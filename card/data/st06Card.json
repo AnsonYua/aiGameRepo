@@ -1,0 +1,852 @@
+{
+  "metadata": {
+    "version": "1.1",
+    "lastUpdated": "2026-01-22",
+    "cardType": "unit"
+  },
+  "cards": {
+    "ST06-001": {
+      "id": "ST06-001",
+      "name": "GQuuuuuuX (Omega Psycommu)",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 5,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Clan"
+      ],
+      "link": [
+        "Amate Yuzuriha (Machu)"
+      ],
+      "ap": 4,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "[When Linked]If you have another (Clan) Unit in play, this Unit gains <First Strike> during this turn. (While this Unit is attacking, it deals damage before the enemy Unit.)"
+        ],
+        "rules": [
+          {
+            "effectId": "linked_grant_first_strike_if_clan_ge_2",
+            "type": "triggered",
+            "sourceConditions": [
+              {
+                "type": "linked"
+              }
+            ],
+            "conditions": [
+              {
+                "type": "unitsInPlayWithTrait",
+                "scope": "self",
+                "traits": [
+                  "Clan"
+                ],
+                "value": ">=2"
+              }
+            ],
+            "action": "grant_keyword",
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "eventTrigger": "PAIRING_COMPLETE"
+            },
+            "parameters": {
+              "keyword": "First Strike",
+              "notes": "Engine: implemented via grant_keyword + First Strike battle ordering."
+            }
+          }
+        ]
+      }
+    },
+    "ST06-002": {
+      "id": "ST06-002",
+      "name": "GQuuuuuuX (Omega Psycommu)",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 4,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Clan"
+      ],
+      "link": [
+        "Amate Yuzuriha (Machu)"
+      ],
+      "ap": 4,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[Deploy]If you have another (Clan) Unit in play, choose 1 enemy Unit. Deal 1 damage to it."
+        ],
+        "rules": [
+          {
+            "effectId": "deploy_damage_enemy_1_if_clan_ge_2",
+            "type": "triggered",
+            "conditions": [
+              {
+                "type": "unitsInPlayWithTrait",
+                "scope": "self",
+                "traits": [
+                  "Clan"
+                ],
+                "value": ">=2"
+              }
+            ],
+            "action": "damage",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "count": 1
+            },
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "ST06-003": {
+      "id": "ST06-003",
+      "name": "Gaia’s Rick Dom (GQ)",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Space"
+      ],
+      "traits": [
+        "Clan"
+      ],
+      "link": [
+        "Gaia"
+      ],
+      "ap": 2,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[Activate/Main]<Support 1> (Rest this Unit. 1 other friendly Unit gets AP+1 during this turn.)"
+        ],
+        "rules": [
+          {
+            "effectId": "activate_support_1",
+            "type": "activated",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "cost": {
+              "rest": "self"
+            },
+            "action": "modifyAP",
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "selection": {
+                "type": "player_choice"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "value": 1,
+              "excludeSource": true,
+              "notes": "Support targeting should exclude the source Unit."
+            }
+          }
+        ]
+      }
+    },
+    "ST06-004": {
+      "id": "ST06-004",
+      "name": "Gelgoog (GQ)",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 2,
+      "cost": 1,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 2,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "ST06-005": {
+      "id": "ST06-005",
+      "name": "Red Gundam",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 4,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Clan"
+      ],
+      "link": [
+        "Shuji Itō"
+      ],
+      "ap": 4,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "<Breach 1> (When this Unit's attack destroys an enemy Unit, deal 1 damage to the first card in that opponent's shield area.)",
+          "[Attack]Choose 1 to 2 friendly (Clan) Units. They get AP+2 during this turn."
+        ],
+        "rules": [
+          {
+            "effectId": "breach_1",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "opponent_shield",
+              "count": 1
+            },
+            "action": "damageShield",
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "BATTLE_DESTROY"
+            }
+          },
+          {
+            "effectId": "attack_ap_plus_2_to_1_or_2_clan_units",
+            "type": "triggered",
+            "action": "modifyAP",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "eventTrigger": "ATTACK_PHASE"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "filters": {
+                "traits": [
+                  "Clan"
+                ]
+              },
+              "selection": {
+                "type": "player_choice"
+              },
+              "count": {
+                "min": 1,
+                "max": 2
+              }
+            },
+            "parameters": {
+              "value": 2
+            }
+          }
+        ]
+      }
+    },
+    "ST06-007": {
+      "id": "ST06-007",
+      "name": "Ortega’s Rick Dom (GQ)",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space"
+      ],
+      "traits": [
+        "Clan"
+      ],
+      "link": [
+        "Ortega"
+      ],
+      "ap": 3,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[Deploy]Choose 1 of your other (Clan) Units. During this turn, that Unit may choose an active enemy Unit with 3 or less AP as its attack target."
+        ],
+        "rules": [
+          {
+            "effectId": "deploy_allow_attack_target_active_enemy_ap_le_3",
+            "type": "triggered",
+            "action": "allow_attack_target",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "eventTrigger": "ENTERS_PLAY"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "filters": {
+                "traits": [
+                  "Clan"
+                ]
+              },
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "parameters": {
+              "status": "active",
+              "ap": "<=3",
+              "excludeSource": true,
+              "notes": "Implemented: excludes the source card so only another (Clan) Unit can be chosen."
+            }
+          }
+        ]
+      }
+    },
+    "ST06-008": {
+      "id": "ST06-008",
+      "name": "Sugai’s Gelgoog (GQ)",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Clan"
+      ],
+      "link": [],
+      "ap": 3,
+      "hp": 3,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "ST06-009": {
+      "id": "ST06-009",
+      "name": "Amate Yuzuriha (Machu)",
+      "cardType": "pilot",
+      "color": "Red",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Clan",
+        "Newtype"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "[When Linked]Look at the top card of your deck. If it is a (Clan) card, you may reveal it and add it to your hand. Otherwise, put that card on the bottom of your deck."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "linked_top_1_clan_to_hand_else_bottom",
+            "type": "triggered",
+            "sourceConditions": [
+              {
+                "type": "linked"
+              }
+            ],
+            "action": "select_from_top_deck",
+            "parameters": {
+              "lookCount": 1,
+              "select": {
+                "count": 1,
+                "optional": true,
+                "toZone": "hand",
+                "reveal": true,
+                "filters": {
+                  "traitsAny": [
+                    "Clan"
+                  ]
+                }
+              },
+              "rest": {
+                "toZone": "deck_bottom",
+                "order": "preserve"
+              },
+              "notes": "Implemented: select_from_top_deck supports optional top-deck reveal/selection."
+            },
+            "timing": {
+              "eventTrigger": "PAIRING_COMPLETE"
+            }
+          }
+        ]
+      }
+    },
+    "ST06-010": {
+      "id": "ST06-010",
+      "name": "Shuji Itō",
+      "cardType": "pilot",
+      "color": "Green",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Clan",
+        "Newtype"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "[During Link][Attack]If you have a (Clan) Unit in play, look at the top card of your deck and return it to the top or bottom of your deck."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "linked_attack_scry_top_1_if_clan_unit_in_play",
+            "type": "triggered",
+            "sourceConditions": [
+              {
+                "type": "linked"
+              }
+            ],
+            "conditions": [
+              {
+                "type": "unitsInPlayWithTrait",
+                "scope": "self",
+                "traits": [
+                  "Clan"
+                ],
+                "value": ">=1"
+              }
+            ],
+            "action": "scry_top_deck",
+            "parameters": {
+              "count": 1,
+              "keep": 1,
+              "choice": "top_or_bottom",
+              "notes": "Implemented: scry supports top/bottom deck placement.",
+              "rest": "bottom"
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_PHASE"
+            }
+          }
+        ]
+      }
+    },
+    "ST06-011": {
+      "id": "ST06-011",
+      "name": "Ruthless Tactics",
+      "cardType": "command",
+      "color": "Red",
+      "level": 3,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Clan"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Main][Action]Choose 1 to 2 friendly (Clan) Units. They get AP+2 during this turn.",
+          "[Pilot][Gaia (GQ)]"
+        ],
+        "rules": [
+          {
+            "effectId": "main_or_action_ap_plus_2_to_1_or_2_clan_units",
+            "type": "play",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "activationWindows": [
+                "MAIN_PHASE",
+                "ACTION_STEP"
+              ]
+            },
+            "action": "modifyAP",
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "filters": {
+                "traits": [
+                  "Clan"
+                ]
+              },
+              "selection": {
+                "type": "player_choice"
+              },
+              "count": {
+                "min": 1,
+                "max": 2
+              }
+            },
+            "parameters": {
+              "value": 2,
+              "notes": "Represents 'choose 1 to 2' as selecting up to 2; engine should allow fewer targets."
+            }
+          },
+          {
+            "effectId": "pilot_designation",
+            "type": "special",
+            "action": "designate_pilot",
+            "parameters": {
+              "pilotName": "Gaia (GQ)",
+              "AP": 1,
+              "HP": 0
+            },
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ST06-012": {
+      "id": "ST06-012",
+      "name": "Schoolgirl and Smuggler",
+      "cardType": "command",
+      "color": "Green",
+      "level": 1,
+      "cost": 1,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Main]Look at the top 3 cards of your deck. You may reveal 1 (Clan) Unit card or Pilot card among them and add it to your hand. Return the rest to the bottom of your deck in random order."
+        ],
+        "rules": [
+          {
+            "effectId": "main_tutor_top_3_clan_unit_or_pilot",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "action": "select_from_top_deck",
+            "parameters": {
+              "lookCount": 3,
+              "select": {
+                "count": 1,
+                "optional": true,
+                "toZone": "hand",
+                "reveal": true,
+                "filters": {
+                  "cardTypeAny": [
+                    "unit",
+                    "pilot"
+                  ],
+                  "traitsAny": [
+                    "Clan"
+                  ]
+                }
+              },
+              "rest": {
+                "toZone": "deck_bottom",
+                "order": "random"
+              },
+              "notes": "Implemented: select_from_top_deck supports reveal/select from top and random bottom placement."
+            }
+          }
+        ]
+      }
+    },
+    "ST06-013": {
+      "id": "ST06-013",
+      "name": "Fierce Unity",
+      "cardType": "command",
+      "color": "Green",
+      "level": 3,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Clan"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Action]Choose 1 to 2 friendly (Clan) Units. During this turn, they can't receive battle damage from enemy Units that are Lv.2 or lower.",
+          "[Pilot][Ortega (GQ)]"
+        ],
+        "rules": [
+          {
+            "effectId": "action_prevent_battle_damage_from_enemy_units_le_2_for_clan",
+            "type": "play",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "activationWindows": [
+                "ACTION_STEP"
+              ]
+            },
+            "action": "prevent_battle_damage",
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "filters": {
+                "traits": [
+                  "Clan"
+                ]
+              },
+              "selection": {
+                "type": "player_choice"
+              },
+              "count": {
+                "min": 1,
+                "max": 2
+              }
+            },
+            "parameters": {
+              "from": "enemy_units",
+              "enemyLevel": "<=2",
+              "notes": "Engine: implemented via prevent_battle_damage temporary effect and battle-resolution checks."
+            }
+          },
+          {
+            "effectId": "pilot_designation",
+            "type": "special",
+            "action": "designate_pilot",
+            "parameters": {
+              "pilotName": "Ortega (GQ)",
+              "AP": 1,
+              "HP": 0
+            },
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ST06-014": {
+      "id": "ST06-014",
+      "name": "Clan Battle",
+      "cardType": "base",
+      "color": "Red",
+      "level": 3,
+      "cost": 1,
+      "zone": [
+        "Space"
+      ],
+      "traits": [
+        "Clan",
+        "Stronghold"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "[Burst]Deploy this card.",
+          "[Deploy]Add 1 of your Shields to your hand.",
+          "[Activate/Main]Rest this Base: If a friendly (Clan) Link Unit is in play, choose 1 friendly Unit. It gets AP+2 during this turn."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_deploy",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "deploy",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "deploy_shield_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self_shield"
+            },
+            "action": "addToHand",
+            "parameters": {
+              "value": 1,
+              "from": "shield"
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          },
+          {
+            "effectId": "activate_ap_plus_2_if_clan_link_unit_in_play",
+            "type": "activated",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "cost": {
+              "restSelf": true,
+              "rest": "self"
+            },
+            "conditions": [
+              {
+                "type": "unitsInPlayWithFilter",
+                "scope": "self",
+                "filters": {
+                  "traits": [
+                    "Clan"
+                  ],
+                  "isLinkUnit": true
+                },
+                "value": ">=1"
+              }
+            ],
+            "action": "modifyAP",
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "parameters": {
+              "value": 2,
+              "notes": "Implemented: isLinkUnit filters are evaluated for in-play units."
+            }
+          }
+        ]
+      }
+    },
+    "ST06-015": {
+      "id": "ST06-015",
+      "name": "Kaneban Co., Ltd.",
+      "cardType": "base",
+      "color": "Green",
+      "level": 4,
+      "cost": 2,
+      "zone": [
+        "Space"
+      ],
+      "traits": [
+        "Clan",
+        "Stronghold"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "[Burst]Deploy this card.",
+          "[Deploy]Add 1 of your Shields to your hand.",
+          "[Once per Turn]When a friendly (Clan) Unit links, it gains <Breach 3> during this turn. (When this Unit's attack destroys an enemy Unit, deal 3 damage to the first card in that opponent's shield area.)"
+        ],
+        "rules": [
+          {
+            "effectId": "burst_deploy",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "deploy",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "deploy_shield_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self_shield"
+            },
+            "action": "addToHand",
+            "parameters": {
+              "value": 1,
+              "from": "shield"
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          },
+          {
+            "effectId": "once_per_turn_grant_breach_3_to_just_linked_clan_unit",
+            "type": "triggered",
+            "cost": {
+              "oncePerTurn": true
+            },
+            "action": "grant_breach",
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "filters": {
+                "traits": [
+                  "Clan"
+                ],
+                "linkStatus": "linked"
+              },
+              "count": 1,
+              "selection": {
+                "type": "JUST_LINKED"
+              }
+            },
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "eventTrigger": "PAIRING_COMPLETE"
+            },
+            "parameters": {
+              "value": 3,
+              "notes": "Implemented: JUST_LINKED selection with temporary Breach grant is supported."
+            }
+          }
+        ]
+      }
+    }
+  }
+}

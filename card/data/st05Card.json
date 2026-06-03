@@ -1,0 +1,869 @@
+{
+  "metadata": {
+    "version": "1.1",
+    "lastUpdated": "2026-01-22",
+    "cardType": "unit"
+  },
+  "cards": {
+    "ST05-001": {
+      "id": "ST05-001",
+      "name": "Gundam Barbatos 4th Form",
+      "cardType": "unit",
+      "color": "Purple",
+      "level": 6,
+      "cost": 4,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Tekkadan",
+        "Gundam Frame"
+      ],
+      "link": [
+        "Mikazuki Augus"
+      ],
+      "ap": 4,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "[Deploy]Choose 1 of your other Units. Deal 1 damage to it. If you do, it gets AP+1 during this turn.",
+          "While this Unit is damaged, it gains <Suppression>. (Damage to Shields by an attack is dealt to the first 2 cards simultaneously.)"
+        ],
+        "rules": [
+          {
+            "effectId": "deploy_damage_1_then_ap_plus_1",
+            "type": "triggered",
+            "action": "sequence",
+            "parameters": {
+              "steps": [
+                {
+                  "stepId": "damage_other_friendly_unit",
+                  "action": "damage",
+                  "target": {
+                    "type": "unit",
+                    "scope": "self_all_unit",
+                    "count": 1,
+                    "selection": {
+                      "type": "player_choice"
+                    }
+                  },
+                  "parameters": {
+                    "value": 1,
+                    "excludeSource": true
+                  }
+                },
+                {
+                  "action": "conditional",
+                  "parameters": {
+                    "if": [
+                      {
+                        "type": "stepResolved",
+                        "stepId": "damage_other_friendly_unit"
+                      }
+                    ],
+                    "then": [
+                      {
+                        "action": "modifyAP",
+                        "timing": {
+                          "duration": "UNTIL_END_OF_TURN"
+                        },
+                        "target": {
+                          "type": "unit",
+                          "scope": "previous_target",
+                          "count": 1
+                        },
+                        "parameters": {
+                          "value": 1
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          },
+          {
+            "effectId": "gain_suppression_while_damaged",
+            "type": "continuous",
+            "action": "grant_keyword",
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "conditions": [
+              {
+                "type": "sourceDamaged",
+                "scope": "source",
+                "value": true
+              }
+            ],
+            "timing": {
+              "duration": "continuous",
+              "endOnSourceDestroyed": true
+            },
+            "parameters": {
+              "keyword": "Suppression"
+            }
+          }
+        ]
+      }
+    },
+    "ST05-002": {
+      "id": "ST05-002",
+      "name": "Gundam Barbatos 2nd Form",
+      "cardType": "unit",
+      "color": "Purple",
+      "level": 4,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Tekkadan",
+        "Gundam Frame"
+      ],
+      "link": [
+        "Mikazuki Augus"
+      ],
+      "ap": 2,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "While this Unit is damaged, it gets AP+2."
+        ],
+        "rules": [
+          {
+            "effectId": "ap_plus_2_while_damaged",
+            "type": "continuous",
+            "action": "modifyAP",
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "conditions": [
+              {
+                "type": "sourceDamaged",
+                "scope": "source",
+                "value": true
+              }
+            ],
+            "timing": {
+              "duration": "continuous"
+            },
+            "parameters": {
+              "value": 2
+            }
+          }
+        ]
+      }
+    },
+    "ST05-003": {
+      "id": "ST05-003",
+      "name": "CGS Mobile Worker",
+      "cardType": "unit",
+      "color": "Purple",
+      "level": 1,
+      "cost": 1,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Tekkadan"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[Activate/Main]Rest this Unit: Choose 1 of your Units. Deal 1 damage to it. It gets AP+1 during this turn."
+        ],
+        "rules": [
+          {
+            "effectId": "activate_damage_1_then_ap_plus_1",
+            "type": "activated",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "cost": {
+              "restSelf": true,
+              "rest": "self"
+            },
+            "action": "sequence",
+            "parameters": {
+              "steps": [
+                {
+                  "action": "damage",
+                  "target": {
+                    "type": "unit",
+                    "scope": "self_all_unit",
+                    "count": 1,
+                    "selection": {
+                      "type": "player_choice"
+                    }
+                  },
+                  "parameters": {
+                    "value": 1
+                  }
+                },
+                {
+                  "action": "modifyAP",
+                  "timing": {
+                    "duration": "UNTIL_END_OF_TURN"
+                  },
+                  "target": {
+                    "type": "unit",
+                    "scope": "previous_target",
+                    "count": 1
+                  },
+                  "parameters": {
+                    "value": 1
+                  }
+                }
+              ],
+              "notes": "Implemented: restSelf/rest='self' activation costs are supported."
+            }
+          }
+        ]
+      }
+    },
+    "ST05-004": {
+      "id": "ST05-004",
+      "name": "Graze Custom",
+      "cardType": "unit",
+      "color": "Purple",
+      "level": 2,
+      "cost": 1,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Tekkadan"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 2,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "ST05-005": {
+      "id": "ST05-005",
+      "name": "Gundam Gusion Rebake",
+      "cardType": "unit",
+      "color": "Purple",
+      "level": 4,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Tekkadan",
+        "Gundam Frame"
+      ],
+      "link": [
+        "Akihiro Altland"
+      ],
+      "ap": 3,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "[Destroyed]Choose 1 enemy Unit with 4 or less AP. Rest it."
+        ],
+        "rules": [
+          {
+            "effectId": "destroyed_rest_enemy_ap_le_4",
+            "type": "triggered",
+            "action": "rest",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "ap": "<=4",
+                "status": "active"
+              },
+              "count": 1
+            },
+            "timing": {
+              "eventTrigger": "DESTROYED"
+            }
+          }
+        ]
+      }
+    },
+    "ST05-006": {
+      "id": "ST05-006",
+      "name": "Hyakuren",
+      "cardType": "unit",
+      "color": "Purple",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Teiwaz"
+      ],
+      "link": [],
+      "ap": 4,
+      "hp": 3,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "ST05-007": {
+      "id": "ST05-007",
+      "name": "McGillis’ Schwalbe Graze",
+      "cardType": "unit",
+      "color": "White",
+      "level": 4,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Gjallarhorn"
+      ],
+      "link": [
+        "McGillis Fareed"
+      ],
+      "ap": 4,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "<Blocker> (Rest this Unit to change the attack target to it.)",
+          "[When Paired]Choose 1 enemy Unit that is Lv.3 or lower. It gets AP-2 during this turn."
+        ],
+        "rules": [
+          {
+            "effectId": "blocker",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "self"
+            },
+            "action": "redirect_attack",
+            "parameters": {
+              "cost": "rest_self"
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_REDIRECT"
+            }
+          },
+          {
+            "effectId": "pair_enemy_ap_minus_2_low_level",
+            "type": "triggered",
+            "action": "modifyAP",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "eventTrigger": "PAIRING_COMPLETE"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "level": "<=3"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "value": -2
+            }
+          }
+        ]
+      }
+    },
+    "ST05-008": {
+      "id": "ST05-008",
+      "name": "Graze Commander Type",
+      "cardType": "unit",
+      "color": "White",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Gjallarhorn"
+      ],
+      "link": [
+        "Gjallarhorn"
+      ],
+      "ap": 3,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "<Blocker> (Rest this Unit to change the attack target to it.)"
+        ],
+        "rules": [
+          {
+            "effectId": "blocker",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "self"
+            },
+            "action": "redirect_attack",
+            "parameters": {
+              "cost": "rest_self"
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_REDIRECT"
+            }
+          }
+        ]
+      }
+    },
+    "ST05-009": {
+      "id": "ST05-009",
+      "name": "Graze",
+      "cardType": "unit",
+      "color": "White",
+      "level": 2,
+      "cost": 1,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Gjallarhorn"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 2,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "ST05-010": {
+      "id": "ST05-010",
+      "name": "Mikazuki Augus",
+      "cardType": "pilot",
+      "color": "Purple",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Tekkadan",
+        "Alaya-Vijnana"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "[When Paired]Choose 1 of your Units and 1 enemy Unit. Deal 1 damage to each."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "pair_damage_each_1",
+            "type": "triggered",
+            "action": "sequence",
+            "parameters": {
+              "steps": [
+                {
+                  "action": "damage",
+                  "target": {
+                    "type": "unit",
+                    "scope": "self_all_unit",
+                    "count": 1,
+                    "selection": {
+                      "type": "player_choice"
+                    }
+                  },
+                  "parameters": {
+                    "value": 1
+                  }
+                },
+                {
+                  "action": "damage",
+                  "target": {
+                    "type": "unit",
+                    "scope": "opponent",
+                    "count": 1,
+                    "selection": {
+                      "type": "player_choice"
+                    }
+                  },
+                  "parameters": {
+                    "value": 1
+                  }
+                }
+              ],
+              "notes": "Implemented: sequence steps support independent multi-target selections."
+            },
+            "timing": {
+              "eventTrigger": "PAIRING_COMPLETE"
+            }
+          }
+        ]
+      }
+    },
+    "ST05-011": {
+      "id": "ST05-011",
+      "name": "Akihiro Altland",
+      "cardType": "pilot",
+      "color": "Purple",
+      "level": 3,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Tekkadan",
+        "Alaya-Vijnana"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "[During Link]During your turn, when this Unit destroys an enemy Unit with battle damage, choose 1 (Tekkadan) Unit card that is Lv.2 or lower from your trash. Add it to your hand."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "linked_battle_destroy_add_tekkadan_unit_le_2_from_trash",
+            "type": "triggered",
+            "sourceConditions": [
+              {
+                "type": "linked"
+              }
+            ],
+            "timing": {
+              "actionTurn": "YOUR_TURN",
+              "eventTrigger": "BATTLE_DESTROY"
+            },
+            "action": "addToHand",
+            "target": {
+              "type": "card",
+              "scope": "self_trash",
+              "filters": {
+                "cardType": "unit",
+                "traitsAny": [
+                  "Tekkadan"
+                ],
+                "level": "<=2"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "value": 1,
+              "from": "trash",
+              "notes": "Implemented: addToHand supports selecting and transferring specific trash cards to hand."
+            }
+          }
+        ]
+      }
+    },
+    "ST05-012": {
+      "id": "ST05-012",
+      "name": "McGillis Fareed",
+      "cardType": "pilot",
+      "color": "White",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Gjallarhorn"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "[When Paired]If you have 2 or more other (Gjallarhorn)/(Tekkadan) Units, choose 1 enemy Unit with 3 or less HP. Rest it."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "pair_rest_enemy_hp_le_3_if_gh_or_tekkadan_ge_3",
+            "type": "triggered",
+            "action": "rest",
+            "conditions": [
+              {
+                "type": "unitsInPlayWithTrait",
+                "scope": "self",
+                "traits": [
+                  "Gjallarhorn",
+                  "Tekkadan"
+                ],
+                "value": ">=3"
+              }
+            ],
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "hp": "<=3",
+                "status": "active"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "notes": "Represents '2 or more other Units' as having 3+ total matching Units in play."
+            },
+            "timing": {
+              "eventTrigger": "PAIRING_COMPLETE"
+            }
+          }
+        ]
+      }
+    },
+    "ST05-013": {
+      "id": "ST05-013",
+      "name": "With Iron and Blood",
+      "cardType": "command",
+      "color": "Purple",
+      "level": 2,
+      "cost": 1,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Main][Action]Choose 1 of your Units. Deal 1 damage to it. It gets AP+3 during this turn."
+        ],
+        "rules": [
+          {
+            "effectId": "main_or_action_damage_1_then_ap_plus_3",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE",
+                "ACTION_STEP"
+              ]
+            },
+            "action": "sequence",
+            "parameters": {
+              "steps": [
+                {
+                  "action": "damage",
+                  "target": {
+                    "type": "unit",
+                    "scope": "self_all_unit",
+                    "count": 1,
+                    "selection": {
+                      "type": "player_choice"
+                    }
+                  },
+                  "parameters": {
+                    "value": 1
+                  }
+                },
+                {
+                  "action": "modifyAP",
+                  "timing": {
+                    "duration": "UNTIL_END_OF_TURN"
+                  },
+                  "target": {
+                    "type": "unit",
+                    "scope": "previous_target",
+                    "count": 1
+                  },
+                  "parameters": {
+                    "value": 3
+                  }
+                }
+              ],
+              "notes": "Implemented: sequence-based multi-step command resolution is supported."
+            }
+          }
+        ]
+      }
+    },
+    "ST05-014": {
+      "id": "ST05-014",
+      "name": "Fatal Strike",
+      "cardType": "command",
+      "color": "Purple",
+      "level": 4,
+      "cost": 2,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Burst]Choose 1 enemy Unit. Deal 1 damage to it.",
+          "[Main]Choose 1 enemy Unit that is Lv.3 or lower. Destroy it."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_damage_enemy_1",
+            "type": "triggered",
+            "action": "damage",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "count": 1
+            },
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "main_destroy_enemy_le_3",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "action": "destroy",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "level": "<=3"
+              },
+              "count": 1
+            }
+          }
+        ]
+      }
+    },
+    "ST05-015": {
+      "id": "ST05-015",
+      "name": "Isaribi",
+      "cardType": "base",
+      "color": "Purple",
+      "level": 3,
+      "cost": 1,
+      "zone": [
+        "Space"
+      ],
+      "traits": [
+        "Tekkadan",
+        "Warship"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "[Burst]Deploy this card.",
+          "[Deploy]Add 1 of your Shields to your hand.",
+          "[Activate/Main]Rest this Base: Choose 1 of your damaged Units. It gets AP+2 during this turn."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_deploy",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "deploy",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "deploy_shield_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self_shield"
+            },
+            "action": "addToHand",
+            "parameters": {
+              "value": 1,
+              "from": "shield"
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          },
+          {
+            "effectId": "activate_ap_plus_2_to_damaged_unit",
+            "type": "activated",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "cost": {
+              "restSelf": true,
+              "rest": "self"
+            },
+            "action": "modifyAP",
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "filters": {
+                "damaged": true
+              },
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "parameters": {
+              "value": 2,
+              "notes": "Implemented: damaged target filters are supported."
+            }
+          }
+        ]
+      }
+    }
+  }
+}

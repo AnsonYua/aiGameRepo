@@ -1,0 +1,872 @@
+{
+  "metadata": {
+    "version": "1.1",
+    "lastUpdated": "2026-01-22",
+    "cardType": "unit"
+  },
+  "cards": {
+    "ST07-001": {
+      "id": "ST07-001",
+      "name": "Gundam Exia",
+      "cardType": "unit",
+      "color": "Purple",
+      "level": 5,
+      "cost": 4,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "CB",
+        "GN Drive"
+      ],
+      "link": [
+        "Setsuna F. Seiei"
+      ],
+      "ap": 4,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "At the end of your turn, if there are 7 or more (CB) cards in your trash, choose 1 of your Resources. Set it as active.",
+          "[When Paired]Place the top 2 cards of your deck into your trash. If you placed a (CB) card with this effect, draw 1."
+        ],
+        "rules": [
+          {
+            "effectId": "end_of_turn_set_active_resource_if_cb_trash_ge_7",
+            "type": "triggered",
+            "timing": {
+              "actionTurn": "YOUR_TURN",
+              "eventTrigger": "END_OF_TURN"
+            },
+            "conditions": [
+              {
+                "type": "cardsInTrash",
+                "scope": "self",
+                "traitsAny": [
+                  "CB"
+                ],
+                "value": ">=7"
+              }
+            ],
+            "action": "setActive",
+            "target": {
+              "type": "energy",
+              "scope": "self_resource",
+              "count": 1,
+              "filters": {
+                "status": "rested",
+                "isExtraEnergy": false
+              }
+            },
+            "parameters": {}
+          },
+          {
+            "effectId": "pair_mill_2_then_draw_if_cb_milled",
+            "type": "triggered",
+            "action": "sequence",
+            "parameters": {
+              "steps": [
+                {
+                  "action": "moveTopDeckToTrash",
+                  "parameters": {
+                    "count": 2,
+                    "reveal": false
+                  }
+                },
+                {
+                  "action": "draw_if_moved_cards_match_traits",
+                  "parameters": {
+                    "value": 1,
+                    "traitsAny": [
+                      "CB"
+                    ],
+                    "notes": "Conditional follow-up based on cards moved by the previous step."
+                  }
+                }
+              ]
+            },
+            "timing": {
+              "eventTrigger": "PAIRING_COMPLETE"
+            }
+          }
+        ]
+      }
+    },
+    "ST07-002": {
+      "id": "ST07-002",
+      "name": "Gundam Exia",
+      "cardType": "unit",
+      "color": "Purple",
+      "level": 4,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "CB",
+        "GN Drive"
+      ],
+      "link": [
+        "Setsuna F. Seiei"
+      ],
+      "ap": 4,
+      "hp": 3,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "ST07-003": {
+      "id": "ST07-003",
+      "name": "Gundam Virtue",
+      "cardType": "unit",
+      "color": "Purple",
+      "level": 5,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "CB",
+        "GN Drive"
+      ],
+      "link": [
+        "Tieria Erde"
+      ],
+      "ap": 5,
+      "hp": 4,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "ST07-004": {
+      "id": "ST07-004",
+      "name": "Gundam Virtue",
+      "cardType": "unit",
+      "color": "Purple",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "CB",
+        "GN Drive"
+      ],
+      "link": [
+        "Tieria Erde"
+      ],
+      "ap": 3,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "While you have a (CB) Pilot in play, this Unit gains <Blocker>. (Rest this Unit to change the attack target to it.)"
+        ],
+        "rules": [
+          {
+            "effectId": "blocker_if_cb_pilot_in_play",
+            "type": "triggered",
+            "conditions": [
+              {
+                "type": "cardsInPlay",
+                "scope": "self",
+                "cardType": "pilot",
+                "traitsAny": [
+                  "CB"
+                ],
+                "value": ">=1"
+              }
+            ],
+            "target": {
+              "type": "unit",
+              "scope": "self"
+            },
+            "action": "redirect_attack",
+            "parameters": {
+              "cost": "rest_self",
+              "notes": "Implemented: blocker redirect rules support conditional checks on cards in play."
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_REDIRECT"
+            }
+          }
+        ]
+      }
+    },
+    "ST07-005": {
+      "id": "ST07-005",
+      "name": "Gundam Dynames",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 4,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "CB",
+        "GN Drive"
+      ],
+      "link": [
+        "Lockon Stratos"
+      ],
+      "ap": 2,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "During your turn, when this Unit destroys an enemy Unit with battle damage, it recovers 2 HP.",
+          "[During Link]This Unit gets AP+2."
+        ],
+        "rules": [
+          {
+            "effectId": "battle_destroy_heal_2_on_your_turn",
+            "type": "triggered",
+            "timing": {
+              "actionTurn": "YOUR_TURN",
+              "eventTrigger": "BATTLE_DESTROY"
+            },
+            "action": "heal",
+            "target": {
+              "type": "unit",
+              "scope": "source",
+              "count": 1
+            },
+            "parameters": {
+              "value": 2
+            }
+          },
+          {
+            "effectId": "during_link_ap_plus_2",
+            "type": "continuous",
+            "sourceConditions": [
+              {
+                "type": "linked"
+              }
+            ],
+            "action": "modifyAP",
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "timing": {
+              "duration": "continuous"
+            },
+            "parameters": {
+              "value": 2
+            }
+          }
+        ]
+      }
+    },
+    "ST07-006": {
+      "id": "ST07-006",
+      "name": "Gundam Dynames",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "CB",
+        "GN Drive"
+      ],
+      "link": [
+        "Lockon Stratos"
+      ],
+      "ap": 3,
+      "hp": 3,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "ST07-007": {
+      "id": "ST07-007",
+      "name": "Gundam Kyrios",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "CB",
+        "GN Drive"
+      ],
+      "link": [
+        "Allelujah Haptism",
+        "Hallelujah Haptism"
+      ],
+      "ap": 2,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "During your turn, while you have a (CB) Pilot in play, this Unit gets AP+2."
+        ],
+        "rules": [
+          {
+            "effectId": "ap_plus_2_on_your_turn_if_cb_pilot_in_play",
+            "type": "continuous",
+            "action": "modifyAP",
+            "timing": {
+              "duration": "continuous",
+              "actionTurn": "YOUR_TURN"
+            },
+            "conditions": [
+              {
+                "type": "cardsInPlay",
+                "scope": "self",
+                "cardType": "pilot",
+                "traitsAny": [
+                  "CB"
+                ],
+                "value": ">=1"
+              }
+            ],
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "parameters": {
+              "value": 2
+            }
+          }
+        ]
+      }
+    },
+    "ST07-008": {
+      "id": "ST07-008",
+      "name": "Gundam Kyrios (Flight Mode)",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "CB",
+        "GN Drive"
+      ],
+      "link": [
+        "Allelujah Haptism",
+        "Hallelujah Haptism"
+      ],
+      "ap": 3,
+      "hp": 1,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "ST07-009": {
+      "id": "ST07-009",
+      "name": "Setsuna F. Seiei",
+      "cardType": "pilot",
+      "color": "Purple",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "CB"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "[Attack]This Unit gets AP+1 during this turn. If there are 7 or more (CB) cards in your trash, all your (CB) Units get AP+1 instead."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "attack_ap_plus_1_branch_cb_trash_ge_7",
+            "type": "triggered",
+            "sourceConditions": [
+              {
+                "type": "paired"
+              }
+            ],
+            "action": "conditional",
+            "parameters": {
+              "branches": [
+                {
+                  "conditions": [
+                    {
+                      "type": "cardsInTrash",
+                      "scope": "self",
+                      "traitsAny": [
+                        "CB"
+                      ],
+                      "value": ">=7"
+                    }
+                  ],
+                  "steps": [
+                    {
+                      "action": "modifyAP",
+                      "timing": {
+                        "duration": "UNTIL_END_OF_TURN"
+                      },
+                      "target": {
+                        "type": "unit",
+                        "scope": "self_all_unit",
+                        "count": 6,
+                        "filters": {
+                          "traits": [
+                            "CB"
+                          ]
+                        }
+                      },
+                      "parameters": {
+                        "value": 1
+                      }
+                    }
+                  ]
+                },
+                {
+                  "conditions": [],
+                  "steps": [
+                    {
+                      "action": "modifyAP",
+                      "timing": {
+                        "duration": "UNTIL_END_OF_TURN"
+                      },
+                      "target": {
+                        "type": "unit",
+                        "scope": "source_paired_unit",
+                        "count": 1
+                      },
+                      "parameters": {
+                        "value": 1,
+                        "notes": "Implemented: source_paired_unit target scope resolves correctly."
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_PHASE"
+            }
+          }
+        ]
+      }
+    },
+    "ST07-010": {
+      "id": "ST07-010",
+      "name": "Tieria Erde",
+      "cardType": "pilot",
+      "color": "Purple",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "CB",
+        "Innovade"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "[Destroyed]If it is your opponent's turn and this is a (CB) Unit, draw 1."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "destroyed_draw_1_on_opponent_turn_if_cb_unit",
+            "type": "triggered",
+            "timing": {
+              "actionTurn": "OPPONENT_TURN",
+              "eventTrigger": "DESTROYED"
+            },
+            "sourceConditions": [
+              {
+                "type": "paired"
+              }
+            ],
+            "conditions": [
+              {
+                "type": "pairedUnitTrait",
+                "scope": "source",
+                "value": "CB"
+              }
+            ],
+            "action": "draw",
+            "parameters": {
+              "value": 1,
+              "notes": "Implemented: pairedUnitTrait conditions are evaluated at runtime."
+            }
+          }
+        ]
+      }
+    },
+    "ST07-011": {
+      "id": "ST07-011",
+      "name": "Lockon Stratos (Neil)",
+      "cardType": "pilot",
+      "color": "Green",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "CB"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "[When Paired]If this is a (CB) Unit, it may choose an active enemy Unit whose Lv. is equal to or lower than this Unit as its attack target during this turn."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "pair_allow_attack_target_active_enemy_le_source",
+            "type": "triggered",
+            "optional": true,
+            "conditions": [
+              {
+                "type": "pairedUnitTrait",
+                "scope": "source",
+                "value": "CB"
+              }
+            ],
+            "action": "allow_attack_target",
+            "target": {
+              "type": "unit",
+              "scope": "source_paired_unit",
+              "count": 1
+            },
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "eventTrigger": "PAIRING_COMPLETE"
+            },
+            "parameters": {
+              "status": "active",
+              "level": "<=SOURCE_LEVEL",
+              "notes": "Implemented: dynamic level comparisons resolve SOURCE_LEVEL at runtime."
+            }
+          }
+        ]
+      }
+    },
+    "ST07-012": {
+      "id": "ST07-012",
+      "name": "Allelujah Haptism",
+      "cardType": "pilot",
+      "color": "Green",
+      "level": 3,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "CB",
+        "Super Soldier"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "During your turn, while you have a (CB) Link Unit in play, this Unit can't receive battle damage from enemy Units with 3 or less AP."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "prevent_battle_damage_from_enemy_ap_le_3_if_cb_link_unit_in_play",
+            "type": "continuous",
+            "timing": {
+              "duration": "continuous",
+              "actionTurn": "YOUR_TURN"
+            },
+            "conditions": [
+              {
+                "type": "unitsInPlayWithFilter",
+                "scope": "self",
+                "filters": {
+                  "traits": [
+                    "CB"
+                  ],
+                  "isLinkUnit": true
+                },
+                "value": ">=1"
+              }
+            ],
+            "action": "prevent_battle_damage",
+            "target": {
+              "type": "unit",
+              "scope": "source_paired_unit",
+              "count": 1
+            },
+            "parameters": {
+              "from": "enemy_units",
+              "maxEnemyAp": 3,
+              "notes": "Implemented: source_paired_unit targeting with maxEnemyAp battle-damage prevention is supported."
+            }
+          }
+        ]
+      }
+    },
+    "ST07-013": {
+      "id": "ST07-013",
+      "name": "Armed Intervention",
+      "cardType": "command",
+      "color": "Purple",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Burst]Draw 1.",
+          "[Action]Choose 1 rested friendly (CB) Unit. Change the attack target of the battling enemy Unit to it."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_draw_1",
+            "type": "triggered",
+            "action": "draw",
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "action_redirect_attack_to_rested_cb_unit",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "ACTION_STEP"
+              ]
+            },
+            "action": "redirect_attack",
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "filters": {
+                "traits": [
+                  "CB"
+                ],
+                "status": "rested"
+              },
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "parameters": {
+              "notes": "Implemented: redirect_attack supports action-step attack target redirection."
+            }
+          }
+        ]
+      }
+    },
+    "ST07-014": {
+      "id": "ST07-014",
+      "name": "Tactical Visionary",
+      "cardType": "command",
+      "color": "Green",
+      "level": 1,
+      "cost": 1,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Main]Look at the top 3 cards of your deck. You may reveal 1 (CB) Unit card or Pilot card among them and add it to your hand. Return the rest to the bottom of your deck in random order."
+        ],
+        "rules": [
+          {
+            "effectId": "main_tutor_top_3_cb_unit_or_pilot",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "action": "select_from_top_deck",
+            "parameters": {
+              "lookCount": 3,
+              "select": {
+                "count": 1,
+                "optional": true,
+                "toZone": "hand",
+                "reveal": true,
+                "filters": {
+                  "cardTypeAny": [
+                    "unit",
+                    "pilot"
+                  ],
+                  "traitsAny": [
+                    "CB"
+                  ]
+                }
+              },
+              "rest": {
+                "toZone": "deck_bottom",
+                "order": "random"
+              },
+              "notes": "Implemented: select_from_top_deck supports reveal/select from top and random bottom placement."
+            }
+          }
+        ]
+      }
+    },
+    "ST07-015": {
+      "id": "ST07-015",
+      "name": "Ptolemaios",
+      "cardType": "base",
+      "color": "Purple",
+      "level": 2,
+      "cost": 1,
+      "zone": [
+        "Space"
+      ],
+      "traits": [
+        "CB",
+        "Warship"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "[Burst]Deploy this card.",
+          "[Deploy]Add 1 of your Shields to your hand.",
+          "While a rested friendly (CB) Unit is in play, this Base can't receive damage from enemy Units that are Lv.3 or lower, other than Unit tokens."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_deploy",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "deploy",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "deploy_shield_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self_shield"
+            },
+            "action": "addToHand",
+            "parameters": {
+              "value": 1,
+              "from": "shield"
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          },
+          {
+            "effectId": "prevent_damage_from_enemy_units_le_3_if_rested_cb_unit_in_play",
+            "type": "continuous",
+            "action": "prevent_damage",
+            "conditions": [
+              {
+                "type": "unitsInPlayWithFilter",
+                "scope": "self",
+                "filters": {
+                  "traits": [
+                    "CB"
+                  ],
+                  "status": "rested",
+                  "cardType": "unit",
+                  "colorNot": "Token"
+                },
+                "value": ">=1"
+              }
+            ],
+            "target": {
+              "type": "card",
+              "scope": "self",
+              "count": 1
+            },
+            "parameters": {
+              "from": "enemy_units",
+              "enemyLevel": "<=3",
+              "notes": "Engine: implemented during base attack resolution; prevents base damage from non-token enemy units with level <=3 while condition holds."
+            },
+            "timing": {
+              "duration": "continuous"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,620 @@
+{
+  "metadata": {
+    "version": "1.1",
+    "lastUpdated": "2026-03-15",
+    "cardType": "unit"
+  },
+  "cards": {
+    "ST09-001": {
+      "id": "ST09-001",
+      "name": "Impulse Gundam",
+      "cardType": "unit",
+      "color": "Purple",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "ZAFT",
+        "Minerva Squad"
+      ],
+      "link": [
+        "Shinn Asuka"
+      ],
+      "ap": 3,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "[Activate/Main](2): Return this Unit to the bottom of its owner's deck. Choose 1 Unit card with \"Impulse Gundam\" in its card name that is Lv.4 or higher from your trash. Deploy it."
+        ],
+        "rules": [
+          {
+            "effectId": "activate_return_self_then_deploy_impulse_from_trash",
+            "type": "activated",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "cost": {
+              "resource": 2
+            },
+            "action": "sequence",
+            "parameters": {
+              "text": "Return this Unit to the bottom of its owner's deck. Choose 1 Unit card with \"Impulse Gundam\" in its card name that is Lv.4 or higher from your trash. Deploy it.",
+              "version": 1,
+              "steps": [
+                {
+                  "stepId": "return_self_to_deck_bottom",
+                  "action": "returnToDeckBottom",
+                  "target": {
+                    "type": "card",
+                    "scope": "self"
+                  }
+                },
+                {
+                  "action": "deploy",
+                  "target": {
+                    "type": "card",
+                    "scope": "self_trash",
+                    "count": 1,
+                    "selection": {
+                      "type": "player_choice"
+                    },
+                    "filters": {
+                      "cardType": "unit",
+                      "level": ">=4",
+                      "nameIncludes": "Impulse Gundam"
+                    }
+                  },
+                  "parameters": {
+                    "payCost": false,
+                    "notes": "Official FAQ confirms the deployed Unit is not paid for."
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ST09-002": {
+      "id": "ST09-002",
+      "name": "Force Impulse Gundam",
+      "cardType": "unit",
+      "color": "Purple",
+      "level": 5,
+      "cost": 4,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "ZAFT",
+        "Minerva Squad"
+      ],
+      "link": [
+        "Shinn Asuka"
+      ],
+      "ap": 5,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "[Destroyed] Choose 1 (Minerva Squad) Unit card without \"Force Impulse Gundam\" in its card name from your trash. Add it to your hand."
+        ],
+        "rules": [
+          {
+            "effectId": "destroyed_add_minerva_unit_from_trash_except_self_name",
+            "type": "triggered",
+            "action": "addToHand",
+            "target": {
+              "type": "card",
+              "scope": "self_trash",
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              },
+              "filters": {
+                "cardType": "unit",
+                "traitsAny": [
+                  "Minerva Squad"
+                ],
+                "nameExcludes": "Force Impulse Gundam"
+              }
+            },
+            "parameters": {
+              "from": "trash",
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "DESTROYED"
+            }
+          }
+        ]
+      }
+    },
+    "ST09-003": {
+      "id": "ST09-003",
+      "name": "Saviour Gundam",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 6,
+      "cost": 5,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "ZAFT",
+        "Minerva Squad"
+      ],
+      "link": [
+        "Athrun Zala"
+      ],
+      "ap": 5,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "<Breach 3> (When this Unit's attack destroys an enemy Unit, deal the specified amount of damage to the first card in that opponent's shield area.)",
+          "[When Linked] If there are 5 or more purple cards in your trash, deal 2 damage to all Units with 5 or less AP."
+        ],
+        "rules": [
+          {
+            "effectId": "breach_3",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "opponent_shield",
+              "count": 1
+            },
+            "action": "damageShield",
+            "parameters": {
+              "value": 3
+            },
+            "timing": {
+              "eventTrigger": "BATTLE_DESTROY"
+            }
+          },
+          {
+            "effectId": "linked_damage_all_units_ap_5_or_less_if_purple_trash_ge_5",
+            "type": "triggered",
+            "sourceConditions": [
+              {
+                "type": "linked"
+              }
+            ],
+            "conditions": [
+              {
+                "type": "cardsInTrash",
+                "scope": "self",
+                "color": "Purple",
+                "value": ">=5"
+              }
+            ],
+            "action": "damage",
+            "target": {
+              "type": "unit",
+              "scope": "any_all_unit",
+              "filters": {
+                "ap": "<=5"
+              }
+            },
+            "parameters": {
+              "value": 2
+            },
+            "timing": {
+              "eventTrigger": "PAIRING_COMPLETE"
+            }
+          }
+        ]
+      }
+    },
+    "ST09-004": {
+      "id": "ST09-004",
+      "name": "Freedom Gundam",
+      "cardType": "unit",
+      "color": "White",
+      "level": 6,
+      "cost": 5,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Orb"
+      ],
+      "link": [
+        "Kira Yamato"
+      ],
+      "ap": 4,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "<Blocker> (Rest this Unit to change the attack target to it.)",
+          "While a friendly Base is in play, this Unit gains <Suppression>. (Damage to Shields by an attack is dealt to the first 2 cards simultaneously.)"
+        ],
+        "rules": [
+          {
+            "effectId": "blocker",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "self"
+            },
+            "action": "redirect_attack",
+            "parameters": {
+              "cost": "rest_self"
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_REDIRECT"
+            }
+          },
+          {
+            "effectId": "gain_suppression_while_friendly_base_in_play",
+            "type": "continuous",
+            "action": "grant_keyword",
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "conditions": [
+              {
+                "type": "cardsInPlayWithFilter",
+                "scope": "self",
+                "filters": {
+                  "cardType": "base"
+                },
+                "value": ">=1"
+              }
+            ],
+            "timing": {
+              "duration": "continuous",
+              "endOnSourceDestroyed": true
+            },
+            "parameters": {
+              "keyword": "Suppression"
+            }
+          }
+        ]
+      }
+    },
+    "ST09-005": {
+      "id": "ST09-005",
+      "name": "Zaku Warrior",
+      "cardType": "unit",
+      "color": "Purple",
+      "level": 2,
+      "cost": 1,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "ZAFT",
+        "Minerva Squad"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 2,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "ST09-006": {
+      "id": "ST09-006",
+      "name": "Sword Impulse Gundam",
+      "cardType": "unit",
+      "color": "Purple",
+      "level": 4,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "ZAFT",
+        "Minerva Squad"
+      ],
+      "link": [
+        "Coordinator",
+        "Minerva Squad"
+      ],
+      "ap": 4,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[Deploy] If you deploy this Unit from your trash, choose 1 enemy Unit that is Lv.3 or lower. Destroy it."
+        ],
+        "rules": [
+          {
+            "effectId": "deploy_destroy_enemy_le_3_if_deployed_from_trash",
+            "type": "triggered",
+            "action": "sequence",
+            "parameters": {
+              "text": "If you deploy this Unit from your trash, choose 1 enemy Unit that is Lv.3 or lower. Destroy it.",
+              "version": 1,
+              "steps": [
+                {
+                  "action": "conditional",
+                  "parameters": {
+                    "if": [
+                      {
+                        "type": "sourceDeployedFrom",
+                        "value": "trash"
+                      }
+                    ],
+                    "then": [
+                      {
+                        "action": "destroy",
+                        "target": {
+                          "type": "unit",
+                          "scope": "opponent",
+                          "count": 1,
+                          "selection": {
+                            "type": "player_choice"
+                          },
+                          "filters": {
+                            "level": "<=3"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "ST09-007": {
+      "id": "ST09-007",
+      "name": "Blast Impulse Gundam",
+      "cardType": "unit",
+      "color": "Purple",
+      "level": 5,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "ZAFT",
+        "Minerva Squad"
+      ],
+      "link": [
+        "Shinn Asuka"
+      ],
+      "ap": 5,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "<Blocker> (Rest this Unit to change the attack target to it.)"
+        ],
+        "rules": [
+          {
+            "effectId": "blocker",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "self"
+            },
+            "action": "redirect_attack",
+            "parameters": {
+              "cost": "rest_self"
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_REDIRECT"
+            }
+          }
+        ]
+      }
+    },
+    "ST09-008": {
+      "id": "ST09-008",
+      "name": "Shinn Asuka",
+      "cardType": "pilot",
+      "color": "Purple",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "ZAFT",
+        "Minerva Squad",
+        "Coordinator"
+      ],
+      "link": [],
+      "ap": 3,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Burst] Add this card to your hand.",
+          "[Attack][Once per Turn] If this is a (Minerva Squad) Unit, choose 1 of your Resources. Set it as active."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "attack_set_active_resource_if_paired_with_minerva_unit",
+            "type": "triggered",
+            "restrictions": [
+              "once_per_turn"
+            ],
+            "sourceConditions": [
+              {
+                "type": "paired"
+              }
+            ],
+            "conditions": [
+              {
+                "type": "pairedUnitTrait",
+                "scope": "source",
+                "value": "Minerva Squad"
+              }
+            ],
+            "action": "setActive",
+            "target": {
+              "type": "energy",
+              "scope": "self_resource",
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_PHASE"
+            }
+          }
+        ]
+      }
+    },
+    "ST09-009": {
+      "id": "ST09-009",
+      "name": "Giant Killing",
+      "cardType": "command",
+      "color": "Purple",
+      "level": 4,
+      "cost": 3,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Main][Action] Choose 1 active enemy Unit with 4 or less AP. Destroy it."
+        ],
+        "rules": [
+          {
+            "effectId": "play_destroy_active_enemy_ap_4_or_less",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE",
+                "ACTION_STEP"
+              ]
+            },
+            "action": "destroy",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              },
+              "filters": {
+                "status": "active",
+                "ap": "<=4"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "ST09-010": {
+      "id": "ST09-010",
+      "name": "Minerva",
+      "cardType": "base",
+      "color": "Purple",
+      "level": 2,
+      "cost": 1,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "ZAFT",
+        "Minerva Squad",
+        "Warship"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "[Burst] Deploy this card.",
+          "[Deploy] Add 1 of your Shields to your hand. Then, if it is your turn, look at the top 2 cards of your deck and return 1 to the top. Place the remaining card into your trash."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_deploy",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "deploy",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "deploy_shield_then_scry_two_top_or_trash_if_your_turn",
+            "type": "triggered",
+            "action": "sequence",
+            "parameters": {
+              "text": "Add 1 of your Shields to your hand. Then, if it is your turn, look at the top 2 cards of your deck and return 1 to the top. Place the remaining card into your trash.",
+              "version": 1,
+              "steps": [
+                {
+                  "action": "addToHand",
+                  "target": {
+                    "type": "card",
+                    "scope": "self_shield",
+                    "count": 1
+                  },
+                  "parameters": {
+                    "from": "shield",
+                    "value": 1
+                  }
+                },
+                {
+                  "action": "conditional",
+                  "parameters": {
+                    "if": [
+                      {
+                        "type": "turnPlayer",
+                        "scope": "self"
+                      }
+                    ],
+                    "then": [
+                      {
+                        "action": "scry_top_deck",
+                        "parameters": {
+                          "count": 2,
+                          "keep": 1,
+                          "choice": "top_or_trash",
+                          "rest": "trash"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

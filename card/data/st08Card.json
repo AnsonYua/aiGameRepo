@@ -1,0 +1,886 @@
+{
+  "metadata": {
+    "version": "1.1",
+    "lastUpdated": "2026-01-22",
+    "cardType": "unit"
+  },
+  "cards": {
+    "ST08-001": {
+      "id": "ST08-001",
+      "name": "Ξ Gundam",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 9,
+      "cost": 8,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Mafty"
+      ],
+      "link": [
+        "Hathaway Noa"
+      ],
+      "ap": 5,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "While you have no Units that are Lv.6 or higher in play, this card in your hand gets cost -1 for each enemy Unit in play.",
+          "While you have no Units that are Lv.6 or higher in play, this card in your hand gets Lv.-1 for each enemy Unit in play.",
+          "[When Paired]Choose 1 enemy Unit with the highest Lv. Deal 3 damage to it."
+        ],
+        "rules": [
+          {
+            "effectId": "hand_cost_minus_1_per_enemy_unit_if_no_friendly_ge_6",
+            "type": "continuous",
+            "action": "modifyCost",
+            "target": {
+              "type": "card",
+              "scope": "self_hand",
+              "count": 1
+            },
+            "conditions": [
+              {
+                "type": "unitsInPlayWithFilter",
+                "scope": "self",
+                "filters": {
+                  "level": ">=6"
+                },
+                "value": "==0"
+              }
+            ],
+            "parameters": {
+              "value": -1,
+              "scaling": {
+                "type": "COUNT_UNITS_IN_PLAY",
+                "scope": "opponent_all_unit"
+              },
+              "notes": "Implemented: cost decreases by 1 per enemy Unit in play while you control no Lv.6+ units."
+            },
+            "timing": {
+              "duration": "continuous"
+            }
+          },
+          {
+            "effectId": "hand_level_minus_1_per_enemy_unit_if_no_friendly_ge_6",
+            "type": "continuous",
+            "action": "modifyLevel",
+            "target": {
+              "type": "card",
+              "scope": "self_hand",
+              "count": 1
+            },
+            "conditions": [
+              {
+                "type": "unitsInPlayWithFilter",
+                "scope": "self",
+                "filters": {
+                  "level": ">=6"
+                },
+                "value": "==0"
+              }
+            ],
+            "parameters": {
+              "value": -1,
+              "scaling": {
+                "type": "COUNT_UNITS_IN_PLAY",
+                "scope": "opponent_all_unit"
+              },
+              "notes": "Implemented: level decreases by 1 per enemy Unit in play while you control no Lv.6+ units."
+            },
+            "timing": {
+              "duration": "continuous"
+            }
+          },
+          {
+            "effectId": "pair_damage_highest_level_enemy_3",
+            "type": "triggered",
+            "action": "damage",
+            "target": {
+              "type": "unit",
+              "scope": "opponent_all_unit",
+              "selection": {
+                "type": "HIGHEST_LEVEL",
+                "tieBreaker": "CONTROLLER_CHOICE"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "value": 3
+            },
+            "timing": {
+              "eventTrigger": "PAIRING_COMPLETE"
+            }
+          }
+        ]
+      }
+    },
+    "ST08-002": {
+      "id": "ST08-002",
+      "name": "Ξ Gundam",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 5,
+      "cost": 4,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Mafty"
+      ],
+      "link": [
+        "Hathaway Noa"
+      ],
+      "ap": 4,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "[Deploy]Choose 1 enemy Unit. Deal 1 damage to it."
+        ],
+        "rules": [
+          {
+            "effectId": "deploy_damage_enemy_1",
+            "type": "triggered",
+            "action": "damage",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "count": 1
+            },
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "ST08-003": {
+      "id": "ST08-003",
+      "name": "Messer (Type-F Naked) (Commander Type)",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 4,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Mafty"
+      ],
+      "link": [
+        "Mafty"
+      ],
+      "ap": 4,
+      "hp": 3,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "ST08-004": {
+      "id": "ST08-004",
+      "name": "Messer Type-F01",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Mafty"
+      ],
+      "link": [
+        "Mafty"
+      ],
+      "ap": 2,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Attack]If this Unit is attacking an enemy Unit, choose 1 enemy Unit. Deal 1 damage to it."
+        ],
+        "rules": [
+          {
+            "effectId": "attack_damage_enemy_1_if_attacking_unit",
+            "type": "triggered",
+            "conditions": [
+              {
+                "type": "attackTargetCardType",
+                "scope": "event",
+                "value": "unit"
+              }
+            ],
+            "action": "damage",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "count": 1
+            },
+            "parameters": {
+              "value": 1,
+              "notes": "Implemented: attackTargetCardType conditions are evaluated during ATTACK_PHASE."
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_PHASE"
+            }
+          }
+        ]
+      }
+    },
+    "ST08-005": {
+      "id": "ST08-005",
+      "name": "Messer Type-F02 Minelayer",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Mafty"
+      ],
+      "link": [],
+      "ap": 4,
+      "hp": 3,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "ST08-006": {
+      "id": "ST08-006",
+      "name": "Penelope",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 7,
+      "cost": 6,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation"
+      ],
+      "link": [
+        "Lane Aim"
+      ],
+      "ap": 5,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "[During Pair][Attack][Once per Turn]If this Unit is attacking the enemy player, reveal 1 (Earth Federation) Unit card from your hand. Return it to the bottom of your deck. If you do, draw 2."
+        ],
+        "rules": [
+          {
+            "effectId": "pair_attack_reveal_ef_unit_bottom_then_draw_2",
+            "type": "triggered",
+            "sourceConditions": [
+              {
+                "type": "paired"
+              }
+            ],
+            "cost": {
+              "oncePerTurn": true,
+              "moveFromHandToDeckBottom": {
+                "scope": "self_hand",
+                "filters": {
+                  "cardType": "unit",
+                  "traitsAny": [
+                    "Earth Federation"
+                  ]
+                },
+                "count": 1,
+                "reveal": true
+              }
+            },
+            "conditions": [
+              {
+                "type": "attackTargetCardType",
+                "scope": "event",
+                "value": "player"
+              }
+            ],
+            "action": "draw",
+            "parameters": {
+              "value": 2,
+              "notes": "Implemented: moveFromHandToDeckBottom costs and attack-target type checks are supported."
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_PHASE"
+            }
+          }
+        ]
+      }
+    },
+    "ST08-007": {
+      "id": "ST08-007",
+      "name": "Penelope",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 5,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation"
+      ],
+      "link": [
+        "Lane Aim"
+      ],
+      "ap": 5,
+      "hp": 4,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "ST08-008": {
+      "id": "ST08-008",
+      "name": "Gustav Karl Type-00",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 3,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation"
+      ],
+      "link": [],
+      "ap": 3,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "While 3 or more enemy Units are in play, this Unit gains <Blocker>. (Rest this Unit to change the attack target to it.)"
+        ],
+        "rules": [
+          {
+            "effectId": "blocker_if_enemy_units_ge_3",
+            "type": "triggered",
+            "conditions": [
+              {
+                "type": "unitsInPlayWithFilter",
+                "scope": "opponent",
+                "filters": {
+                  "cardType": "unit"
+                },
+                "value": ">=3"
+              }
+            ],
+            "target": {
+              "type": "unit",
+              "scope": "self"
+            },
+            "action": "redirect_attack",
+            "parameters": {
+              "cost": "rest_self",
+              "notes": "Implemented: blocker redirect rules support opponent unit-count conditions."
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_REDIRECT"
+            }
+          }
+        ]
+      }
+    },
+    "ST08-009": {
+      "id": "ST08-009",
+      "name": "Jegan Ground Type-A (Man Hunter)",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 1,
+      "cost": 1,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Deploy]Choose 1 rested enemy Unit that is Lv.2 or lower. It won't be set as active during the start phase of your opponent's next turn."
+        ],
+        "rules": [
+          {
+            "effectId": "deploy_prevent_set_active_next_turn_for_rested_enemy_le_2",
+            "type": "triggered",
+            "action": "prevent_set_active_next_turn",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "status": "rested",
+                "level": "<=2"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "statusEffect": {
+                "type": "activation_lock",
+                "restriction": "prevent_set_active",
+                "duration": {
+                  "kind": "until",
+                  "phase": "START_PHASE",
+                  "player": "opponent",
+                  "count": 1
+                },
+                "consumption": {
+                  "kind": "auto_expire",
+                  "when": "OPPONENT_START_PHASE_END"
+                }
+              },
+              "notes": "Implemented: applies activation lock so the unit cannot be set active on the opponent's next start phase."
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "ST08-010": {
+      "id": "ST08-010",
+      "name": "Hathaway Noa",
+      "cardType": "pilot",
+      "color": "Red",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Mafty",
+        "Newtype"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "[When Paired]If this is a (Mafty) Unit, choose 1 of your (Mafty) Units. During this turn, it may choose a damaged active enemy Unit as its attack target."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "pair_allow_attack_target_damaged_active_enemy_if_mafty_unit",
+            "type": "triggered",
+            "conditions": [
+              {
+                "type": "pairedUnitTrait",
+                "scope": "source",
+                "value": "Mafty"
+              }
+            ],
+            "action": "allow_attack_target",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "eventTrigger": "PAIRING_COMPLETE"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "filters": {
+                "traits": [
+                  "Mafty"
+                ]
+              },
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "parameters": {
+              "status": "active",
+              "damaged": true,
+              "notes": "Implemented: attack-target permission supports damaged-target filtering."
+            }
+          }
+        ]
+      }
+    },
+    "ST08-011": {
+      "id": "ST08-011",
+      "name": "Lane Aim",
+      "cardType": "pilot",
+      "color": "Blue",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Earth Federation"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "When you draw with an effect, if this is a blue Unit, it gains <High-Maneuver> during this turn. (This Unit can't be blocked.)"
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "grant_high_maneuver_on_effect_draw_if_blue_unit",
+            "type": "triggered",
+            "action": "grant_keyword",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "eventTrigger": "EFFECT_DRAW"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "source_paired_unit",
+              "count": 1
+            },
+            "conditions": [
+              {
+                "type": "pairedUnitColor",
+                "scope": "source",
+                "value": "Blue"
+              }
+            ],
+            "parameters": {
+              "keyword": "High-Maneuver",
+              "notes": "Implemented: EFFECT_DRAW trigger dispatch and source_paired_unit targeting are supported."
+            }
+          }
+        ]
+      }
+    },
+    "ST08-012": {
+      "id": "ST08-012",
+      "name": "Words for Hathaway",
+      "cardType": "command",
+      "color": "Red",
+      "level": 3,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Mafty"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Main]Choose 1 friendly Link Unit. It gains <Breach 1> during this turn. (When this Unit's attack destroys an enemy Unit, deal 1 damage to the first card in that opponent's shield area.)",
+          "[Pilot][Gawman Nobile]"
+        ],
+        "rules": [
+          {
+            "effectId": "main_grant_breach_1_to_friendly_link_unit",
+            "type": "play",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "action": "grant_breach",
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "filters": {
+                "isLinkUnit": true
+              },
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "parameters": {
+              "value": 1,
+              "notes": "Implemented: grants Breach for the configured duration."
+            }
+          },
+          {
+            "effectId": "pilot_designation",
+            "type": "special",
+            "action": "designate_pilot",
+            "parameters": {
+              "pilotName": "Gawman Nobile",
+              "AP": 1,
+              "HP": 0
+            },
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ST08-013": {
+      "id": "ST08-013",
+      "name": "Lady Luck",
+      "cardType": "command",
+      "color": "Red",
+      "level": 5,
+      "cost": 1,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Main][Action]Choose 1 enemy Unit. Deal 1 damage to it. If a friendly (Mafty) Link Unit is in play, deal 2 damage instead."
+        ],
+        "rules": [
+          {
+            "effectId": "main_or_action_damage_1_or_2_if_mafty_link_unit_in_play",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE",
+                "ACTION_STEP"
+              ]
+            },
+            "action": "conditional",
+            "parameters": {
+              "branches": [
+                {
+                  "conditions": [
+                    {
+                      "type": "unitsInPlayWithFilter",
+                      "scope": "self",
+                      "filters": {
+                        "traits": [
+                          "Mafty"
+                        ],
+                        "isLinkUnit": true
+                      },
+                      "value": ">=1"
+                    }
+                  ],
+                  "steps": [
+                    {
+                      "action": "damage",
+                      "target": {
+                        "type": "unit",
+                        "scope": "opponent",
+                        "count": 1
+                      },
+                      "parameters": {
+                        "value": 2
+                      }
+                    }
+                  ]
+                },
+                {
+                  "conditions": [],
+                  "steps": [
+                    {
+                      "action": "damage",
+                      "target": {
+                        "type": "unit",
+                        "scope": "opponent",
+                        "count": 1
+                      },
+                      "parameters": {
+                        "value": 1
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ST08-014": {
+      "id": "ST08-014",
+      "name": "Valiant",
+      "cardType": "base",
+      "color": "Red",
+      "level": 2,
+      "cost": 1,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Mafty",
+        "Warship"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "[Burst]Deploy this card.",
+          "[Deploy]Add 1 of your Shields to your hand. Then, choose 1 of your Units. It gets AP+2 during this turn."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_deploy",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "deploy",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "deploy_shield_to_hand_then_ap_plus_2",
+            "type": "triggered",
+            "action": "sequence",
+            "parameters": {
+              "steps": [
+                {
+                  "action": "addToHand",
+                  "target": {
+                    "type": "card",
+                    "scope": "self_shield"
+                  },
+                  "parameters": {
+                    "value": 1,
+                    "from": "shield"
+                  }
+                },
+                {
+                  "action": "modifyAP",
+                  "timing": {
+                    "duration": "UNTIL_END_OF_TURN"
+                  },
+                  "target": {
+                    "type": "unit",
+                    "scope": "self_all_unit",
+                    "count": 1
+                  },
+                  "parameters": {
+                    "value": 2
+                  }
+                }
+              ]
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "ST08-015": {
+      "id": "ST08-015",
+      "name": "Davao",
+      "cardType": "base",
+      "color": "Blue",
+      "level": 3,
+      "cost": 1,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation",
+        "Stronghold"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "[Burst]Deploy this card.",
+          "[Deploy]Add 1 of your Shields to your hand.",
+          "[Activate/Main][Once per Turn](2):Choose 1 of your Units. It recovers 2 HP."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_deploy",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "deploy",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "deploy_shield_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self_shield"
+            },
+            "action": "addToHand",
+            "parameters": {
+              "value": 1,
+              "from": "shield"
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          },
+          {
+            "effectId": "activate_heal_2_once_per_turn",
+            "type": "activated",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "cost": {
+              "resource": 2,
+              "oncePerTurn": true
+            },
+            "action": "heal",
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "parameters": {
+              "value": 2
+            }
+          }
+        ]
+      }
+    }
+  }
+}

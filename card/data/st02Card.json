@@ -1,0 +1,863 @@
+{
+  "metadata": {
+    "version": "1.1",
+    "lastUpdated": "2025-01-13",
+    "cardType": "unit"
+  },
+  "cards": {
+    "ST02-001": {
+      "id": "ST02-001",
+      "name": "Wing Gundam",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 6,
+      "cost": 4,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Operation Meteor"
+      ],
+      "link": [
+        "Heero Yuy"
+      ],
+      "ap": 4,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "<Breach 5> (When this Unit's attack destroys an enemy Unit, deal 5 damage to the first card in that opponent's shield area.)",
+          "This Unit may choose an active enemy Unit that is Lv.4 or lower as its attack target."
+        ],
+        "rules": [
+          {
+            "effectId": "breach_5",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "opponent_shield",
+              "count": 1
+            },
+            "action": "damageShield",
+            "parameters": {
+              "value": 5
+            },
+            "timing": {
+              "eventTrigger": "BATTLE_DESTROY"
+            }
+          },
+          {
+            "effectId": "attack_active_low_level",
+            "type": "continuous",
+            "action": "allow_attack_target",
+            "parameters": {
+              "status": "active",
+              "level": "<=4"
+            },
+            "timing": {
+              "duration": "continuous"
+            }
+          }
+        ]
+      }
+    },
+    "ST02-002": {
+      "id": "ST02-002",
+      "name": "Wing Gundam (Bird Mode)",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 3,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Operation Meteor"
+      ],
+      "link": [
+        "Heero Yuy"
+      ],
+      "ap": 2,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[Deploy]Place 1 EX Resource."
+        ],
+        "rules": [
+          {
+            "effectId": "deploy_place_ex_resource",
+            "type": "triggered",
+            "action": "addExtraEnergy",
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "ST02-003": {
+      "id": "ST02-003",
+      "name": "Gundam Heavyarms",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 5,
+      "cost": 3,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Operation Meteor"
+      ],
+      "link": [
+        "Trowa Barton"
+      ],
+      "ap": 3,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "[During Pair]During your turn, when this Unit destroys an enemy Unit with battle damage, deal 1 damage to all enemy Units that are Lv.3 or lower."
+        ],
+        "rules": [
+          {
+            "effectId": "paired_battle_damage_splash",
+            "type": "triggered",
+            "sourceConditions": [
+              {
+                "type": "paired"
+              }
+            ],
+            "timing": {
+              "actionTurn": "YOUR_TURN",
+              "eventTrigger": "BATTLE_DESTROY"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "opponent_all_unit",
+              "count": 99,
+              "filters": {
+                "level": "<=3"
+              }
+            },
+            "action": "damage",
+            "parameters": {
+              "value": 1
+            }
+          }
+        ]
+      }
+    },
+    "ST02-004": {
+      "id": "ST02-004",
+      "name": "Gundam Sandrock",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 4,
+      "cost": 2,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Operation Meteor"
+      ],
+      "link": [
+        "Quatre Raberba Winner"
+      ],
+      "ap": 4,
+      "hp": 3,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "ST02-005": {
+      "id": "ST02-005",
+      "name": "Maganac",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Maganac Corps"
+      ],
+      "link": [],
+      "ap": 3,
+      "hp": 2,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "ST02-006": {
+      "id": "ST02-006",
+      "name": "Tallgeese",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 5,
+      "cost": 4,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "OZ"
+      ],
+      "link": [
+        "Zechs Merquise"
+      ],
+      "ap": 4,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "[Activate/Main][Once per Turn](4):Set this Unit as active."
+        ],
+        "rules": [
+          {
+            "effectId": "activate_set_active",
+            "type": "activated",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "cost": {
+              "resource": 4,
+              "oncePerTurn": true
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "action": "setActive"
+          }
+        ]
+      }
+    },
+    "ST02-007": {
+      "id": "ST02-007",
+      "name": "Leo",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "OZ"
+      ],
+      "link": [
+        "OZ Trait"
+      ],
+      "ap": 2,
+      "hp": 2,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "ST02-008": {
+      "id": "ST02-008",
+      "name": "Aries",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "OZ"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "<Blocker> (Rest this Unit to change the attack target to it.)"
+        ],
+        "rules": [
+          {
+            "effectId": "blocker",
+            "target": {
+              "type": "unit",
+              "scope": "self"
+            },
+            "action": "redirect_attack",
+            "parameters": {
+              "cost": "rest_self"
+            },
+            "type": "triggered",
+            "timing": {
+              "eventTrigger": "ATTACK_REDIRECT"
+            }
+          }
+        ]
+      }
+    },
+    "ST02-009": {
+      "id": "ST02-009",
+      "name": "Tragos",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 1,
+      "cost": 1,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "OZ"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "<Blocker> (Rest this Unit to change the attack target to it.)"
+        ],
+        "rules": [
+          {
+            "effectId": "blocker",
+            "target": {
+              "type": "unit",
+              "scope": "self"
+            },
+            "action": "redirect_attack",
+            "parameters": {
+              "cost": "rest_self"
+            },
+            "type": "triggered",
+            "timing": {
+              "eventTrigger": "ATTACK_REDIRECT"
+            }
+          }
+        ]
+      }
+    },
+    "ST02-010": {
+      "id": "ST02-010",
+      "name": "Heero Yuy",
+      "cardType": "pilot",
+      "color": "Green",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Operation Meteor"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "[During Link]This Unit gets AP+1.",
+          "[During Link]This Unit gets HP+1."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "type": "triggered",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "link_ap_boost",
+            "sourceConditions": [
+              {
+                "type": "linked"
+              }
+            ],
+            "action": "modifyAP",
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "duration": "continuous"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self"
+            },
+            "type": "continuous"
+          },
+          {
+            "effectId": "link_hp_boost",
+            "sourceConditions": [
+              {
+                "type": "linked"
+              }
+            ],
+            "action": "modifyHP",
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "duration": "continuous"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self"
+            },
+            "type": "continuous"
+          }
+        ]
+      }
+    },
+    "ST02-011": {
+      "id": "ST02-011",
+      "name": "Zechs Merquise",
+      "cardType": "pilot",
+      "color": "Blue",
+      "level": 5,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "OZ"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "[During Link]During your turn, when this Unit destroys an enemy Unit with battle damage, draw 1."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "type": "triggered",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "link_battle_draw",
+            "type": "triggered",
+            "sourceConditions": [
+              {
+                "type": "paired"
+              }
+            ],
+            "timing": {
+              "actionTurn": "YOUR_TURN",
+              "eventTrigger": "BATTLE_DESTROY"
+            },
+            "target": {
+              "type": "player",
+              "scope": "self"
+            },
+            "action": "draw",
+            "parameters": {
+              "value": 1
+            }
+          }
+        ]
+      }
+    },
+    "ST02-012": {
+      "id": "ST02-012",
+      "name": "Simultaneous Fire",
+      "cardType": "command",
+      "color": "Green",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Operation Meteor"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Main]Choose 1 of your Units; it gains <Breach 3> during this turn.",
+          "[Pilot][Trowa Barton]"
+        ],
+        "rules": [
+          {
+            "effectId": "main_grant_breach",
+            "type": "play",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "action": "grant_breach",
+            "parameters": {
+              "value": 3
+            }
+          },
+          {
+            "effectId": "pilot_designation",
+            "action": "designate_pilot",
+            "parameters": {
+              "pilotName": "Trowa Barton",
+              "AP": 1,
+              "HP": 1
+            },
+            "type": "special",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ST02-013": {
+      "id": "ST02-013",
+      "name": "Peaceful Timbre",
+      "cardType": "command",
+      "color": "Green",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Operation Meteor"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Action]During this battle, your shield-area cards can't receive damage from enemy Units that are Lv.4 or lower.",
+          "[Pilot][Quatre Raberba Winner]"
+        ],
+        "rules": [
+          {
+            "effectId": "action_prevent_shield_damage",
+            "type": "play",
+            "timing": {
+              "duration": "UNTIL_END_OF_BATTLE",
+              "activationWindows": [
+                "ACTION_STEP"
+              ]
+            },
+            "action": "sequence",
+            "parameters": {
+              "text": "During this battle, your shield-area cards can't receive damage from enemy Units that are Lv.4 or lower.",
+              "version": 1,
+              "steps": [
+                {
+                  "action": "prevent_shield_damage",
+                  "parameters": {
+                    "maxEnemyLevel": 4
+                  }
+                },
+                {
+                  "action": "prevent_battle_damage",
+                  "timing": {
+                    "duration": "UNTIL_END_OF_BATTLE"
+                  },
+                  "target": {
+                    "type": "base",
+                    "scope": "self"
+                  },
+                  "parameters": {
+                    "from": "enemy_units",
+                    "enemyLevel": "<=4"
+                  }
+                }
+              ],
+              "notes": "Shield-area wording includes both shields and base: step1 applies shield prevention, step2 applies base battle-damage prevention."
+            }
+          },
+          {
+            "effectId": "pilot_designation",
+            "action": "designate_pilot",
+            "parameters": {
+              "pilotName": "Quatre Raberba Winner",
+              "AP": 1,
+              "HP": 1
+            },
+            "type": "special",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ST02-014": {
+      "id": "ST02-014",
+      "name": "Siege Ploy",
+      "cardType": "command",
+      "color": "Blue",
+      "level": 3,
+      "cost": 1,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Burst]Activate this card's [Main].",
+          "[Main]/[Action]Choose 1 enemy Unit with 5 or less HP and rest it."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_activate_main",
+            "action": "activate_ability",
+            "parameters": {
+              "abilityType": "main"
+            },
+            "type": "triggered",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "main_action_rest_low_hp",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE",
+                "ACTION_STEP"
+              ]
+            },
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "hp": "<=5",
+                "status": "active"
+              },
+              "count": 1
+            },
+            "action": "rest"
+          }
+        ]
+      }
+    },
+    "ST02-015": {
+      "id": "ST02-015",
+      "name": "Saint Gabriel Institute",
+      "cardType": "base",
+      "color": "Green",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Academy",
+        "Stronghold"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "[Burst]Deploy this card.",
+          "[Deploy]Add 1 of your Shields to your hand. Then, look at the top 2 cards of your deck and return 1 to the top and 1 to the bottom."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_deploy",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "deploy",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "deploy_shield_then_scry_two",
+            "type": "triggered",
+            "action": "sequence",
+            "parameters": {
+              "text": "Add 1 of your Shields to your hand. Then look at the top 2 cards of your deck and return 1 to the top and 1 to the bottom.",
+              "version": 1,
+              "steps": [
+                {
+                  "action": "addToHand",
+                  "target": {
+                    "type": "card",
+                    "scope": "self_shield"
+                  },
+                  "parameters": {
+                    "value": 1,
+                    "from": "shield"
+                  }
+                },
+                {
+                  "action": "scry_top_deck",
+                  "parameters": {
+                    "count": 2,
+                    "keep": 1,
+                    "choice": "top_or_bottom",
+                    "rest": "bottom"
+                  }
+                }
+              ]
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "ST02-016": {
+      "id": "ST02-016",
+      "name": "Corsica Base",
+      "cardType": "base",
+      "color": "Blue",
+      "level": 3,
+      "cost": 3,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "OZ",
+        "Stronghold"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "[Burst]Deploy this card.",
+          "[Deploy]Add 1 of your Shields to your hand. Then, if it's your turn, deploy 1 Tallgeese (OZ/AP4/HP2) Unit token. If a \"Corsica Base\" is in your trash, deploy 2 Leo (OZ/AP1/HP1) Unit tokens instead."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_deploy",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "deploy",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "deploy_shield_then_conditional_token",
+            "type": "triggered",
+            "action": "sequence",
+            "parameters": {
+              "text": "Add 1 of your Shields to your hand. Then, if it's your turn, deploy 1 Tallgeese (OZ/AP4/HP2) Unit token. If a \"Corsica Base\" is in your trash, deploy 2 Leo (OZ/AP1/HP1) Unit tokens instead.",
+              "version": 1,
+              "steps": [
+                {
+                  "action": "addToHand",
+                  "target": {
+                    "type": "card",
+                    "scope": "self_shield"
+                  },
+                  "parameters": {
+                    "value": 1,
+                    "from": "shield"
+                  }
+                },
+                {
+                  "action": "conditionalTokenDeploy",
+                  "parameters": {
+                    "condition1": {
+                      "selfTurn": true,
+                      "token": {
+                        "cardId": "T-005"
+                      },
+                      "count": 1
+                    },
+                    "condition2": {
+                      "cardInTrash": "ST02-016",
+                      "token": {
+                        "cardId": "T-004"
+                      },
+                      "count": 2,
+                      "selfTurn": true
+                    }
+                  }
+                }
+              ]
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "T-004": {
+      "id": "T-004",
+      "name": "Leo",
+      "cardType": "unit",
+      "color": "Token",
+      "level": 0,
+      "cost": 0,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "OZ"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 1,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "T-005": {
+      "id": "T-005",
+      "name": "Tallgeese",
+      "cardType": "unit",
+      "color": "Token",
+      "level": 0,
+      "cost": 0,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "OZ"
+      ],
+      "link": [],
+      "ap": 4,
+      "hp": 2,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    }
+  }
+}
