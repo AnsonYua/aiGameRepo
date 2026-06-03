@@ -14,6 +14,8 @@ first_player: P1|P2     # 先手玩家（P1=人類，P2=AI）
 active_player: P1|P2     # 當前行動玩家
 phase: <string>          # 當前階段：pre-game, start, draw, resource, main, battle, end
 step: <string|null>      # 子步驟：phase=battle 時為 attack, block, action, damage, battle_end；phase=end 時為 action, cleanup；其餘 phase 為 null
+current_attacker: <int|null>  # 當前攻擊的 battle_area slot 編號（phase=battle 時設定，battle_end 時清空）
+priority: <active_player|null>  # 當前優先權誰屬（CR-2.9）；null = 無優先權窗口，自動階段
 
 p1 / p2:
   base:
@@ -25,7 +27,7 @@ p1 / p2:
     status: active|rested|null  # Base 狀態（CR-7.5）。EX-BASE=null，部署的 Base 卡可被 rested 來支付能力費用。Start Phase 重置為 active
   shields: <int>         # 盾牌剩餘張數（開局 6，Base 底下疊放）
   hand_count: <int>      # 手牌數量（推導用，可省略）
-  hand_cards: [<string>] # 手牌卡片編號列表；P2 視角為 ["Unknown", ...]
+  hand_cards: [<string>] # 手牌卡片編號列表；P2 視角為 ["Unknown", ...]（隱私遮罩見 ui_templates.md §privacy_mask）
   deck_count: <int>      # 牌庫剩餘張數
   resource_deck_count: <int>  # 資源牌庫剩餘張數
   resources:
@@ -77,6 +79,8 @@ EX Resource 用完移除遊戲（CR-3.4）
 
 `skill_initialize` 根據 `first_player` 設定：先手 turn=1/active_player=先手，後手 EX Resource+1（CR-1.2, CR-1.4, CR-1.5, CR-1.7）。
 
+> * 標記 `*` 者為初始化階段的值（手牌 5、shields=0、deck=45）。調度（Mulligan）完成後，`skill_pass` pre-game 會將牌庫頂 6 張設為 shields（CR-1.5 → shields=6, deck_count=39）。
+
 | 欄位 | 先手 | 後手 |
 |---|---|---|
 | base.card_id | EX-BASE | EX-BASE |
@@ -85,13 +89,14 @@ EX Resource 用完移除遊戲（CR-3.4）
 | base.damage | 0 | 0 |
 | base.alive | true | true |
 | base.status | null | null |
-| shields | 6 | 6 |
+| shields | 0* | 0* |
 | hand_cards | 5 張（對手視角隱藏） | 5 張（對手視角隱藏） |
-| deck_count | 39 | 39 |
+| deck_count | 45* | 45* |
 | resource_deck_count | 10 | 10 |
 | resources.active | 0 | 0 |
 | resources.rested | 0 | 0 |
 | resources.ex | 0 | 1 |
+| current_attacker | null | null |
 | battle_area | 6 格全 null | 6 格全 null |
 | trash | [] | [] |
 | removal | [] | [] |

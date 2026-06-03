@@ -1,7 +1,7 @@
 ---
 name: skill_card_db
-triggers: [card_lookup]
-phase_lock: any
+type: utility
+note: card data interpretation reference — not a routable skill; loaded by orchestrator for card data pre-fetch
 ---
 
 # skill_card_db — Card Data & Effect Interpretation

@@ -6,6 +6,9 @@ phase_lock: main
 
 # skill_battle
 
+## 輸出規則
+你的回覆是 state_diff YAML。用 **Write** 工具寫入 `/tmp/gcg_skill_output.txt`，用 **Read** 工具讀回，你的回覆就是 Read 的結果。
+
 Declare an attack (CR-5). Transitions phase from main → battle(attack).
 
 ## Input
@@ -28,10 +31,11 @@ Declare an attack (CR-5). Transitions phase from main → battle(attack).
 state_diff:
   phase: battle
   step: attack
+  current_attacker: <slot>     # tracked for block/damage resolution
   <active_player>:
     battle_area:
       - slot: <attacking_slot>
         status: rested         # attacker becomes rested after declaration
-  battle_log:
+  battle_log:                          # 模板見 ui_templates.md §log_attack
     - "<active_player> attacks with slot <N>"
 ```

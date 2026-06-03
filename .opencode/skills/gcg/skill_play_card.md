@@ -6,6 +6,9 @@ phase_lock: main, battle(action), end(action)
 
 # skill_play_card
 
+## 輸出規則
+你的回覆是 state_diff YAML。用 **Write** 工具寫入 `/tmp/gcg_skill_output.txt`，用 **Read** 工具讀回，你的回覆就是 Read 的結果。
+
 Play card from hand to appropriate zone. Handles all card types: Unit, Pilot, Command, Base, dual-purpose [Pilot], and pairing.
 
 ## Input
@@ -27,7 +30,7 @@ Play card from hand to appropriate zone. Handles all card types: Unit, Pilot, Co
 - Place in first empty battle_area slot (slot 0-5, first where unit_id=null)
 - Set ap=card_data[].ap, hp=card_data[].hp, damage=0, status=null, keywords=[], link=false
 - If all 6 slots occupied → must trash an existing unit to free a slot (CR-5.11)
-- Token type (level=0) cannot be played from hand — error
+- Token type (level=0) cannot be played from hand（見 ui_templates.md §err_token_play）
 
 **Pilot** (`deploy <card_id>`):
 - Place in first empty battle_area slot
@@ -40,7 +43,7 @@ Play card from hand to appropriate zone. Handles all card types: Unit, Pilot, Co
 
 **Base** (`deploy <card_id>`):
 - Old Base (current `base`) goes to trash (CR-7.3)
-- Top shield card moves to hand (CR-7.3)
+- Top shield card moves to hand (CR-7.3)。從 `.deck_tracking.json` 該玩家的 `shields_cards` 移除最外層（最後一張），加入手牌（由 orchestrator 更新）
 - New Base card replaces it: card_id, hp=card_data[].hp, ap=card_data[].ap, damage=0, alive=true, status=active
 - [Deploy] trigger resolves (CR-6.6)
 
@@ -88,6 +91,6 @@ state_diff:
     shields: -1            # if base deploy (top shield → hand)
     trash:
       - add: <old card_id>
-  battle_log:
+  battle_log:                          # 模板見 ui_templates.md §log_play_card
     - "<active_player> plays/deploys/pairs <card_id>"
 ```
