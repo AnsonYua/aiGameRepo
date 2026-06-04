@@ -1,0 +1,12 @@
+# Priority：越高越重要。多個經驗檔案同時符合時，
+# attack_target 和 desperate_play 以 priority 最高者為準。
+# score_bonus 在所有符合的檔案間相加。
+id: pilot-over-command
+priority: 8
+description: '當有空位或無駕駛員的單位時，將雙用途 [Pilot] 卡作為駕駛員部署而非指令使用。'
+condition:
+  has_unpaired_units: true
+effect:
+  score_bonus:
+  - card_type: pilot
+    bonus: 12

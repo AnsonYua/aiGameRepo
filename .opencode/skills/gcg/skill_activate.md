@@ -4,36 +4,36 @@ triggers: [activate]
 phase_lock: main, battle(action), end(action)
 ---
 
-# skill_activate
+# skill_activate — 啟動效果
 
 ## 輸出規則
-你的回覆是 state_diff YAML。用 **Write** 工具寫入 `/tmp/gcg_skill_output.txt`，用 **Read** 工具讀回，你的回覆就是 Read 的結果。
+你的回應是 state_diff YAML。使用 **Write** 工具寫入 `/tmp/gcg_skill_output.txt`，再用 **Read** 工具讀回 — 你的回應就是 Read 的結果。
 
-Activate a card's activated ability (CR-10.3: [Activate/Main] or [Main]/[Action]). Typically used on Base cards or Unit abilities.
+啟動卡片的主動效果（CR-10.3：[Activate/Main] 或 [Main]/[Action]）。通常用於 Base 卡或 Unit 能力。
 
-## Input
+## 輸入
 
-- `game_state.md` — current state
-- `card_data[card_id]` — pre-fetched card data (from orchestrator)
-- `effect_id` — which ability to activate (from card's interpreted effects)
+- `game_state.md` — 當前狀態
+- `card_data[card_id]` — 預先提取的卡片資料（來自 orchestrator）
+- `effect_id` — 要啟動哪個效果（來自卡片的 interpreted effects）
 
-## Flow
+## 流程
 
-1. **Find the effect**: Match `effect_id` against the card's interpreted `effects[]`
-2. **Check activation window**: Must match current phase/step (CR-10.3)
-3. **Pay cost**:
-   - `resource(N)`: rest N active resources
-   - `rest_self`: rest the source card (battle_area slot or base.status→rested)
-   - `resource(N)+once`: pay + check `active_effects[].used_this_turn` (CR-10.4)
-4. **Apply effect** (varies by action type):
-   - `deploy_token`: add token to first empty battle_area slot
-   - `ap_boost(N)`: apply temporarily to target via active_effects
-   - `shield_to_hand(N)`: move shield to hand。從 `.deck_tracking.json` 該玩家的 `shields_cards` 移除最外層（最後一張），加入手牌（由 orchestrator 更新）
-   - `rest_target`: rest enemy unit
-   - etc.
-5. **Record oncePerTurn**: If applicable, set `active_effects[].used_this_turn=true`
+1. **找到效果**：比對 `effect_id` 與卡片的 interpreted `effects[]`
+2. **檢查啟動時機**：必須符合當前階段/子步驟（CR-10.3）
+3. **支付費用**：
+   - `resource(N)`：橫置 N 個直立資源
+   - `rest_self`：橫置來源卡（戰區欄位或 base.status→rested）
+   - `resource(N)+once`：支付 + 檢查 `active_effects[].used_this_turn`（CR-10.4）
+4. **應用效果**（依動作類型）：
+   - `deploy_token`：將代幣加入第一個空戰區欄位
+   - `ap_boost(N)`：透過 active_effects 暫時套用到目標
+   - `shield_to_hand(N)`：將盾牌移至手牌。shields: -N 表示數量；實際 card_id 由 orchestrator 透過 state_diff 追蹤
+   - `rest_target`：橫置敵方單位
+   - 等等
+5. **記錄 oncePerTurn**：若有，設定 `active_effects[].used_this_turn=true`
 
-## Output
+## 輸出
 
 ```yaml
 state_diff:
@@ -41,24 +41,24 @@ state_diff:
     resources:
       active: -<cost>
       rested: +<cost>
-    shields: -<N>               # if shield_to_hand
+    shields: -<N>               # 若為 shield_to_hand
     base:
-      status: rested             # if rest_self on base
+      status: rested             # 若 rest_self 在 base 上
     active_effects:
       - add:
           effectId: <effectId>
           source: <card_id>
           timing: UNTIL_END_OF_TURN|ONCE_PER_TURN
           parameters: {<key>: <value>}
-          used_this_turn: true   # if oncePerTurn
-    battle_area:                 # merged changes (rest_target + deploy_token etc.)
+          used_this_turn: true   # 若 oncePerTurn
+    battle_area:                 # 合併變更（rest_target + deploy_token 等）
       - slot: <N>
-        unit_id: <token_id|null>   # null=unchanged, token_id=deploy
+        unit_id: <token_id|null>   # null=不變, token_id=部署
         pilot_id: null
         ap: <from token data|unchanged>
         hp: <from token data|unchanged>
         damage: 0
-        status: rested|null        # rested=rest_target, null=unchanged
+        status: rested|null        # rested=rest_target, null=不變
         keywords: []
         link: false
   battle_log:                          # 模板見 ui_templates.md §log_activate

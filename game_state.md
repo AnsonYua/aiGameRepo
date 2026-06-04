@@ -4,6 +4,7 @@ active_player: P1
 phase: main
 step: null
 current_attacker: null
+priority: null
 p1:
   base:
     card_id: EX-BASE

@@ -1,0 +1,16 @@
+# Priority：越高越重要。多個經驗檔案同時符合時，
+# attack_target 和 desperate_play 以 priority 最高者為準。
+# score_bonus 在所有符合的檔案間相加。
+id: early-game-rush
+priority: 8
+description: '前期：積極部署單位，在對手站穩陣腳前搶佔場面。'
+condition:
+  turn_max: 5
+  my_units_max: 2
+  enemy_units_max: 3
+effect:
+  score_bonus:
+    card_type: unit
+    bonus: 12
+  attack_target: base
+  desperate_play: true

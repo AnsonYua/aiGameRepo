@@ -1,0 +1,13 @@
+# Priority：越高越重要。多個經驗檔案同時符合時，
+# attack_target 和 desperate_play 以 priority 最高者為準。
+# score_bonus 在所有符合的檔案間相加。
+id: command-kill-finisher
+priority: 10
+description: '敵方有只剩 1 HP 的單位：強烈優先使用指令卡在它再次攻擊前尾刀。'
+condition:
+  enemy_units_min: 1
+  enemy_damaged_units_min: 1
+effect:
+  score_bonus:
+  - card_type: command
+    bonus: 20

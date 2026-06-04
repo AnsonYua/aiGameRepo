@@ -1,6 +1,6 @@
 # Game State Schema
 
-唯一事實來源 `game_state.md` 的欄位定義。所有 Skill 與 Agent 讀取此結構以理解遊戲狀態。
+唯一事實來源 **runtime** `game_state.md` 的欄位定義（此文件為 schema 說明，`game_state.md` 由 orchestrator 於遊戲期間動態產生）。所有 Skill 與 Agent 讀取此結構以理解遊戲狀態。
 
 遊戲規則見 `gcg-rulebook.md`（CR-ID 引用）。
 
@@ -26,7 +26,7 @@ p1 / p2:
     alive: <bool>        # true=存在, false=已被破壞移除
     status: active|rested|null  # Base 狀態（CR-7.5）。EX-BASE=null，部署的 Base 卡可被 rested 來支付能力費用。Start Phase 重置為 active
   shields: <int>         # 盾牌剩餘張數（開局 6，Base 底下疊放）
-  hand_count: <int>      # 手牌數量（推導用，可省略）
+  hand_count: <int>      # 手牌數量（必須，display 模板需要使用 {hand_count}）
   hand_cards: [<string>] # 手牌卡片編號列表；P2 視角為 ["Unknown", ...]（隱私遮罩見 ui_templates.md §privacy_mask）
   deck_count: <int>      # 牌庫剩餘張數
   resource_deck_count: <int>  # 資源牌庫剩餘張數

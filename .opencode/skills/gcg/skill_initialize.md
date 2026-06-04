@@ -4,22 +4,22 @@ triggers: [start game]
 phase_lock: pre-game
 ---
 
-# skill_initialize
+# skill_initialize — 遊戲初始化
 
 ## 輸出規則
-你的回覆是 state_diff YAML。用 **Write** 工具寫入 `/tmp/gcg_skill_output.txt`，用 **Read** 工具讀回，你的回覆就是 Read 的結果。
+你的回應是 state_diff YAML。使用 **Write** 工具寫入 `/tmp/gcg_skill_output.txt`，再用 **Read** 工具讀回 — 你的回應就是 Read 的結果。
 
-根據 `first_player`（P1|P2）建立初始遊戲狀態（CR-1）。
+根據 CR-1 初始化遊戲狀態，以 `first_player`（P1|P2）為準。
 
 ## 流程
 
-1. 設定 `turn: 1`, `active_player: first_player`, `phase: pre-game`（Mulligan 在 pre-game 進行，CR-2.3）
-2. 後手 EX Resource +1（CR-1.2）
-3. 從 `card/gcgdecks.json` 讀取該玩家的牌庫（見 `skill_card_db.md` §4 `get_deck(playerId)`），隨機洗牌後：前 5 張作為手牌、剩餘 45 張作為牌庫。**Shields 先設為 0，待 Mulligan 完成後再從牌庫頂設置**（CR-1.8 → CR-1.5）
-4. 初始化雙方：Base（CR-1.4）、resource_deck_count=10（CR-1.6）、battle_area=6 null 格、trash=[], removal=[]
-5. 剩餘 45 張牌庫的 card_id 順序需記錄於 `.deck_tracking.json`（由 orchestrator 在 §1 step 8 寫入）
-6. 回傳完整 `game_state` 作為 `state_diff` 的 set 操作
-7. 輸出後：Orchestrator 依 §5 Mulligan Flow 處理後續（使用 ui_templates.md §compose_mulligan）
+1. 設定 `turn: 1`、`active_player: first_player`、`phase: pre-game`（調度發生在 pre-game，CR-2.3）
+2. 後手玩家獲得 EX Resource +1（CR-1.2）
+3. 從 `card/gcgdecks.json` 讀取牌組（見 `skill_card_db.md` §4 `get_deck(playerId)`），洗牌：前 5 張→手牌，剩餘 45 張→牌庫。**盾牌初始為 0，調度完成後從牌庫頂設置**（CR-1.8 → CR-1.5）
+4. 初始化雙方：Base（CR-1.4）、resource_deck_count=10（CR-1.6）、battle_area=6 空欄位、trash=[]、removal=[]
+5. 剩餘 45 張牌庫順序由 orchestrator 透過 state_diff 追蹤（hand_cards 與 deck_count 已足夠）
+6. 回傳完整 `game_state` 作為 `state_diff` set 操作
+7. 輸出後：Orchestrator 依 §5 調度流程繼續（使用 ui_templates.md §compose_mulligan）
 
 ## 輸出
 

@@ -4,39 +4,39 @@ triggers: [block]
 phase_lock: battle
 ---
 
-# skill_block
+# skill_block — 阻擋
 
 ## 輸出規則
-你的回覆是 state_diff YAML。用 **Write** 工具寫入 `/tmp/gcg_skill_output.txt`，用 **Read** 工具讀回，你的回覆就是 Read 的結果。
+你的回應是 state_diff YAML。使用 **Write** 工具寫入 `/tmp/gcg_skill_output.txt`，再用 **Read** 工具讀回 — 你的回應就是 Read 的結果。
 
-Declare a blocker (CR-5.8, CR-6.1). Non-active player intercepts an attack.
+宣告阻擋者（CR-5.8, CR-6.1）。非行動玩家攔截攻擊。
 
-## Input
+## 輸入
 
-- `game_state.md` — current state
-- `slot` — which battle_area slot is blocking
+- `game_state.md` — 當前狀態
+- `slot` — 哪個戰區欄位進行阻擋
 
-## Flow
+## 流程
 
-1. **Phase/step check**: phase must be battle, step must be attack
-2. **Read current_attacker**: the slot in `game_state.current_attacker` is being blocked
-3. **Check blocker eligibility**:
-   - Unit must have Blocker keyword (CR-6.1)
-   - Unit must be not rested (status != rested)
-   - Unit must belong to the non-active player
-4. **Execute block**: rest the blocker (CR-5.8)
-5. **Redirect**: attack now targets the blocker instead of defense layer (CR-5.9)
-6. **Advance step**: step → action (priority window opens, CR-5.12)
+1. **檢查階段/子步驟**：phase 必須為 battle，step 必須為 attack
+2. **讀取 current_attacker**：`game_state.current_attacker` 中的欄位正在被阻擋
+3. **檢查阻擋資格**：
+   - 單位必須具有 Blocker 關鍵字（CR-6.1）
+   - 單位必須為直立（status != rested）
+   - 單位必須屬於非行動玩家
+4. **執行阻擋**：橫置阻擋者（CR-5.8）
+5. **轉向**：攻擊現在指向阻擋者而非防禦層（CR-5.9）
+6. **推進子步驟**：子步驟 → action（優先權視窗開啟，CR-5.12）
 
-## Output
+## 輸出
 
 ```yaml
 state_diff:
-  step: action                  # advance to action step for priority (CR-5.12)
+  step: action                  # 推進至 action 子步驟（CR-5.12）
   <non_active_player>:
     battle_area:
       - slot: <blocking_slot>
-        status: rested          # blocker becomes rested
+        status: rested          # 阻擋者變為橫置
   battle_log:                          # 模板見 ui_templates.md §log_block
     - "<non_active_player> blocks with slot <N>"
 ```

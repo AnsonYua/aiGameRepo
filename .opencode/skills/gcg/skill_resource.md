@@ -4,19 +4,19 @@ triggers: [resource]
 phase_lock: resource
 ---
 
-# skill_resource
+# skill_resource — 資源階段
 
 ## 輸出規則
-你的回覆是 state_diff YAML。用 **Write** 工具寫入 `/tmp/gcg_skill_output.txt`，用 **Read** 工具讀回，你的回覆就是 Read 的結果。
+你的回應是 state_diff YAML。使用 **Write** 工具寫入 `/tmp/gcg_skill_output.txt`，再用 **Read** 工具讀回 — 你的回應就是 Read 的結果。
 
-Resource phase (CR-2.6). Deploy 1 resource card from resource deck. Active player must do this.
+資源階段（CR-2.6）。從資源牌庫部署 1 張資源卡。行動玩家強制執行。
 
-## Flow
+## 流程
 
-1. resource_deck_count > 0 → deploy 1 (resource_deck_count -= 1, resources.active += 1)
-2. resource_deck_count = 0 → skip (CR-8.3)
+1. resource_deck_count > 0 → 部署 1 張（resource_deck_count -= 1, resources.active += 1）
+2. resource_deck_count = 0 → 跳過（CR-8.3）
 
-## Output
+## 輸出
 
 ```yaml
 state_diff:

@@ -4,28 +4,28 @@ triggers: [concede]
 phase_lock: any
 ---
 
-# skill_termination
+# skill_termination — 遊戲結束
 
 ## 輸出規則
-你的回覆是 state_diff YAML。用 **Write** 工具寫入 `/tmp/gcg_skill_output.txt`，用 **Read** 工具讀回，你的回覆就是 Read 的結果。
+你的回應是 state_diff YAML。使用 **Write** 工具寫入 `/tmp/gcg_skill_output.txt`，再用 **Read** 工具讀回 — 你的回應就是 Read 的結果。
 
-Terminate the game (CR-9). Sets game_over=true and declares the winner.
+終止遊戲（CR-9）。設定 game_over=true 並宣告勝者。
 
-## Trigger conditions
+## 觸發條件
 
-- `concede` command → immediate loss for the conceding player (CR-8.4)
-- Loss detected by orchestrator (CR-4.9: shields=0 + direct hit, CR-8.2: deck=0 + need to draw)
+- `concede` 指令 → 投降方立即敗北（CR-8.4）
+- Orchestrator 偵測敗北（CR-4.9：無盾牌 + 直擊，CR-8.2：牌庫空 + 需抽牌）
 
-## Flow
+## 流程
 
-1. Determine loser:
-   - conceding player → loser (CR-8.4)
-   - player with shields=0 + direct damage → loser (CR-4.9)
-   - player with deck=0 + need to draw → loser (CR-8.2)
-2. Winner = the other player
-3. Set game_over=true, winner, phase=null, step=null
+1. 判定敗者：
+   - 投降方 → 敗者（CR-8.4）
+   - 無盾牌 + 直接傷害 → 敗者（CR-4.9）
+   - 牌庫空 + 需抽牌 → 敗者（CR-8.2）
+2. 勝者 = 另一方
+3. 設定 game_over=true、winner、phase=null、step=null
 
-## Output
+## 輸出
 
 ```yaml
 state_diff:

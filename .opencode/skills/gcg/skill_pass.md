@@ -4,67 +4,70 @@ triggers: [pass, end turn]
 phase_lock: any
 ---
 
-# skill_pass
+# skill_pass — 讓過與階段推進
 
 ## 輸出規則
-你的回覆是 state_diff YAML。用 **Write** 工具寫入 `/tmp/gcg_skill_output.txt`，用 **Read** 工具讀回，你的回覆就是 Read 的結果。
+你的回應是 state_diff YAML。使用 **Write** 工具寫入 `/tmp/gcg_skill_output.txt`，再用 **Read** 工具讀回 — 你的回應就是 Read 的結果。
 
-Pass priority (CR-2.10). Advances the game through phases/steps when both players pass.
+讓過優先權（CR-2.10）。雙方連續讓過時推進階段/子步驟。
 
-## Flow by current phase
+## 依當前階段處理
 
 ### main + pass
-- Phase → end, step → action
-- priority → non-active player（CR-2.9）
+- 階段 → end，子步驟 → action
+- 優先權 → 非行動玩家（CR-2.9）
 
 ### main + end turn
-- Alias for `pass` (same behavior)
+- 等同於 `pass`（行為相同）
 
 ### battle(action) + pass
-- Both passed → damage resolves per skill_damage.md（orchestrator 在 phase=battle 時附加此參考）
-- priority → null（damage 解析後將由 skill_damage 設定回 main）
+- 雙方已讓過 → 進入傷害結算（依 skill_damage.md，orchestrator 在 phase=battle 時載入此參考）
+- 優先權 → null（傷害結算後藉 skill_damage 返回 main）
 
 ### end(action) + pass
-- Both passed → advance to cleanup
-- Cleanup: discard if hand ≥11 (CR-8.1), then end turn
-- active_player switches, phase → start, priority → new active_player
+- 雙方已讓過 → 進入清理步驟
+- 清理依 CR-8.1：棄牌，結束回合，切換行動玩家
+- 完整清理邏輯在 `skill_start_phase.md`（下次回合開始階段重置）
 
 ### pre-game + pass
-- 雙方調度（Mulligan）已完成（CR-1.8）
-- 從各玩家牌庫頂取 6 張設為 shields，依序：第 1 張（原牌庫頂）→ 盾牌最下層（最內層，FAQ Q8），第 6 張 → 盾牌最上層（最外層，緊鄰 Base）。deck_count 減 6（CR-1.5）
-- 實際盾牌卡 ID 記錄於 `.deck_tracking.json`（由 orchestrator 在 §10 更新）
-- Phase → start, step → null, 不切換 active_player
+- 雙方已完成調度（CR-1.8）
+- 委託 `skill_start_phase.md` 統一處理盾牌設置 + 階段推進
+- 階段 → start，子步驟 → null，行動玩家不變
 
 ### draw + pass
-- Draw 完成 → 推進到 Resource Phase（CR-2.6）
-- Phase → resource, step → null
+- 抽牌完成 → 推進至資源階段（CR-2.6）
+- 此步驟藉 `skill_start_phase.md` 統一處理
+- 階段 → resource，子步驟 → null
 
 ### resource + pass
-- Resource 完成 → 推進到 Main Phase（CR-2.7）
-- Phase → main, step → null
+- 資源部署完成 → 推進至主要階段（CR-2.7）
+- 此步驟藉 `skill_start_phase.md` 統一處理
+- 階段 → main，子步驟 → null
 
 ### start + pass
-- Start Phase 自動重置所有橫置卡（CR-2.4）：`resources.rested → 0, resources.active ← total, base.status → active`（若 base 部署卡且 alive）
-- Phase → draw, step → null
+- 開始階段自動重置所有橫置卡（CR-2.4）
+- 此步驟藉 `skill_start_phase.md` 統一處理
+- 階段 → draw，子步驟 → null
 
 ### battle(attack) + pass
-- 非 active player 放棄阻擋 → 推進到 action step
-- Step → action, priority → active_player（CR-5.12）
+- 非行動玩家放棄阻擋 → 進入行動子步驟
+- 子步驟 → action，優先權 → 行動玩家（CR-5.12）
 
-### any other phase + pass
-- No effect (phase continues normally)
+### 其他階段 + pass
+- 保留處理意外組合（例如 battle/damage + pass）。觸發時記錄為異常。
+- 無效果（階段正常繼續）
 
-## Output
+## 輸出
 
 ```yaml
 state_diff:
   phase: <next_phase>           # pre-game / start / draw / resource / main / end / battle
   step: <next_step|null>        # action / damage / battle_end / cleanup / null
-  current_attacker: null        # cleared on battle_end
-  p1:                           # 僅 pre-game→start 時設置
-    shields: +6                 # 增量（deck_tracking.json 記錄實際 card_ids）
+  current_attacker: null        # battle_end 時清除
+    p1:                           # 僅 pre-game→start 時設置
+    shields: +6                 # 增量（實際 card_ids 由 orchestrator 追蹤）
     deck_count: -6              # 減 6
-  p2:                           # 僅 pre-game→start 時設置
+    p2:                           # 僅 pre-game→start 時設置
     shields: +6
     deck_count: -6
   # ── start→draw 時（CR-2.4）──
@@ -75,7 +78,7 @@ state_diff:
     base:
       status: active             # 僅部署 Base 卡且 alive
 
-  # ── priority 轉移 ──
+  # ── 優先權轉移 ──
   priority: <active_player|non_active_player|null>
 
   battle_log:                          # 模板見 ui_templates.md §log_pass

@@ -8,12 +8,12 @@
 ## 1. 狀態標題（每條輸出第一行）
 
 ### display_title
-`Turn {N} | {Phase}{Step} | {active_player}'s turn`
+`Turn {turn} | {phase}{step} | {active_player}'s turn`
 
-範例：`Turn 1 | pre-game | P1's turn`
+Example: `Turn 1 | pre-game | P1's turn`
 
 ### display_mulligan_title
-`Mulligan — P1 為先手`
+`Mulligan — P1 is first player`
 
 ---
 
@@ -22,9 +22,9 @@
 ### display_hand
 格式：
 ```
-Your Hand ({count}):
-- {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}
-- {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}
+Your Hand ({hand_count}):
+- {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}{link_suffix}{keyword_suffix}
+- {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}{link_suffix}{keyword_suffix}
 ...
 ```
 
@@ -42,7 +42,7 @@ Your Hand ({count}): {card_id}({name}), {card_id}({name}), ...
 ## 3. 資源顯示
 
 ### display_resources
-`Resources: active={N}, rested={N}, EX={N} | Deck: {N} | Resource Deck: {N}`
+`Resources: active={active}, rested={rested}, EX={ex} | Deck: {deck_count} | Resource Deck: {resource_deck_count}`
 
 ---
 
@@ -51,22 +51,22 @@ Your Hand ({count}): {card_id}({name}), {card_id}({name}), ...
 ### display_battle_area
 格式：
 ```
-Your Battle Area ({occupied}/{total}):
-- Slot{N}: [{card_id}] {name} | AP:{ap}/HP:{hp-hp-damage} | {pilot_id} | {keywords} | {status}
-- Slot{N}: empty
+Your Battle Area ({occupied_slots}/{total_slots}):
+- Slot{slot}: [{card_id}] {name} | AP:{ap}/HP:{hp_remaining} | {pilot_id} | {keywords} | {status}
+- Slot{slot}: empty
 ...
 
-Opponent's Battle Area ({occupied}/{total}):
-- Slot{N}: Unknown | {if visible show details}
-- Slot{N}: empty
+Opponent's Battle Area ({opponent_occupied}/{total_slots}):
+- Slot{slot}: Unknown | {if visible show details}
+- Slot{slot}: empty
 ...
 ```
 
 ### display_battle_area_short
-格式：
+Format:
 ```
-Your Battle Area: {count} unit(s)
-Opponent's Battle Area: {count} unit(s)
+Your Battle Area: {occupied_slots} unit(s)
+Opponent's Battle Area: {opponent_occupied} unit(s)
 ```
 
 ---
@@ -74,25 +74,45 @@ Opponent's Battle Area: {count} unit(s)
 ## 5. 防禦層顯示
 
 ### display_shields
-`Shields: {N} remaining | Base: {card_id} | HP: {current}/{max}`
+`Shields: {shields} remaining | Base: {base_card_id} | HP: {current_hp}/{max_hp}`
 
 ---
 
-## 6. 優先權與可用行動
+## 6. Priority & Available Actions
 
 ### display_priority
-`Priority: {player}`
+`Priority: {priority}{you_suffix}`
 
 ### display_actions
-格式（依 current phase/step 列出可用指令）：
+Format (list available commands per current phase/step):
+When determining play/deploy legality, must check both **Level (CR-3.2)** and **Cost (CR-3.3)**:
+- Level = resources.active + resources.rested + resources.ex ≥ card.level
+- Cost = resources.active ≥ card.cost (or EX covers difference)
+Only ✅ if both satisfied, otherwise ❌.
+
 ```
 Available:
 - pass
 - draw                # draw phase
 - resource            # resource phase
-- play/deploy <card_id>  # main phase
+- play/deploy <card_id>  # main phase (requires Level ≥ Lv and active ≥ Cost)
 - attack <slot>       # main phase (if eligible unit)
 - block <slot>        # battle (attack step)
+- redraw              # pre-game mulligan
+- keep                # pre-game mulligan
+- activate <slot>     # main phase (if battle_area unit has manual_activate ability)
+- pair <card_id> <slot>  # main phase (deploy Pilot to existing unit's slot)
+- concede
+```
+Available:
+- pass
+- draw                # draw phase
+- resource            # resource phase
+- play/deploy <card_id>  # main phase（需 Level ≥ Lv 且 active ≥ Cost）
+- attack <slot>       # main phase (if eligible unit)
+- block <slot>        # battle (attack step)
+- activate <slot>     # main phase（battle_area 單位有 manual_activate 能力時可用）
+- pair <card_id> <slot>  # main phase（將 Pilot 部署到已有單位的 slot）
 - redraw              # pre-game mulligan
 - keep                # pre-game mulligan
 - concede
@@ -108,28 +128,28 @@ Orchestrator 每次回傳給使用者時，依以下順序組合：
 ```
 {display_title}
 {display_resources}
-{display_hand} 或 {display_hand_short}（僅 active_player 的手牌；opponent 用 display_opponent_hand）
-{display_battle_area} 或 {display_battle_area_short}
+{display_hand} or {display_hand_short} (active_player's hand only; opponent uses display_opponent_hand)
+{display_battle_area} or {display_battle_area_short}
 {display_shields}
 
-{battle_log 最新一筆}
+{latest_battle_log}
 
-Priority: {player}
+{display_priority}
 
 {display_actions}
 ```
 
 ### compose_mulligan
-Mulligan 階段專用輸出（§5 Mulligan Flow 第 1 步）：
+Mulligan phase output (§5 Mulligan Flow step 1):
 
 ```
 {display_mulligan_title}
 
 Your Hand:
-- {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}
+- {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}{link_suffix}{keyword_suffix}
 ...
 
-請輸入 redraw 或 keep
+Enter redraw or keep
 ```
 
 ---
@@ -137,25 +157,25 @@ Your Hand:
 ## 8. 特殊事件顯示
 
 ### display_phase_transition
-格式：
+Format:
 ```
---- {Phase}{ → {next_phase}} ---
+--- {phase}{ → {next_phase}} ---
 ```
 
 ### display_damage_result
-格式：
+Format:
 ```
 ⚔ {attacker_slot} ({attacker_ap}AP) → {target}
-  {target} takes {N} damage{ / destroyed if hp≤0}
+  {target} takes {damage} damage{ / destroyed if hp≤0}
 {additional effects like Breach, Burst}
 ```
 
 ### display_game_over
-格式：
+Format:
 ```
 ═══════════════════════════
-   GAME OVER — {winner} 勝利
-   原因：{reason} [CR-X.Y]
+   GAME OVER — {winner} wins
+   Reason: {reason} [CR-X.Y]
 ═══════════════════════════
 ```
 
@@ -164,14 +184,16 @@ Your Hand:
 ## 9. 隱私遮罩（Privacy Gate）
 
 ### privacy_mask
-- 對手手牌 → `"Unknown"`
-- 對手牌庫 → `"{count} cards"`（僅張數）
-- 對手盾牌 → `"{count} remaining"`（僅張數，不含 card_id）
-- 對手戰區 → `"Slot{N}: Unknown / empty / AP:?/HP:?"`（已知資訊例外）
+- Opponent hand → `"Unknown"`
+- Opponent deck → `"{deck_count} cards"` (count only)
+- Opponent shields → `"{opponent_shields} remaining"` (count only, no card_id)
+- Opponent battle area → `"Slot{slot}: Unknown / empty / AP:?/HP:?"` (known info exceptions apply)
 
 ---
 
 ## 10. 錯誤訊息
+
+> **Note (P2-20)**: Orchestrator must check phase match before routing to the corresponding display template; if mismatched, emit `err_phase_mismatch`.
 
 ### err_phase_mismatch
 `requires phase=<X>, current phase=<Y>`
@@ -186,7 +208,7 @@ Your Hand:
 `insufficient resources: need {N}, have {N}`
 
 ### err_invalid_slot
-`invalid slot: {N} (must be 0-5)`
+`invalid slot: {slot} (must be 0-5)`
 
 ---
 
@@ -221,10 +243,10 @@ Your Hand:
 `"<active_player> plays/deploys/pairs <card_id>"`
 
 ### log_attack
-`"<active_player> attacks with slot <N>"`
+`"<active_player> attacks with slot <slot>"`
 
 ### log_block
-`"<non_active_player> blocks with slot <N>"`
+`"<non_active_player> blocks with slot <slot>"`
 
 ### log_activate
 `"<active_player> activates <effect_id> on <card_id>"`

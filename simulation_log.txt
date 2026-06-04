@@ -1,0 +1,193 @@
+P1 starting hand (5 cards)
+P2 starting hand (5 cards)
+P1 keeps hand
+P2 keeps hand
+P2 gets 1 EX Resource (second player) [CR-1.2]
+P1: 39 deck, 6 shields
+P2: 39 deck, 6 shields
+Shields set: 6 each [CR-1.3]
+Start Phase — reset all rested
+P1 draws 1 card [CR-2.5]
+P1 deploys 1 resource [CR-2.6]
+Turn 1 | Main Phase | P1's turn
+
+  >> P1 action: deploy st01/ST01-008
+P1 units Demi Trainer (Lv1/Cost:1)
+  → Slot 0
+
+  >> P1 action: pass
+P1 passes
+
+=== Turn 2 | P2's turn ===
+Start Phase — reset all rested
+P2 draws 1 card [CR-2.5]
+P2 deploys 1 resource [CR-2.6]
+Turn 2 | Main Phase | P2's turn
+
+  >> P2 action: deploy st01/ST01-005
+P2 units GM (Lv2/Cost:1)
+  → Slot 0
+
+  >> P2 action: deploy st01/ST01-005
+P2 units GM (Lv2/Cost:1)
+  → Slot 1
+
+  >> P2 action: pass
+P2 passes
+
+=== Turn 3 | P1's turn ===
+Start Phase — reset all rested
+P1 draws 1 card [CR-2.5]
+P1 deploys 1 resource [CR-2.6]
+Turn 3 | Main Phase | P1's turn
+
+  >> P1 action: attack 0
+P1 attacks with Demi Trainer (AP:1) [CR-5.1]
+No blocker — attacking defense layer [CR-4.3]
+  P2's Base takes 1 dmg (HP: 2/3)
+  Battle ends, back to Main Phase [CR-5.3]
+
+  >> P1 action: deploy st01/ST01-005
+P1 units GM (Lv2/Cost:1)
+  → Slot 1
+
+  >> P1 action: deploy st01/ST01-005
+P1 units GM (Lv2/Cost:1)
+  → Slot 2
+
+  >> P1 action: pass
+P1 passes
+
+=== Turn 4 | P2's turn ===
+Start Phase — reset all rested
+P2 draws 1 card [CR-2.5]
+P2 deploys 1 resource [CR-2.6]
+Turn 4 | Main Phase | P2's turn
+
+  >> P2 action: attack 0
+P2 attacks with GM (AP:2) [CR-5.1]
+No blocker — attacking defense layer [CR-4.3]
+  P1's Base takes 2 dmg (HP: 1/3)
+  Battle ends, back to Main Phase [CR-5.3]
+
+  >> P2 action: attack 1
+P2 attacks with GM (AP:2) [CR-5.1]
+No blocker — attacking defense layer [CR-4.3]
+  P1's Base takes 2 dmg (HP: -1/3)
+  Base destroyed! [CR-4.4]
+  Battle ends, back to Main Phase [CR-5.3]
+
+  >> P2 action: deploy st01/ST01-012
+P2 commands Thoroughly Damaged (Lv2/Cost:1)
+  [Pilot] dual card — playing as Command
+  Effect: Thoroughly Damaged — no valid target (rested enemy unit)
+
+  >> P2 action: pass
+P2 passes
+
+=== Turn 5 | P1's turn ===
+Start Phase — reset all rested
+P1 draws 1 card [CR-2.5]
+P1 deploys 1 resource [CR-2.6]
+Turn 5 | Main Phase | P1's turn
+
+  >> P1 action: attack 1
+P1 attacks with GM (AP:2) [CR-5.1]
+No blocker — attacking defense layer [CR-4.3]
+  P2's Base takes 2 dmg (HP: 0/3)
+  Base destroyed! [CR-4.4]
+  Battle ends, back to Main Phase [CR-5.3]
+
+  >> P1 action: attack 2
+P1 attacks with GM (AP:2) [CR-5.1]
+No blocker — attacking defense layer [CR-4.3]
+  Shield destroyed: Amuro Ray [CR-4.6]
+  Burst triggered: addToHand
+    Amuro Ray added to hand via Burst
+  Battle ends, back to Main Phase [CR-5.3]
+
+  >> P1 action: attack 0
+P1 attacks with Demi Trainer (AP:1) [CR-5.1]
+No blocker — attacking defense layer [CR-4.3]
+  Shield destroyed: Gundam [CR-4.6]
+  Battle ends, back to Main Phase [CR-5.3]
+
+  >> P1 action: deploy st01/ST01-003
+P1 units Guncannon (Lv3/Cost:2)
+  → Slot 3
+
+  >> P1 action: deploy st01/ST01-008
+P1 units Demi Trainer (Lv1/Cost:1)
+  → Slot 4
+
+  >> P1 action: pass
+P1 passes
+
+=== Turn 6 | P2's turn ===
+Start Phase — reset all rested
+P2 draws 1 card [CR-2.5]
+P2 deploys 1 resource [CR-2.6]
+Turn 6 | Main Phase | P2's turn
+
+  >> P2 action: attack 0
+P2 attacks with GM (AP:2) [CR-5.1]
+No blocker — attacking defense layer [CR-4.3]
+  Shield destroyed: White Base [CR-4.6]
+  Burst triggered: deploy
+    White Base deployed as new Base from Burst
+  Battle ends, back to Main Phase [CR-5.3]
+
+  >> P2 action: attack 1
+P2 attacks with GM (AP:2) [CR-5.1]
+No blocker — attacking defense layer [CR-4.3]
+  P1's Base takes 2 dmg (HP: 3/5)
+  Battle ends, back to Main Phase [CR-5.3]
+
+  >> P2 action: deploy st01/ST01-004
+P2 units Guntank (Lv3/Cost:2)
+  → Slot 2
+  [Deploy]: [Deploy]Choose 1 enemy Unit with 2 or less HP. Rest it.
+
+  >> P2 action: play st01/ST01-014
+P2 commands Unforeseen Incident (Lv3/Cost:1)
+  Demi Trainer AP -3 (→0) from Unforeseen Incident
+
+  >> P2 action: pass
+P2 passes
+
+=== Turn 7 | P1's turn ===
+Start Phase — reset all rested
+P1 draws 1 card [CR-2.5]
+P1 deploys 1 resource [CR-2.6]
+Turn 7 | Main Phase | P1's turn
+
+  >> P1 action: attack 1
+P1 attacks with GM (AP:2) [CR-5.1]
+No blocker — attacking defense layer [CR-4.3]
+  Shield destroyed: Gundam [CR-4.6]
+  Battle ends, back to Main Phase [CR-5.3]
+
+  >> P1 action: attack 2
+P1 attacks with GM (AP:2) [CR-5.1]
+No blocker — attacking defense layer [CR-4.3]
+  Shield destroyed: Gundam Aerial (Permet Score Six) [CR-4.6]
+  Battle ends, back to Main Phase [CR-5.3]
+
+  >> P1 action: attack 3
+P1 attacks with Guncannon (AP:2) [CR-5.1]
+No blocker — attacking defense layer [CR-4.3]
+  Shield destroyed: Gundam(MA Form) [CR-4.6]
+  Battle ends, back to Main Phase [CR-5.3]
+
+  >> P1 action: attack 0
+P1 attacks with Demi Trainer (AP:1) [CR-5.1]
+No blocker — attacking defense layer [CR-4.3]
+  Shield destroyed: Amuro Ray [CR-4.6]
+  Burst triggered: addToHand
+    Amuro Ray added to hand via Burst
+  Battle ends, back to Main Phase [CR-5.3]
+
+  >> P1 action: attack 4
+P1 attacks with Demi Trainer (AP:1) [CR-5.1]
+No blocker — attacking defense layer [CR-4.3]
+  DIRECT HIT! P1 wins! [CR-4.9]

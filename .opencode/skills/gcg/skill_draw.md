@@ -4,19 +4,19 @@ triggers: [draw]
 phase_lock: draw
 ---
 
-# skill_draw
+# skill_draw — 抽牌階段
 
 ## 輸出規則
-你的回覆是 state_diff YAML。用 **Write** 工具寫入 `/tmp/gcg_skill_output.txt`，用 **Read** 工具讀回，你的回覆就是 Read 的結果。
+你的回應是 state_diff YAML。使用 **Write** 工具寫入 `/tmp/gcg_skill_output.txt`，再用 **Read** 工具讀回 — 你的回應就是 Read 的結果。
 
-Draw phase (CR-2.5). Active player draws 1 card from deck.
+抽牌階段（CR-2.5）。行動玩家從牌庫抽 1 張牌。
 
-## Flow
+## 流程
 
-1. Deck count > 0 → draw 1 card (deck_count -= 1, hand gains 1 card). 從 `.deck_tracking.json` 該玩家的 `library_cards` 頂部取 1 張移至手牌（由 orchestrator 更新）
-2. Deck count = 0 → immediate loss (CR-8.2)
+1. 牌庫 > 0 → 抽 1 張（deck_count -= 1，手牌 +1）
+2. 牌庫 = 0 → 立即敗北（CR-8.2）
 
-## Output
+## 輸出
 
 ```yaml
 state_diff:

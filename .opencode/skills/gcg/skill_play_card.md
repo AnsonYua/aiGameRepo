@@ -4,74 +4,74 @@ triggers: [play, deploy, pair]
 phase_lock: main, battle(action), end(action)
 ---
 
-# skill_play_card
+# skill_play_card — 出牌
 
 ## 輸出規則
-你的回覆是 state_diff YAML。用 **Write** 工具寫入 `/tmp/gcg_skill_output.txt`，用 **Read** 工具讀回，你的回覆就是 Read 的結果。
+你的回應是 state_diff YAML。使用 **Write** 工具寫入 `/tmp/gcg_skill_output.txt`，再用 **Read** 工具讀回 — 你的回應就是 Read 的結果。
 
-Play card from hand to appropriate zone. Handles all card types: Unit, Pilot, Command, Base, dual-purpose [Pilot], and pairing.
+從手牌出牌至對應區域。處理所有卡片類型：Unit、Pilot、Command、Base、雙用途 [Pilot] 以及配對（pair）。
 
-## Input
+## 輸入
 
-- `game_state.md` — current game state
-- `card_data[card_id]` — pre-fetched card stats + interpreted effects (from orchestrator)
+- `game_state.md` — 當前遊戲狀態
+- `card_data[card_id]` — 預先提取的卡片數值 + 解譯後效果（來自 orchestrator）
 
-## Flow
+## 流程
 
-### 1. Pay Cost (CR-3.2, CR-3.3)
+### 1. 支付費用（CR-3.2, CR-3.3）
 
-- `Level = resources.active + resources.rested + resources.ex` must be ≥ `card_data[card_id].level`
-- Pay cost: rest `card_data[card_id].cost` active resources (active -= cost, rested += cost)
-- If insufficient active resources, EX can be consumed to cover difference (CR-3.4)
+- `Level = resources.active + resources.rested + resources.ex` 必須 ≥ `card_data[card_id].level`
+- 支付費用：橫置 `card_data[card_id].cost` 個直立資源（active -= cost, rested += cost）
+- 若直立資源不足，可用 EX 補足差額（CR-3.4）
 
-### 2. Dispatch by cardType
+### 2. 依 cardType 分派
 
-**Unit** (`deploy <card_id>`):
-- Place in first empty battle_area slot (slot 0-5, first where unit_id=null)
-- Set ap=card_data[].ap, hp=card_data[].hp, damage=0, status=null, keywords=[], link=false
-- If all 6 slots occupied → must trash an existing unit to free a slot (CR-5.11)
-- Token type (level=0) cannot be played from hand（見 ui_templates.md §err_token_play）
+**Unit**（`deploy <card_id>`）：
+- 放入第一個空的戰區欄位（slot 0-5，第一個 unit_id=null 者）
+- 設定 ap=card_data[].ap, hp=card_data[].hp, damage=0, status=null, keywords=[], link=false
+- 若 6 格全滿 → 必須 trash 現有單位騰出空間（CR-5.11）
+- Token 型（level=0）不可從手牌打出（見 ui_templates.md §err_token_play）
 
-**Pilot** (`deploy <card_id>`):
-- Place in first empty battle_area slot
-- Set ap=card_data[].ap, hp=card_data[].hp, damage=0, status=null, keywords=[], link=false
+**Pilot**（`deploy <card_id>`）：
+- 放入第一個空的戰區欄位
+- 設定 ap=card_data[].ap, hp=card_data[].hp, damage=0, status=null, keywords=[], link=false
 
-**Command** (`play <card_id>`):
-- Card effect resolves immediately based on interpreted effects
-- Card goes to trash after resolution
-- Activation window must match current phase/step (CR-10.3)
+**Command**（`play <card_id>`）：
+- 卡片效果立即結算（依 interpreted effects）
+- 結算後卡片進 trash
+- 啟動時機須符合當前階段/子步驟（CR-10.3）
 
-**Base** (`deploy <card_id>`):
-- Old Base (current `base`) goes to trash (CR-7.3)
-- Top shield card moves to hand (CR-7.3)。從 `.deck_tracking.json` 該玩家的 `shields_cards` 移除最外層（最後一張），加入手牌（由 orchestrator 更新）
-- New Base card replaces it: card_id, hp=card_data[].hp, ap=card_data[].ap, damage=0, alive=true, status=active
-- [Deploy] trigger resolves (CR-6.6)
+**Base**（`deploy <card_id>`）：
+- 舊 Base（當前 `base`）進 trash（CR-7.3）
+- 最上層盾牌移至手牌（CR-7.3）。shields: -1 表示數量；實際 card_id 由 orchestrator 透過 state_diff 追蹤
+- 新 Base 卡取代：card_id, hp=card_data[].hp, ap=card_data[].ap, damage=0, alive=true, status=active
+- [Deploy] 觸發結算（CR-6.6）
 
-**Dual-purpose [Pilot]** (choose mode):
-- `play` → treat as Command: resolve effect, go to trash
-- `deploy` → treat as Pilot: place in battle_area with the [Pilot] stats
+**雙用途 [Pilot]**（選擇模式）：
+- `play` → 視為 Command：結算效果，進 trash
+- `deploy` → 視為 Pilot：以 [Pilot] 數值放入戰區
 
-### 3. Pair (`pair <pilot_card_id> <slot>`)
+### 3. 配對（`pair <pilot_card_id> <slot>`）
 
-- Target slot must have unit_id != null and pilot_id = null
-- Pilot card must be in hand (or just deployed)
-- Set pilot_id in the slot
-- Pilot card removed from hand
-- If pilot can link (pilot name in card_data[unit_id].link) → set link=true (CR-6.4)
-- [When Paired] triggers resolve (from interpreted effects with trigger=on_pair)
+- 目標欄位必須有 unit_id != null 且 pilot_id = null
+- Pilot 卡必須在手牌（或剛部署）
+- 在欄位中設定 pilot_id
+- Pilot 卡從手牌移除
+- 若 pilot 可共鳴（pilot name 在 card_data[unit_id].link 中）→ 設定 link=true（CR-6.4）
+- [When Paired] 觸發結算（來自 trigger=on_pair 的 interpreted effects）
 
-## Output
+## 輸出
 
 ```yaml
 state_diff:
   <active_player>:
     resources:
-      active: -<cost>     # after paying cost
+      active: -<cost>     # 支付費用後
       rested: +<cost>
       ex: -<ex_used>
     hand_cards:
       - remove: <card_id>
-    battle_area:           # for deploy/pair
+    battle_area:           # 部署/配對用
       - slot: <N>
         unit_id: "<card_id or unchanged>"
         pilot_id: "<pilot_id or unchanged>"
@@ -81,14 +81,14 @@ state_diff:
         status: null
         keywords: []
         link: <true|false>
-    base:                  # for base deploy
+    base:                  # Base 部署用
       card_id: "<new card_id>"
       ap: <new ap>
       hp: <new hp>
       damage: 0
       alive: true
       status: active
-    shields: -1            # if base deploy (top shield → hand)
+    shields: -1            # 若為 Base 部署（最上層盾牌→手牌）
     trash:
       - add: <old card_id>
   battle_log:                          # 模板見 ui_templates.md §log_play_card

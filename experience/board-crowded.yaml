@@ -1,0 +1,16 @@
+# Priority：越高越重要。多個經驗檔案同時符合時，
+# attack_target 和 desperate_play 以 priority 最高者為準。
+# score_bonus 在所有符合的檔案間相加。
+id: board-crowded
+priority: 6
+description: '戰區接近全滿：偏好使用指令卡和部署駕駛員到現有單位，而非填滿空格。'
+condition:
+  my_empty_slots_max: 1
+  my_units_min: 4
+effect:
+  score_bonus:
+  - card_type: command
+    bonus: 15
+  - card_type: pilot
+    bonus: 10
+  desperate_play: false

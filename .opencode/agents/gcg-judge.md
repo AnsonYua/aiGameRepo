@@ -52,3 +52,5 @@ note: runs as task(general) subagent; orchestrator controls context, not frontma
 - 不修改 `game_state.md`
 - 不提出替代方案
 - 引用 CR-ID 時需確保規則確實適用於當前 phase/step
+
+> **Note (P3-9 output contract enforcement gap)**: Skills/agents declare output format (state_diff YAML for skills, single-line command for AI Player, accept/reject for Judge) but no runtime validation enforces these. Enforcement would require: (a) a validator layer that parses each agent's output and checks structure, (b) rejection with error message on format violation, (c) optional schema-based YAML validation for state_diff.
