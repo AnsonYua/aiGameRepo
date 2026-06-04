@@ -1,5 +1,6 @@
 ---
 name: skill_damage
+triggers: []  # 非獨立路由，不單獨觸發
 phase_lock: battle
 note: 非獨立路由 — 與 skill_pass.md 一同載入（phase=battle 時）
 ---
@@ -47,6 +48,12 @@ state_diff:
       - slot: <blocker_slot>
         damage: +<attacker_ap>
         hp: 0 / unit_id: null    # 若被破壞
+    active_effects:
+      - add:
+          effectId: <burst_effect_id>
+          source: <card_id>
+          timing: instant
+          parameters: {}
   priority: <active_player>          # 戰鬥後優先權返回行動玩家
   game_over: true / winner: <active_player>  # CR-4.9 直擊
   battle_log:                    # 模板見 ui_templates.md §log_damage

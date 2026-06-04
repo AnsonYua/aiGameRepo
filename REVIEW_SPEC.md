@@ -109,6 +109,10 @@
 | Phase lock 驗證 | 路由前手動比對 game_state.phase 與 skill 的 phase_lock，不符 → err_phase_mismatch |
 | 150 行限制 | orchestrator 本身 ≤ 150 行 |
 | 內嵌模板 | mulligan / compose_state 模板直接內嵌在 orchestrator 中，不依賴 ui_templates.md 讀取 |
+| 遊戲狀態檔管理 | start game 時產生唯一 game_id（`game_<YYYYMMDD_HHMMSS>`），建立 `game-states/<game_id>/` 目錄，將 game_id 寫入 `.gcg_active_game` |
+| State I/O 路徑 | 所有「讀 state」從 `game-states/<game_id>/gameState.md`，所有「寫 state」至同一路徑。非 `game_state.md` |
+| 子代理資料傳遞 | 呼叫 skill / Judge / Display / AI Player 時，將 game state 資料（從 game-specific 檔案讀取後）傳入 task context。子代理不直接讀取 game state 檔案 |
+| 路徑初始化檢查 | 啟動後先讀 `.gcg_active_game`；不存在時只接受 `start game` 指令，拒絕其他操作 |
 
 ### Display — 格式化輸出
 
@@ -128,7 +132,7 @@
 
 | 範圍 | 檢查要點 |
 |------|---------|
-| 輸入 | game_state.md（當前狀態）+ state_diff（提議變更）+ card_data |
+| 輸入 | game state（當前狀態，orchestrator 傳入）+ state_diff（提議變更）+ card_data |
 | 輸出格式 | 僅 `accept` 或 `reject: <reason> [CR-X.Y]` |
 | CR-ID 驗證 | state_diff 附帶的 CR-ID 引用是否正確 |
 | 卡片數據驗證 | 新部署 unit 的 ap/hp 必須符合 card_data 基礎值 |
@@ -169,6 +173,10 @@
 | Command Effect | 11+ action types 全部實作 |
 | 經驗載入 | load_matching_experience() 匹配正確 |
 | 日誌 | log_action() 輸出格式與 §12 一致 |
+| Game state 路徑解析 | `_resolve_state_path()` 依優先級：`--game-state` CLI > `.gcg_active_game` > `game_state.md` 回退 |
+| 循環重新載入 | `load_state()` 每次呼叫重新解析路徑（除非 `--game-state` 鎖定），自動跟隨 orchestrator 新開遊戲 |
+| 活躍遊戲追蹤 | 讀取 `.gcg_active_game` 取得 game_id，組合路徑 `game-states/<game_id>/gameState.md`；檔案不存在時回退 |
+| Replay 路徑正確 | `save_replay()` 從正確的 game state 檔案讀取最終狀態，不因路徑變更而中斷 |
 
 ## UI Templates（ui_templates.md）
 
@@ -206,6 +214,8 @@
 | 檔案大小 | agent 檔案 < 150 行，技能檔案 < 150 行 |
 | 無 .deck_tracking.json | 已全部移除，無遺留參考 |
 | CR-ID 參考 | 所有規則引用使用 CR-X.Y 格式 |
+| 遊戲狀態隔離 | 每局遊戲使用獨立 `game-states/<game_id>/gameState.md`，永不覆寫單一 `game_state.md` |
+| `.gcg_active_game` 同步 | orchestrator 與 simulation runner 透過 `.gcg_active_game` 溝通當前遊戲 ID，檔案內容須一致 |
 
 ---
 

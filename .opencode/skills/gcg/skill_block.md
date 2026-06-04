@@ -26,13 +26,14 @@ phase_lock: battle
    - 單位必須屬於非行動玩家
 4. **執行阻擋**：橫置阻擋者（CR-5.8）
 5. **轉向**：攻擊現在指向阻擋者而非防禦層（CR-5.9）
-6. **推進子步驟**：子步驟 → action（優先權視窗開啟，CR-5.12）
+6. **推進子步驟**：子步驟 → action，優先權 → 非行動玩家（CR-5.12 / CR-2.10(a)）
 
 ## 輸出
 
 ```yaml
 state_diff:
   step: action                  # 推進至 action 子步驟（CR-5.12）
+  priority: <non_active_player>     # 非行動玩家優先取得優先權（CR-5.12）
   <non_active_player>:
     battle_area:
       - slot: <blocking_slot>

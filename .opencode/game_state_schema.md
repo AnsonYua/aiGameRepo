@@ -15,7 +15,7 @@ active_player: P1|P2     # 當前行動玩家
 phase: <string>          # 當前階段：pre-game, start, draw, resource, main, battle, end
 step: <string|null>      # 子步驟：phase=battle 時為 attack, block, action, damage, battle_end；phase=end 時為 action, cleanup；其餘 phase 為 null
 current_attacker: <int|null>  # 當前攻擊的 battle_area slot 編號（phase=battle 時設定，battle_end 時清空）
-priority: <active_player|null>  # 當前優先權誰屬（CR-2.9）；null = 無優先權窗口，自動階段
+priority: <active_player|non_active_player|null>  # 當前優先權誰屬（CR-2.9, CR-2.10）；null = 無優先權窗口，自動階段
 
 p1 / p2:
   base:
@@ -43,7 +43,8 @@ p1 / p2:
       damage: <int>      # 已受傷害
       status: <string|null># 狀態（rested 等）
       keywords: [<string>]# 關鍵字（First Strike, Blocker 等）
-      link: <bool>       # 是否連結
+      link: <bool>       # 是否連結（Link Unit：CR-6.4）
+      turns_on_field: <int>  # 已在場上的回合數（0=剛部署，Start Phase +1）
   trash: [<string>]      # 廢棄區卡片編號列表
   removal: [<string>]    # 除外區卡片編號列表
 
@@ -60,7 +61,7 @@ winner: null|<string>       # 勝利者（P1/P2/null）
 
 ---
 
-## Level 與費用（見 CR-3）
+## Level 與費用（見 CR-3.x）
 
 Level = resources.active + resources.rested + resources.ex（CR-3.1）
 出牌條件：Level ≥ 卡的 Lv（CR-3.2）
@@ -71,7 +72,7 @@ EX Resource 用完移除遊戲（CR-3.4）
 
 ## 戰鬥規則
 
-所有戰鬥規則見 `gcg-rulebook.md`：防禦層序 CR-4，戰鬥流程 CR-5，關鍵字 CR-6，敗北 CR-9。
+所有戰鬥規則見 `gcg-rulebook.md`：防禦層序 CR-4.x，戰鬥流程 CR-5.x，關鍵字 CR-6.x，敗北 CR-9.x。
 
 ---
 

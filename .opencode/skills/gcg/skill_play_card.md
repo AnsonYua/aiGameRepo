@@ -28,13 +28,13 @@ phase_lock: main, battle(action), end(action)
 
 **Unit**（`deploy <card_id>`）：
 - 放入第一個空的戰區欄位（slot 0-5，第一個 unit_id=null 者）
-- 設定 ap=card_data[].ap, hp=card_data[].hp, damage=0, status=null, keywords=[], link=false
+- 設定 ap=card_data[].ap, hp=card_data[].hp, damage=0, status=null, keywords=[], link=false, turns_on_field=0
 - 若 6 格全滿 → 必須 trash 現有單位騰出空間（CR-5.11）
 - Token 型（level=0）不可從手牌打出（見 ui_templates.md §err_token_play）
 
 **Pilot**（`deploy <card_id>`）：
 - 放入第一個空的戰區欄位
-- 設定 ap=card_data[].ap, hp=card_data[].hp, damage=0, status=null, keywords=[], link=false
+- 設定 ap=card_data[].ap, hp=card_data[].hp, damage=0, status=null, keywords=[], link=false, turns_on_field=0
 
 **Command**（`play <card_id>`）：
 - 卡片效果立即結算（依 interpreted effects）
@@ -51,7 +51,10 @@ phase_lock: main, battle(action), end(action)
 - `play` → 視為 Command：結算效果，進 trash
 - `deploy` → 視為 Pilot：以 [Pilot] 數值放入戰區
 
-### 3. 配對（`pair <pilot_card_id> <slot>`）
+### 3. action step 優先權重置
+- 若在 battle(action) 或 end(action) 階段，優先權返回非行動玩家（CR-2.10(c)）
+
+### 4. 配對（`pair <pilot_card_id> <slot>`）
 
 - 目標欄位必須有 unit_id != null 且 pilot_id = null
 - Pilot 卡必須在手牌（或剛部署）
@@ -64,6 +67,7 @@ phase_lock: main, battle(action), end(action)
 
 ```yaml
 state_diff:
+  priority: <non_active_player>     # action step 啟動後優先權返回非行動玩家（CR-2.10(c)）
   <active_player>:
     resources:
       active: -<cost>     # 支付費用後

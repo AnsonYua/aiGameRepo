@@ -32,6 +32,7 @@ state_diff:
   phase: battle
   step: attack
   current_attacker: <slot>     # 供阻擋/傷害結算追蹤
+  priority: null                    # 攻擊宣告階段無優先權窗口
   <active_player>:
     battle_area:
       - slot: <attacking_slot>

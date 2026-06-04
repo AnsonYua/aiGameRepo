@@ -1,7 +1,7 @@
 ---
 name: skill_start_phase
 triggers: [auto_start]
-phase_lock: pre-game, start
+phase_lock: pre-game, start, draw, resource
 ---
 
 # skill_start_phase — 自動階段推進
@@ -20,7 +20,7 @@ phase_lock: pre-game, start
 2. 階段 → start，子步驟 = null
 
 ### 起點 = start（或前一步驟完成後）
-3. 重置所有橫置卡（CR-2.4）：`resources.rested → 0, resources.active ← total`；若 Base 為已部署卡且 alive → `base.status: active`
+3. 重置所有橫置卡（CR-2.4）：`resources.rested → 0, resources.active ← total`；若 Base 為已部署卡且 alive → `base.status: active`；所有己方戰區 Unit 的 `turns_on_field +1`（CR-5.4a）
 4. 階段 → draw
 
 ### 抽牌（強制，CR-2.5）
@@ -47,6 +47,9 @@ state_diff:
       - add: <card_id>    # 抽 1 張
     deck_count: -1        # 抽牌
     resource_deck_count: -1  # 資源
+    battle_area:           # 每格 battle_area slot
+      - slot: <N>
+        turns_on_field: +1  # 每一格有 unit 的 slot turns_on_field +1（CR-5.4a）
     resources:
       active: +<total_before>  # start→draw 重置：rested→active
       rested: 0

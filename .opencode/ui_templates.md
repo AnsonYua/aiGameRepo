@@ -96,7 +96,7 @@ Available:
 - draw                # draw phase
 - resource            # resource phase
 - play/deploy <card_id>  # main phase (requires Level ≥ Lv and active ≥ Cost)
-- attack <slot>       # main phase (if eligible unit)
+- attack <slot>       # main phase (if eligible unit: active + (turns_on_field≥1 or link=true) [CR-5.4])
 - block <slot>        # battle (attack step)
 - redraw              # pre-game mulligan
 - keep                # pre-game mulligan
@@ -109,7 +109,7 @@ Available:
 - draw                # draw phase
 - resource            # resource phase
 - play/deploy <card_id>  # main phase（需 Level ≥ Lv 且 active ≥ Cost）
-- attack <slot>       # main phase (if eligible unit)
+- attack <slot>       # main phase (if eligible unit: active + (turns_on_field≥1 or link=true) [CR-5.4])
 - block <slot>        # battle (attack step)
 - activate <slot>     # main phase（battle_area 單位有 manual_activate 能力時可用）
 - pair <card_id> <slot>  # main phase（將 Pilot 部署到已有單位的 slot）

@@ -19,54 +19,56 @@ When displaying "Available Actions" in Main Phase, each Unit/Pilot/Base/Command 
 
 Both satisfied → ✅; Either fails → ❌(reason in parentheses)
 
+Status values in battle area: active → 直立, rested → 橫置, null → 無
+
 ## Mulligan Template
 
 ```
-Mulligan — {player} is {first|second}
+調度 — {player} 為{先手|後手}
 
-Your Hand:
+你的手牌：
 - {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}{link_suffix}{keyword_suffix}
 - {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}{link_suffix}{keyword_suffix}
 - {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}{link_suffix}{keyword_suffix}
 - {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}{link_suffix}{keyword_suffix}
 - {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}{link_suffix}{keyword_suffix}
 
-Enter redraw or keep
+請輸入 redraw 或 keep
 ```
 
 ## Main Phase Template
 
 ```
-Turn {turn} | {phase}{step} | {active_player}'s turn
-Resources: active={active}, rested={rested}, EX={ex} | Deck: {deck_count} | Resource Deck: {resource_deck_count}
+回合 {turn} | {phase}{step} | {active_player} 的回合
+資源：直立={active} 橫置={rested} EX={ex} | 牌庫：{deck_count} | 資源牌庫：{resource_deck_count}
 
-Your Hand ({hand_count}):
+你的手牌（{hand_count}）：
 - {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}{link_suffix}{keyword_suffix}
 - {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}{link_suffix}{keyword_suffix}
 ...
 
-Opponent's Hand: {opponent_hand_count} cards
+對手手牌：{opponent_hand_count} 張
 
-Your Battle Area ({occupied_slots}/{total_slots}):
-{all_empty ? "- All slots empty" : "- Slot{slot}: [{card_id}] {name} | AP:{ap}/HP:{hp_remaining} | {pilot_id} | {keywords} | {status}\n..."}
+你的戰區（{occupied_slots}/{total_slots}）：
+{all_empty ? "- 全部空格" : "- 欄位{slot}：[{card_id}] {name} | AP:{ap}/HP:{hp_remaining} | {pilot_id} | {keywords} | {status}\n..."}
 
-Opponent's Battle Area ({opponent_occupied}/{total_slots}):
-{opponent_all_empty ? "- All slots empty" : "- Slot{slot}: {opponent_revealed ? '[{card_id}] {name} | AP:{ap}/HP:{hp}' : 'Unknown'}\n- Slot{slot}: empty\n..."}
+對手戰區（{opponent_occupied}/{total_slots}）：
+{opponent_all_empty ? "- 全部空格" : "- 欄位{slot}：{opponent_revealed ? '[{card_id}] {name} | AP:{ap}/HP:{hp}' : '未知'}\n- 欄位{slot}：空\n..."}
 
-Shields: {shields} remaining | Base: {base_card_id} | HP: {current_hp}/{max_hp}
-Opponent Shields: {opponent_shields} remaining
+盾牌：{shields} 剩餘 | 基地：{base_card_id} | HP：{current_hp}/{max_hp}
+對手盾牌：{opponent_shields} 剩餘
 
 {latest_battle_log}
 
-Priority: {priority}{you_suffix}
+優先權：{priority}{you_suffix}
 
-Available Actions (computed per play legality rules ✅/❌):
+可行指令（依出牌合法性 ✅/❌ 計算）：
 {for each card in hand_cards, determine if deployable:}
-  - {action_prefix} {card_id} — {name} (Lv{level}/Cost:{cost}) {✅|❌reason}
+  - {action_prefix} {card_id} — {name}（Lv{level}/Cost:{cost}）{✅|❌reason}
 ...
-- pass — proceed to End Phase
-- attack <slot> (if eligible unit exists)
-- concede
+- 讓過 — 進入結束階段
+- 攻擊 <欄位>（若單位符合條件：直立 +（出場回合≥1 或 link=true）[CR-5.4]）
+- 投降
 ```
 
 ### Template Variable Descriptions
@@ -75,14 +77,15 @@ Available Actions (computed per play legality rules ✅/❌):
 |------|------|
 | `link_suffix` | If card has link attribute, display ` | [Link: {name}]`, otherwise empty |
 | `keyword_suffix` | Card keywords (e.g. Blocker) displayed as ` | [{keywords}]`. Unit type with no keywords → empty |
-| `all_empty` | All slots null on this side → true, output "All slots empty" |
+| `all_empty` | All slots null on this side → true, output "- 全部空格" |
 | `occupied_slots` | Number of non-null slots on own battlefield |
 | `opponent_occupied` | Number of non-null slots on opponent battlefield |
-| `opponent_revealed` | Whether this slot's unit has been revealed (attacked or targeted) → if true, show card_id/name/ap/hp instead of Unknown |
+| `opponent_revealed` | Whether this slot's unit has been revealed (attacked or targeted) → if true, show card_id/name/ap/hp instead of 未知 |
 | `total_slots` | Fixed at 6 |
-| `you_suffix` | priority=active_player and active_player=P1 (you) → `(you)`, otherwise empty |
-| `action_prefix` | cardType=command → `play`, otherwise → `deploy` |
+| `you_suffix` | priority=active_player and active_player=P1 (you) → `(你)`, otherwise empty |
+| `action_prefix` | cardType=command → `使用`, otherwise → `部署` |
 | `hp_remaining` | Displayed as `{hp-damage}` (current remaining HP) |
+| `{status}` | Replace with 直立/橫置/無 based on the status field value |
 | `latest_battle_log` | Latest battle_log entry, formatted as `✔ {msg}` or `✘ {msg}` or `• {msg}` per line |
 | `opponent_shields` | Opponent's remaining shield count (number only, no card_id), must obey privacy_mask |
 | `✅\|❌reason` | Both Level+Cost satisfied → ✅, otherwise → ❌(reason) |
@@ -90,62 +93,61 @@ Available Actions (computed per play legality rules ✅/❌):
 ## Draw Phase Template
 
 ```
-Turn {turn} | Draw Phase — auto draw | {active_player}'s turn
-Resources: active={active}, rested={rested}, EX={ex} | Deck: {deck_count} | Resource Deck: {resource_deck_count}
+回合 {turn} | 抽牌階段 — 自動抽牌 | {active_player} 的回合
+資源：直立={active} 橫置={rested} EX={ex} | 牌庫：{deck_count} | 資源牌庫：{resource_deck_count}
 
-Your Hand ({hand_count}):
+你的手牌（{hand_count}）：
 - {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}{link_suffix}{keyword_suffix}
 ...
 
-Opponent's Hand: {opponent_hand_count} cards
+對手手牌：{opponent_hand_count} 張
 
-Your Battle Area ({occupied_slots}/{total_slots}):
-{all_empty ? "- All slots empty" : "- Slot{slot}: [{card_id}] {name} | AP:{ap}/HP:{hp_remaining} | {pilot_id} | {keywords} | {status}\n..."}
+你的戰區（{occupied_slots}/{total_slots}）：
+{all_empty ? "- 全部空格" : "- 欄位{slot}：[{card_id}] {name} | AP:{ap}/HP:{hp_remaining} | {pilot_id} | {keywords} | {status}\n..."}
 
-Opponent's Battle Area ({opponent_occupied}/{total_slots}):
-{opponent_all_empty ? "- All slots empty" : "- Slot{slot}: {opponent_revealed ? '[{card_id}] {name} | AP:{ap}/HP:{hp}' : 'Unknown'}\n- Slot{slot}: empty\n..."}
+對手戰區（{opponent_occupied}/{total_slots}）：
+{opponent_all_empty ? "- 全部空格" : "- 欄位{slot}：{opponent_revealed ? '[{card_id}] {name} | AP:{ap}/HP:{hp}' : '未知'}\n- 欄位{slot}：空\n..."}
 
-Shields: {shields} remaining | Base: {base_card_id} | HP: {current_hp}/{max_hp}
-Opponent Shields: {opponent_shields} remaining
+盾牌：{shields} 剩餘 | 基地：{base_card_id} | HP：{current_hp}/{max_hp}
+對手盾牌：{opponent_shields} 剩餘
 
 {latest_battle_log}
 
-Priority: {priority}{you_suffix}
+優先權：{priority}{you_suffix}
 
-Available Actions:
-- pass — done drawing, proceed to Resource Phase
-- concede
+可行指令：
+- 讓過 — 抽牌完成，進入資源階段
+- 投降
 ```
 
 ## Resource Phase Template
 
 ```
-Turn {turn} | Resource Phase — auto deploy | {active_player}'s turn
-Resources: active={active}, rested={rested}, EX={ex} | Deck: {deck_count} | Resource Deck: {resource_deck_count}
+回合 {turn} | 資源階段 — 自動部署資源 | {active_player} 的回合
+資源：直立={active} 橫置={rested} EX={ex} | 牌庫：{deck_count} | 資源牌庫：{resource_deck_count}
 
-Your Hand ({hand_count}):
+你的手牌（{hand_count}）：
 - {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}{link_suffix}{keyword_suffix}
 ...
 
-Opponent's Hand: {opponent_hand_count} cards
+對手手牌：{opponent_hand_count} 張
 
-Your Battle Area ({occupied_slots}/{total_slots}):
-{all_empty ? "- All slots empty" : "- Slot{slot}: [{card_id}] {name} | AP:{ap}/HP:{hp_remaining} | {pilot_id} | {keywords} | {status}\n..."}
+你的戰區（{occupied_slots}/{total_slots}）：
+{all_empty ? "- 全部空格" : "- 欄位{slot}：[{card_id}] {name} | AP:{ap}/HP:{hp_remaining} | {pilot_id} | {keywords} | {status}\n..."}
 
-Opponent's Battle Area ({opponent_occupied}/{total_slots}):
-{opponent_all_empty ? "- All slots empty" : "- Slot{slot}: {opponent_revealed ? '[{card_id}] {name} | AP:{ap}/HP:{hp}' : 'Unknown'}\n- Slot{slot}: empty\n..."}
+對手戰區（{opponent_occupied}/{total_slots}）：
+{opponent_all_empty ? "- 全部空格" : "- 欄位{slot}：{opponent_revealed ? '[{card_id}] {name} | AP:{ap}/HP:{hp}' : '未知'}\n- 欄位{slot}：空\n..."}
 
-Shields: {shields} remaining | Base: {base_card_id} | HP: {current_hp}/{max_hp}
-Opponent Shields: {opponent_shields} remaining
+盾牌：{shields} 剩餘 | 基地：{base_card_id} | HP：{current_hp}/{max_hp}
+對手盾牌：{opponent_shields} 剩餘
 
 {latest_battle_log}
 
-Priority: {priority}{you_suffix}
+優先權：{priority}{you_suffix}
 
-Available Actions:
-- pass — done deploying resource, proceed to Main Phase
-- concede
-
+可行指令：
+- 讓過 — 部署資源完成，進入主要階段
+- 投降
 ```
 
 ## Battle Phase Template
@@ -153,154 +155,152 @@ Available Actions:
 ### Attack Declaration Step
 
 ```
-Turn {turn} | Battle Phase — attack declaration | {active_player}'s turn
-Resources: active={active}, rested={rested}, EX={ex} | Deck: {deck_count} | Resource Deck: {resource_deck_count}
+回合 {turn} | 戰鬥階段 — 攻擊宣言 | {active_player} 的回合
+資源：直立={active} 橫置={rested} EX={ex} | 牌庫：{deck_count} | 資源牌庫：{resource_deck_count}
 
-Your Hand ({hand_count}):
+你的手牌（{hand_count}）：
 - {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}{link_suffix}{keyword_suffix}
 ...
 
-Opponent's Hand: {opponent_hand_count} cards
+對手手牌：{opponent_hand_count} 張
 
-Your Battle Area ({occupied_slots}/{total_slots}):
-{all_empty ? "- All slots empty" : "- Slot{slot}: [{card_id}] {name} | AP:{ap}/HP:{hp_remaining} | {pilot_id} | {keywords} | {status}\n..."}
+你的戰區（{occupied_slots}/{total_slots}）：
+{all_empty ? "- 全部空格" : "- 欄位{slot}：[{card_id}] {name} | AP:{ap}/HP:{hp_remaining} | {pilot_id} | {keywords} | {status}\n..."}
 
-Opponent's Battle Area ({opponent_occupied}/{total_slots}):
-{opponent_all_empty ? "- All slots empty" : "- Slot{slot}: {opponent_revealed ? '[{card_id}] {name} | AP:{ap}/HP:{hp}' : 'Unknown'}\n- Slot{slot}: empty\n..."}
+對手戰區（{opponent_occupied}/{total_slots}）：
+{opponent_all_empty ? "- 全部空格" : "- 欄位{slot}：{opponent_revealed ? '[{card_id}] {name} | AP:{ap}/HP:{hp}' : '未知'}\n- 欄位{slot}：空\n..."}
 
-Shields: {shields} remaining | Base: {base_card_id} | HP: {current_hp}/{max_hp}
-Opponent Shields: {opponent_shields} remaining
+盾牌：{shields} 剩餘 | 基地：{base_card_id} | HP：{current_hp}/{max_hp}
+對手盾牌：{opponent_shields} 剩餘
 
 {latest_battle_log}
 
-Priority: {priority}{you_suffix}
+優先權：{priority}{you_suffix}
 
-Available Actions:
-- attack <slot> (if eligible unit exists)
-- pass — skip attack, proceed to End Phase
-- concede
-
+可行指令：
+- 攻擊 <欄位>（若單位符合攻擊條件）
+- 讓過 — 跳過攻擊，進入結束階段
+- 投降
 ```
 
 ### Action Step + Damage Step
 
 ```
-Turn {turn} | Battle Phase — action step | {active_player}'s turn
-Resources: active={active}, rested={rested}, EX={ex} | Deck: {deck_count} | Resource Deck: {resource_deck_count}
+回合 {turn} | 戰鬥階段 — 動作子步驟 | {active_player} 的回合
+資源：直立={active} 橫置={rested} EX={ex} | 牌庫：{deck_count} | 資源牌庫：{resource_deck_count}
 
-Your Hand ({hand_count}):
+你的手牌（{hand_count}）：
 - {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}{link_suffix}{keyword_suffix}
 ...
 
-Opponent's Hand: {opponent_hand_count} cards
+對手手牌：{opponent_hand_count} 張
 
-Your Battle Area ({occupied_slots}/{total_slots}):
-{all_empty ? "- All slots empty" : "- Slot{slot}: [{card_id}] {name} | AP:{ap}/HP:{hp_remaining} | {pilot_id} | {keywords} | {status}\n..."}
+你的戰區（{occupied_slots}/{total_slots}）：
+{all_empty ? "- 全部空格" : "- 欄位{slot}：[{card_id}] {name} | AP:{ap}/HP:{hp_remaining} | {pilot_id} | {keywords} | {status}\n..."}
 
-Opponent's Battle Area ({opponent_occupied}/{total_slots}):
-{opponent_all_empty ? "- All slots empty" : "- Slot{slot}: {opponent_revealed ? '[{card_id}] {name} | AP:{ap}/HP:{hp}' : 'Unknown'}\n- Slot{slot}: empty\n..."}
+對手戰區（{opponent_occupied}/{total_slots}）：
+{opponent_all_empty ? "- 全部空格" : "- 欄位{slot}：{opponent_revealed ? '[{card_id}] {name} | AP:{ap}/HP:{hp}' : '未知'}\n- 欄位{slot}：空\n..."}
 
-Shields: {shields} remaining | Base: {base_card_id} | HP: {current_hp}/{max_hp}
-Opponent Shields: {opponent_shields} remaining
+盾牌：{shields} 剩餘 | 基地：{base_card_id} | HP：{current_hp}/{max_hp}
+對手盾牌：{opponent_shields} 剩餘
 
 {latest_battle_log}
 
-Priority: {priority}{you_suffix}
+優先權：{priority}{you_suffix}
 
-Available Actions:
-- block <slot> (if eligible Blocker unit exists)
-- pass — no block
-
+可行指令：
+- 阻擋 <欄位>（若單位有 Blocker 關鍵字）
+- 讓過 — 不阻擋
 ```
 
 ### Battle End Step
 
 ```
-Turn {turn} | Battle Phase — end | {active_player}'s turn
-Resources: active={active}, rested={rested}, EX={ex} | Deck: {deck_count} | Resource Deck: {resource_deck_count}
+回合 {turn} | 戰鬥階段 — 結束 | {active_player} 的回合
+資源：直立={active} 橫置={rested} EX={ex} | 牌庫：{deck_count} | 資源牌庫：{resource_deck_count}
 
-Your Hand ({hand_count}):
+你的手牌（{hand_count}）：
 - {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}{link_suffix}{keyword_suffix}
 ...
 
-Opponent's Hand: {opponent_hand_count} cards
+對手手牌：{opponent_hand_count} 張
 
-Your Battle Area ({occupied_slots}/{total_slots}):
-{all_empty ? "- All slots empty" : "- Slot{slot}: [{card_id}] {name} | AP:{ap}/HP:{hp_remaining} | {pilot_id} | {keywords} | {status}\n..."}
+你的戰區（{occupied_slots}/{total_slots}）：
+{all_empty ? "- 全部空格" : "- 欄位{slot}：[{card_id}] {name} | AP:{ap}/HP:{hp_remaining} | {pilot_id} | {keywords} | {status}\n..."}
 
-Opponent's Battle Area ({opponent_occupied}/{total_slots}):
-{opponent_all_empty ? "- All slots empty" : "- Slot{slot}: {opponent_revealed ? '[{card_id}] {name} | AP:{ap}/HP:{hp}' : 'Unknown'}\n- Slot{slot}: empty\n..."}
+對手戰區（{opponent_occupied}/{total_slots}）：
+{opponent_all_empty ? "- 全部空格" : "- 欄位{slot}：{opponent_revealed ? '[{card_id}] {name} | AP:{ap}/HP:{hp}' : '未知'}\n- 欄位{slot}：空\n..."}
 
-Shields: {shields} remaining | Base: {base_card_id} | HP: {current_hp}/{max_hp}
-Opponent Shields: {opponent_shields} remaining
+盾牌：{shields} 剩餘 | 基地：{base_card_id} | HP：{current_hp}/{max_hp}
+對手盾牌：{opponent_shields} 剩餘
 
 {latest_battle_log}
 
-Priority: {priority}{you_suffix}
+優先權：{priority}{you_suffix}
 
-Available Actions:
-- pass — battle ends, proceed to End Phase
-- concede
+可行指令：
+- 讓過 — 戰鬥結束，進入結束階段
+- 投降
 ```
 
 ## End Phase Template
 
 ```
-Turn {turn} | End Phase | {active_player}'s turn
-Resources: active={active}, rested={rested}, EX={ex} | Deck: {deck_count} | Resource Deck: {resource_deck_count}
+回合 {turn} | 結束階段 | {active_player} 的回合
+資源：直立={active} 橫置={rested} EX={ex} | 牌庫：{deck_count} | 資源牌庫：{resource_deck_count}
 
-Your Hand ({hand_count}):
+你的手牌（{hand_count}）：
 - {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}{link_suffix}{keyword_suffix}
 ...
 
-Opponent's Hand: {opponent_hand_count} cards
+對手手牌：{opponent_hand_count} 張
 
-Your Battle Area ({occupied_slots}/{total_slots}):
-{all_empty ? "- All slots empty" : "- Slot{slot}: [{card_id}] {name} | AP:{ap}/HP:{hp_remaining} | {pilot_id} | {keywords} | {status}\n..."}
+你的戰區（{occupied_slots}/{total_slots}）：
+{all_empty ? "- 全部空格" : "- 欄位{slot}：[{card_id}] {name} | AP:{ap}/HP:{hp_remaining} | {pilot_id} | {keywords} | {status}\n..."}
 
-Opponent's Battle Area ({opponent_occupied}/{total_slots}):
-{opponent_all_empty ? "- All slots empty" : "- Slot{slot}: {opponent_revealed ? '[{card_id}] {name} | AP:{ap}/HP:{hp}' : 'Unknown'}\n- Slot{slot}: empty\n..."}
+對手戰區（{opponent_occupied}/{total_slots}）：
+{opponent_all_empty ? "- 全部空格" : "- 欄位{slot}：{opponent_revealed ? '[{card_id}] {name} | AP:{ap}/HP:{hp}' : '未知'}\n- 欄位{slot}：空\n..."}
 
-Shields: {shields} remaining | Base: {base_card_id} | HP: {current_hp}/{max_hp}
-Opponent Shields: {opponent_shields} remaining
+盾牌：{shields} 剩餘 | 基地：{base_card_id} | HP：{current_hp}/{max_hp}
+對手盾牌：{opponent_shields} 剩餘
 
 {latest_battle_log}
 
-Priority: {priority}{you_suffix}
+優先權：{priority}{you_suffix}
 
-Available Actions:
-- pass — end turn
-- concede
+可行指令：
+- 讓過 — 結束回合
+- 投降
 ```
 
 ## Start Phase Template
 
 ```
-Turn {turn} | Start Phase | {active_player}'s turn
-Resources: active={active}, rested={rested}, EX={ex} | Deck: {deck_count} | Resource Deck: {resource_deck_count}
+回合 {turn} | 開始階段 | {active_player} 的回合
+資源：直立={active} 橫置={rested} EX={ex} | 牌庫：{deck_count} | 資源牌庫：{resource_deck_count}
 
-Your Hand ({hand_count}):
+你的手牌（{hand_count}）：
 - {card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}{link_suffix}{keyword_suffix}
 ...
 
-Opponent's Hand: {opponent_hand_count} cards
+對手手牌：{opponent_hand_count} 張
 
-Your Battle Area ({occupied_slots}/{total_slots}):
-{all_empty ? "- All slots empty" : "- Slot{slot}: [{card_id}] {name} | AP:{ap}/HP:{hp_remaining} | {pilot_id} | {keywords} | {status}\n..."}
+你的戰區（{occupied_slots}/{total_slots}）：
+{all_empty ? "- 全部空格" : "- 欄位{slot}：[{card_id}] {name} | AP:{ap}/HP:{hp_remaining} | {pilot_id} | {keywords} | {status}\n..."}
 
-Opponent's Battle Area ({opponent_occupied}/{total_slots}):
-{opponent_all_empty ? "- All slots empty" : "- Slot{slot}: {opponent_revealed ? '[{card_id}] {name} | AP:{ap}/HP:{hp}' : 'Unknown'}\n- Slot{slot}: empty\n..."}
+對手戰區（{opponent_occupied}/{total_slots}）：
+{opponent_all_empty ? "- 全部空格" : "- 欄位{slot}：{opponent_revealed ? '[{card_id}] {name} | AP:{ap}/HP:{hp}' : '未知'}\n- 欄位{slot}：空\n..."}
 
-Shields: {shields} remaining | Base: {base_card_id} | HP: {current_hp}/{max_hp}
-Opponent Shields: {opponent_shields} remaining
+盾牌：{shields} 剩餘 | 基地：{base_card_id} | HP：{current_hp}/{max_hp}
+對手盾牌：{opponent_shields} 剩餘
 
 {latest_battle_log}
 
-Priority: {priority}{you_suffix}
+優先權：{priority}{you_suffix}
 
-Available Actions:
-- pass — proceed to Draw Phase
-- concede
+可行指令：
+- 讓過 — 進入抽牌階段
+- 投降
 ```
 
 > **Note (P2-20)**: Orchestrator must check phase match before routing to the corresponding display template; if mismatched, emit `err_phase_mismatch` error template.
@@ -308,5 +308,5 @@ Available Actions:
 ## Error Template
 
 ```
-illegal command: {reason}
+非法指令：{reason}
 ```

@@ -20,14 +20,16 @@ phase_lock: any
 ### main + end turn
 - 等同於 `pass`（行為相同）
 
-### battle(action) + pass
-- 雙方已讓過 → 進入傷害結算（依 skill_damage.md，orchestrator 在 phase=battle 時載入此參考）
+### battle(action) + pass（單次讓過）
+- 單方讓過 → 優先權翻轉給對方（CR-2.10(b)）
+- 若雙方已連續讓過 → 進入傷害結算（依 skill_damage.md，orchestrator 在 phase=battle 時載入此參考）
 - 優先權 → null（傷害結算後藉 skill_damage 返回 main）
 
-### end(action) + pass
-- 雙方已讓過 → 進入清理步驟
-- 清理依 CR-8.1：棄牌，結束回合，切換行動玩家
-- 完整清理邏輯在 `skill_start_phase.md`（下次回合開始階段重置）
+### end(action) + pass（單次讓過）
+- 單方讓過 → 優先權翻轉給對方（CR-2.10(b)）
+- 若雙方已連續讓過 → 進入清理步驟（CR-2.8）
+- 清理（CR-8.1）：手牌 ≥ 11 需棄到 10 張。結束回合，行動玩家切換為對方，turn +1
+- 階段 → start，子步驟 → null
 
 ### pre-game + pass
 - 雙方已完成調度（CR-1.8）
@@ -51,7 +53,7 @@ phase_lock: any
 
 ### battle(attack) + pass
 - 非行動玩家放棄阻擋 → 進入行動子步驟
-- 子步驟 → action，優先權 → 行動玩家（CR-5.12）
+- 子步驟 → action，優先權 → 非行動玩家（CR-5.12）
 
 ### 其他階段 + pass
 - 保留處理意外組合（例如 battle/damage + pass）。觸發時記錄為異常。
@@ -63,11 +65,12 @@ phase_lock: any
 state_diff:
   phase: <next_phase>           # pre-game / start / draw / resource / main / end / battle
   step: <next_step|null>        # action / damage / battle_end / cleanup / null
+  turn: +1                      # end(action) cleanup 時
   current_attacker: null        # battle_end 時清除
-    p1:                           # 僅 pre-game→start 時設置
+  p1:                           # 僅 pre-game→start 時設置
     shields: +6                 # 增量（實際 card_ids 由 orchestrator 追蹤）
     deck_count: -6              # 減 6
-    p2:                           # 僅 pre-game→start 時設置
+  p2:                           # 僅 pre-game→start 時設置
     shields: +6
     deck_count: -6
   # ── start→draw 時（CR-2.4）──

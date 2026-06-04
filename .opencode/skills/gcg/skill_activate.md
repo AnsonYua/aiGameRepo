@@ -32,11 +32,13 @@ phase_lock: main, battle(action), end(action)
    - `rest_target`：橫置敵方單位
    - 等等
 5. **記錄 oncePerTurn**：若有，設定 `active_effects[].used_this_turn=true`
+6. **action step 優先權重置**：若在 battle(action) 或 end(action) 階段，優先權返回非行動玩家（CR-2.10(c)）
 
 ## 輸出
 
 ```yaml
 state_diff:
+  priority: <non_active_player>     # action step 啟動後優先權返回非行動玩家（CR-2.10(c)）
   <active_player>:
     resources:
       active: -<cost>

@@ -101,7 +101,7 @@ Priority: P1 (你)
 - **先手**：第 1 回合開始行動，無 EX Resource（CR-1.2）
 - **後手**：起始 1 個 EX Resource（CR-1.2, CR-3.4, CR-3.5）
 
-### 局勢評估（player_id 決定你的身分，line 18-19 映射）
+### 局勢評估（player_id 決定你的身分，見 §1 line 23-26 映射）
 
 以 `p1.*` / `p2.*` 為準，依 player_id 決定哪個是你、哪個是對手：
 - `p1.base.hp - p1.base.damage` → 防禦層 Base 殘餘 HP
@@ -111,7 +111,7 @@ Priority: P1 (你)
 防禦差 = 我方防禦總層數 - 對方防禦總層數
   - 每方防禦總層數 = base.alive ? shields + (base.hp - base.damage) : shields
 場面差 = 我方 battle_area 非 null 格數 - 對方 battle_area 非 null 格數
-可攻擊 Unit 數 = 我方 battle_area 中 status≠rested 且（出場≥1 回合 或 link=true）的 Unit 數 — 決定本回合 punch 能力
+可攻擊 Unit 數 = 我方 battle_area 中 status≠rested 且（turns_on_field≥1 或 link=true）的 Unit 數 — 決定本回合 punch 能力（CR-5.4）
 資源差 = (我方 active + 我方 rested + 我方 ex) - (對方 active + 對方 rested + 對方 ex)
 手牌差 = 我方 hand_count - 對方 hand_count
 
@@ -133,20 +133,17 @@ Priority: P1 (你)
 
 Base 是外層 buffer（被破壞不敗北），盾牌是內層（0 盾 + 直擊 = 敗北）。
 
-**Python 引擎映射**：`simulate_game.py` 使用 flat scoring 而非條件分支 — `ai_decision()` 在 `main` phase 對所有可能動作計算數值評分並取最高分。以下 5 種策略分支對應不同的 scoring 權重組合（攻擊優先權 pri、部署分數公式、經驗加成）而非獨立的控制流程。
-
-**各分支策略**（對應 Python scoring 權重組合）：
+**各分支策略**：
 
 > **橫掃**（原名 壓制）— 防禦穩固 + 場面領先時，先清敵 Unit 再推防禦層
 > 核心邏輯：你的防禦夠厚，不怕對手反打，所以優先減少對手場面（消除威脅），再穩穩推掉防禦層。
-> 每一步都確認可攻擊 Unit 數夠不夠用：
-> 1. 先數可攻擊 Unit 數（line 83）
+> 每一步都確認可攻擊 Unit 數夠不夠用（`turns_on_field≥1` 或 `link=true`，CR-5.4）：
+> 1. 先數可攻擊 Unit 數
 > 2. 若對方有 Blocker，分配攻擊補刀清 Blocker（Trade 有利 = AP ≥ HP 才打）
 > 3. Blocker 清完後，清場 — 打非 Blocker Unit，優先 Trade 有利 + 高AP
 > 4. 清完敵 Unit 後，剩餘攻擊 → 打 Base 破外層 → 打盾
 > 5. 攻擊完 → 空格補最強 Unit → pair → `pass`
 > 手牌留 Command 備用，不賭 all-in。
-> Python 權重映射：attack unit pri=15-20（補刀 20, Blocker 18, AP 加權 >15）, 打 Base pri=12, 打盾 pri=14；Unit 部署 + score_bonuses["unit"]。
 
 > **發展** — 防禦穩固但場面落後時，不出攻擊只鋪場
 > 核心邏輯：你防禦夠不怕，但戰區 Unit 比對方少，主動攻擊會讓戰線拉更開。先補 Unit 撐場面，只打確定會殺的攻擊。
@@ -154,7 +151,6 @@ Base 是外層 buffer（被破壞不敗北），盾牌是內層（0 盾 + 直擊
 > 2. 空格出高 HP Unit（撐場面，不要求高 AP）
 > 3. Unit 出完 check 有 Pilot 可 pair → pair
 > 4. 必殺攻擊（如有）→ 打完 `pass`。無必殺直接 `pass`
-> Python 權重映射：Unit 部署分數 = 效率值×10 + 等級×2 + score_bonuses["unit"]；跳過 pri<12 的攻擊（不貿然打防禦層）。
 
 > **搶血** — 防禦劣勢但場面領先時，全力打臉拚直擊
 > 核心邏輯：你的盾/Base 薄，拖越久越危險。趁場面有人數優勢時直接打穿防禦層，搶在對手反打之前結束。
@@ -164,7 +160,6 @@ Base 是外層 buffer（被破壞不敗北），盾牌是內層（0 盾 + 直擊
 > 4. 攻擊完 → 空格繼續出高 AP Unit（不換怪，Command 補傷害）
 > 5. EX 全用（不留）
 > 6. `pass`
-> Python 權重映射：攻擊優先打防禦層（Base pri=12, 盾 pri=14），不列舉 unit 攻擊；Command 加 score_bonuses["command"]，EX 資源全用。
 
 > **反打** — 全面劣勢但手牌多時，鋪滿等下一波
 > 核心邏輯：你現在攻擊打不贏（防禦差、場面都輸），但手牌有資源。先鋪場建立場面，Command 解掉關鍵威脅，下一回合再反攻。
@@ -174,36 +169,20 @@ Base 是外層 buffer（被破壞不敗北），盾牌是內層（0 盾 + 直擊
 > 4. 出第二張 Unit
 > 5. Command 解對方關鍵（Blocker > 最高AP Unit > Link Unit）
 > 6. `pass` 留資源
-> Python 權重映射：Block 階段用 HP>AP 存活判斷；Action 階段 play command（score=10 + score_bonuses["command"]）；Main 階段 Unit/Pilot 部署依分數排序。
 
 > **絕望** — 全面劣勢 + 手牌乾涸時，孤注一擲
 > 核心邏輯：快輸了，手牌也沒了，唯一的機會是賭對手沒防禦或抽不到解牌。所有資源梭哈拚一波。
 > 1. Command 解對方最高 AP Unit 或 Blocker（清除最大威脅）
 > 2. EX 全轉資源（橫置，用於出牌）
 > 3. 所有手牌 Unit 全部 deploy 到戰區
-> 4. 所有可攻擊 Unit → 全部打防禦層（自殺攻擊，不 trade）
+> 4. 所有可攻擊 Unit（turns_on_field≥1 或 link=true）→ 全部打防禦層（自殺攻擊，不 trade）
 > 5. 如果全空 + 盾 0 + 場面還是輸 → `concede`（CR-8.4）
-> Python 權重映射：`desperate_play=true` 時觸發 fallback 區塊（Line 1056-1071）— 無視分數強行 deploy unit，其次 deploy dual [Pilot] 卡。
 
-Main Phase 內可 play → attack → play → attack 循環。每次回傳一條指令。
+Main Phase 內可 play → attack → play → attack 循環。每次回傳一條指令。注意：同一 phase 內 deploy 的 Unit `turns_on_field=0`，不可攻擊（除非 `link=true`，CR-5.4）。
 
 ---
 
 ## 3a. 跨場經驗（持久記憶）
-
-GCG AI 經驗系統有兩層：
-
-### Python 引擎層（`experience/*.yaml`）
-`simulate_game.py` 的 `load_matching_experience()`（Line 844）掃描 `experience/` 目錄，載入所有 `.yaml` 檔案並以 `condition` 字段比對當前遊戲狀態。匹配的經驗按 `priority` 排序，由 `_merge_effects()`（Line 819）合併效果：
-- **條件系統**：`_check_condition()`（Line 780）支援 `turn_min/max`、`my/enemy_units_min/max`、`my_hand_min/max`、`my_empty_slots_min/max`、`my_base_hp_min/max`、`enemy_shields_min/max`、`my_resources_min/max`、`enemy_rested/damaged_units_min/max`、`has_link_units`、`is_first_turn`、`has_unpaired_units`、`enemy_has_blocker`。所有條件通過才匹配。
-- **效果合併規則**：`score_bonus` 同 card_type 累加、`attack_target` 取最高 priority、`block_priority_shift` 累加、`desperate_play` 任一為 true 即啟用。
-- **效果類型**：
-  - `score_bonus.card_type`（unit/pilot/command/base）→ 該類型 cards 增加分數加成
-  - `attack_target: base|kill` → 影響攻擊目標偏好
-  - `desperate_play: true` → 啟用絕望 fallback（Line 1056-1071 強行出牌）
-  - `block_priority_shift` → 阻擋優先權偏移
-
-### MCP 記憶層（可選橋接）
 `memories` MCP 工具作為跨場學習的**可選橋接層**，用於在圖形介面或 LLM 驅動對局中累積長期策略記憶。
 
 #### 何時儲存
@@ -238,7 +217,7 @@ Mono White 對局：對方 Command 解場多，Unit 不宜舖超過 3 隻
 
 ## 4. 戰鬥步驟
 
-**Attack** — 可攻擊 Unit 條件見 CR-5.4。防禦層序 CR-4。
+**Attack** — 可攻擊 Unit 條件見 CR-5.4：`turns_on_field >= 1`（已出場 1+ 回合）或 `link == true`（Link Unit）。防禦層序 CR-4.x。
 
 1. **攻擊優先順序**（一次一個，CR-5.5）：First Strike (CR-5.7) → 高AP → 低AP
 2. **防禦層損傷預測**（由 CR-4.3 自動決定，不可選擇）：
@@ -337,6 +316,16 @@ card_data[card_id]:
 ### Pair 額外檢查
 - 目標 slot 已有 unit_id 且 pilot_id=null
 - `card_data[unit_id].link` 包含此 Pilot 的 name（或同系列可 Link）
+
+### Attack 額外檢查（輸出 `attack <slot>` 前必做）
+| 條件 | 檢查 |
+|------|------|
+| slot 有 unit？ | `me.battle_area[slot].unit_id` 非 null |
+| unit 為直立？ | `me.battle_area[slot].status != "rested"` |
+| 可攻擊資格（CR-5.4）？ | `turns_on_field >= 1`（a）**或** `link == true`（b），至少滿足一項 |
+| 有不可攻擊玩家關鍵字？ | `"不可攻擊玩家"` 不在 `me.battle_area[slot].keywords` 中 |
+
+以上全部檢查通過才可輸出 `attack <slot>`。
 
 ### Once per turn 注意
 - 帶 `[Once per Turn]` 的效果在 `game_state.active_effects[]` 中記錄 `used_this_turn: true`
