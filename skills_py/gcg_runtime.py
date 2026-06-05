@@ -349,6 +349,22 @@ def _handle_command(state: GameState, player_id: str, cmd: str) -> tuple[bool, s
     return False, f"未知指令：{action}"
 
 
+def _split_compound_commands(cmd: str) -> list[str]:
+    parts = cmd.strip().split()
+    if not parts:
+        return []
+
+    commands: list[list[str]] = [[]]
+    for token in parts:
+        if token.lower() in {"and", "then", "然後"}:
+            if commands[-1]:
+                commands.append([])
+            continue
+        commands[-1].append(token)
+
+    return [" ".join(part) for part in commands if part]
+
+
 def _auto_resolve_p2(
     state: GameState,
     max_actions: int = 20,
@@ -425,19 +441,25 @@ def _command(player_id: str, cmd: str, viewer: str, as_json: bool, game_id: Opti
     state = _load_active_state(game_id)
     events: list[dict] = []
     _record_event(state, events, "decision_received", player_id, viewer, f"{player_id} 輸入指令：{cmd}", command=cmd)
-    ok, reason = _handle_command(state, player_id, cmd)
-    if not ok:
-        state.battle_log.append(f"非法指令：{reason}")
-    _record_event(
-        state,
-        events,
-        "decision_applied",
-        player_id,
-        viewer,
-        f"{player_id} 指令{'成功' if ok else '失敗'}：{cmd}",
-        command=cmd,
-        result={"ok": ok, "reason": reason},
-    )
+    ok = True
+    reason = ""
+    commands = _split_compound_commands(cmd)
+    for sub_cmd in commands:
+        ok, reason = _handle_command(state, player_id, sub_cmd)
+        if not ok:
+            state.battle_log.append(f"非法指令：{reason}")
+        _record_event(
+            state,
+            events,
+            "decision_applied",
+            player_id,
+            viewer,
+            f"{player_id} 指令{'成功' if ok else '失敗'}：{sub_cmd}",
+            command=sub_cmd,
+            result={"ok": ok, "reason": reason},
+        )
+        if not ok:
+            break
     determine_winner(state)
     if not state.game_over:
         _auto_resolve_p2(state, viewer=viewer, events=events)
