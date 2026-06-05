@@ -79,6 +79,15 @@ python3 skills_py/gcg_runtime.py command --player P1 --cmd "<玩家原始指令>
 - 回覆與文件預設使用繁體中文。
 - 不提交或保留 `.DS_Store`、`__pycache__/`、`*.pyc`、`.opencode/node_modules/`。
 
+## Debug / Fix 原則
+
+- 不要把「增加 retry」當成 AI、runtime、harness 問題的預設修法。Retry 只能處理已確認的暫時性外部錯誤；若沒有量測與 root cause，不要用 retry 掩蓋問題。
+- 遇到 live LLM / `gcg-ai-player` 很慢、逾時或重複失敗時，先量測單次最小 prompt，例如只含 `player_id`、`first_player`、`legal_actions: keep, redraw` 與調度顯示的 `opencode run --agent gcg-ai-player`。若最小 prompt 仍需十幾秒，root cause 是 opencode 啟動 / model latency，不是 gameplay replay 或 prompt 太長。
+- 修 timeout / slow harness 時，優先做 fail-fast、latency recording、review artifact 與明確錯誤分類；不要讓 harness 長時間卡住，也不要讓 timeout 後繼續污染同一局 replay。
+- Review 要區分 `AI prompt problem`、`Display problem`、`Runtime problem`、`Harness problem`、`opencode/model latency problem`。例如 illegal `attack` 通常先看 display 是否列出具體合法攻擊；live LLM 慢則先看單次 opencode latency。
+- 若要調整 live LLM 速度，先考慮模型/agent mode/attach server/timeout 設定；不要在 Python 裡新增策略 fallback，也不要把多次 retry 當成「AI 變聰明」。
+- `GCG_AI_TIMEOUT_SECONDS` 與 harness 的 `--ai-timeout-seconds` 是診斷與 fail-fast 工具。縮短 timeout 的目的是快速產生清楚的 FAIL review，不是讓測試悄悄通過。
+
 ## Runtime / Display 約定
 
 - `skills_py/gcg_runtime.py status` 與一般 command 回覆前，會自動清理空的 action priority window。
