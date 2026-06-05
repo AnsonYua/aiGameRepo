@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-gcg_bootstrap.py — Single-shot game initialization.
-Replaces the orchestrator's 6-step "start game" manual tool calls.
+gcg_initialGame.py — Single-shot game initialization.
+Outputs JSON to stdout with game_id, state_path, card_data, display_text.
 
 Usage:
-  python skills_py/gcg_bootstrap.py [--json] [--display]
-
-Outputs JSON to stdout with game_id, state_path, card_data.
-With --display, also renders the mulligan template to /tmp/gcg_output.txt.
+  python3 skills_py/gcg_initialGame.py --json
 """
 import json
 import random
@@ -24,6 +22,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from skills_py.game_state import GameState, PlayerState, BattleSlot, BaseState
 from skills_py.card_db import get_deck, build_card_summary
+from skills_py.gcg_display import render
 
 
 def init_game(game_id: str) -> GameState:
@@ -64,15 +63,17 @@ def init_game(game_id: str) -> GameState:
     return state
 
 
-def save_state(state: GameState, state_path: str):
-    game_dir = Path(state_path).parent
+def save_state(state: GameState):
+    game_dir = GAME_STATES_DIR / state.game_id
     game_dir.mkdir(parents=True, exist_ok=True)
+    state_path = game_dir / "gameState.md"
 
-    d = state.to_dict("P1")
+    d = state.to_dict("none")
     with open(state_path, "w") as f:
         yaml.dump(d, f, allow_unicode=True, default_flow_style=False)
 
     ACTIVE_GAME_FILE.write_text(state.game_id)
+    return str(state_path)
 
 
 def build_card_data(state: GameState) -> dict:
@@ -84,41 +85,24 @@ def main():
     random.seed()
 
     game_id = f"game_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    state_path = f"game-states/{game_id}/gameState.md"
 
     state = init_game(game_id)
-    save_state(state, state_path)
+    state_path = save_state(state)
     card_data = build_card_data(state)
+    display_text = render(state_path)
 
     result = {
         "game_id": game_id,
         "state_path": state_path,
         "card_data": card_data,
+        "display_text": display_text,
         "priority": state.priority,
         "phase": state.phase,
         "first_player": state.first_player,
         "active_player": state.active_player,
     }
 
-    use_json = "--json" in sys.argv
-    want_display = "--display" in sys.argv
-
-    if want_display:
-        from skills_py.gcg_display import render
-        output = render(state_path)
-        display_path = "/tmp/gcg_output.txt"
-        Path(display_path).write_text(output)
-        result["display_written"] = display_path
-
-    if use_json:
-        print(json.dumps(result, ensure_ascii=False, indent=2))
-    else:
-        print(f"game_id: {game_id}")
-        print(f"state_path: {state_path}")
-        print(f"phase: {state.phase}")
-        print(f"first_player: {state.first_player}")
-        print(f"active_player: {state.active_player}")
-        print(f"priority: {state.priority}")
+    print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

@@ -78,7 +78,7 @@ EX Resource 用完移除遊戲（CR-3.4）
 
 ## 初始化值（遊戲開始前）
 
-`skill_initialize` 根據 `first_player` 設定：先手 turn=1/active_player=先手，後手 EX Resource+1（CR-1.2, CR-1.4, CR-1.5, CR-1.7）。
+`gcg_initialGame.py:init_game()` 根據 `first_player` 設定：先手 turn=1/active_player=先手，後手 EX Resource+1（CR-1.2, CR-1.4, CR-1.5, CR-1.7）。
 
 > * 標記 `*` 者為初始化階段的值（手牌 5、shields=0、deck=45）。調度（Mulligan）完成後，`skill_pass` pre-game 會將牌庫頂 6 張設為 shields（CR-1.5 → shields=6, deck_count=39）。
 

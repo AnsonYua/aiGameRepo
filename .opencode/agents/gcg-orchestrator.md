@@ -17,11 +17,11 @@ mcp:
 
 ```
 正常流程（所有指令成功執行後）：
-  bash: python skills_py/gcg_display.py <state_path> -o /tmp/gcg_output.txt
+  bash: python3 skills_py/gcg_display.py <state_path> -o /tmp/gcg_output.txt
   → 省略 template，腳本自動從 state 的 phase 選取對應模板（phase_table + battle_step_map）
 
 Judge reject：
-  bash: python skills_py/gcg_display.py <state_path> error -o /tmp/gcg_output.txt
+  bash: python3 skills_py/gcg_display.py <state_path> error -o /tmp/gcg_output.txt
   → 手動指定 error 模板，覆蓋自動偵測
 ```
 
@@ -30,10 +30,12 @@ Judge reject：
 
 ## 強制輸出規則
 
-你的回應「只能」來自 `gcg_display.py` 的輸出。流程：
+所有回應必須使用**繁體中文**。
+
+你的回應「只能」來自 `gcg_display.py` 的輸出（或其他流程中明確指定的 `display_text`）。流程：
 
 1. 處理指令（跑 skill → Judge → 寫 state）
-2. 用 bash 執行 `python skills_py/gcg_display.py <state_path> -o /tmp/gcg_output.txt`（正常流程）或傳入 `error`（Judge reject 時）
+2. 用 bash 執行 `python3 skills_py/gcg_display.py <state_path> -o /tmp/gcg_output.txt`（正常流程）或傳入 `error`（Judge reject 時）
 3. 用 **Read 工具**讀取 `/tmp/gcg_output.txt`
 4. 你的回應就是 Read 的結果，**一字不改**
 
@@ -52,21 +54,19 @@ Judge reject：
 ## 流程
 
 ### start game
-1. 用 bash 執行 `date +%Y%m%d_%H%M%S` 產生 game_id（格式：`game_<timestamp>`）
-2. 用 bash `mkdir -p "game-states/<game_id>/"` 建立遊戲目錄
-3. 用 **Write 工具**將 game_id 寫入 `.gcg_active_game`
-4. 讀 `card/gcgdecks.json` → task `skill_initialize` → Judge
-5. 將 state 寫入 `game-states/<game_id>/gameState.md`
-6. bash `python skills_py/gcg_display.py game-states/<game_id>/gameState.md -o /tmp/gcg_output.txt` → Read→回應
+1. bash `python3 skills_py/gcg_initialGame.py --json`
+   - 一步完成：gen game_id, init GameState, save gameState.md, write .gcg_active_game, pre-fetch card_data, render display_text
+   - 輸出 JSON：`{game_id, state_path, card_data, display_text, priority, phase, first_player, active_player}`
+   - 直接將 `display_text` 作為回應輸出（無需額外 Read/Display 步驟）
 
-Judge 需要 `card_data` 來驗證效果（見 `gcg-judge.md:31-33`）：
-在呼叫 Judge 前，用 `skill_card_db.md` §3 `build_card_data(relevant_cards[])` 預取相關卡片的解釋資料，
-傳入 Judge context。
-
-AI Player 也需要 `card_data` 對照表 — 在呼叫 AI Player 前同樣用 `skill_card_db.md` §3 預取其手牌中每張 card_id 的詳細資料。
+`card_data` 已由 initialGame JSON 輸出預取，後續呼叫 AI Player / Judge 時直接從 context 傳入。
 
 ### redraw/keep
-讀 `.gcg_active_game` 得 game_id → 讀 `game-states/<game_id>/gameState.md` → task `skill_redraw` → Judge → 寫 state 至 `game-states/<game_id>/gameState.md` → P2=AI(task `gcg-ai-player`) → task `skill_start_phase` → Judge → 寫 state → bash `python skills_py/gcg_display.py game-states/<game_id>/gameState.md -o /tmp/gcg_output.txt` → Read→回應
+讀 `.gcg_active_game` 得 game_id → 讀 `game-states/<game_id>/gameState.md`
+→ P1 輸入 keep / redraw → 解析：keep→無標誌，redraw→`--redraw-p1`
+→ P2 選擇 keep / redraw（task `gcg-ai-player`）→ 解析：keep→無標誌，redraw→`--redraw-p2`
+→ bash `python3 skills_py/gcg_postmulligan.py <state_path> [--redraw-p1] [--redraw-p2]`
+→ 直接將 `display_text` 作為回應輸出
 
 ### AI auto-play (when priority = P2)
 When `priority = P2` and no user command is expected, auto-invoke:
@@ -78,18 +78,18 @@ This applies during:
 - Battle action step when P2 has priority (CR-5.12)
 
 ### 其他指令
-讀 `.gcg_active_game` 得 game_id → 讀 `game-states/<game_id>/gameState.md` 進行 phase lock 驗證 → 查路由 → task 對應 skill → Judge → 寫 state 至 `game-states/<game_id>/gameState.md` → bash `python skills_py/gcg_display.py game-states/<game_id>/gameState.md -o /tmp/gcg_output.txt` → Read→回應
+讀 `.gcg_active_game` 得 game_id → 讀 `game-states/<game_id>/gameState.md` 進行 phase lock 驗證 → 查路由 → task 對應 skill → Judge → 寫 state 至 `game-states/<game_id>/gameState.md` → bash `python3 skills_py/gcg_display.py game-states/<game_id>/gameState.md -o /tmp/gcg_output.txt` → Read→回應
 
 ### Phase Lock 驗證程序
 在任何 skill 路由前執行：
 1. 讀 `.gcg_active_game` 得 game_id
 2. 讀取 `game-states/<game_id>/gameState.md` 中的 `phase` 與 `step`
 3. 比對目標 skill 的 `phase_lock` frontmatter
-4. 若當前 phase 不在 phase_lock 列表中 → 跳過 skill，bash `python skills_py/gcg_display.py <state_path> error -o /tmp/gcg_output.txt` → Read→回應
+4. 若當前 phase 不在 phase_lock 列表中 → 跳過 skill，bash `python3 skills_py/gcg_display.py <state_path> error -o /tmp/gcg_output.txt` → Read→回應
 5. 若符合 → 正常路由到 skill
 
 ### Judge reject (Judge 回傳 reject 時)
-bash `python skills_py/gcg_display.py <state_path> error -o /tmp/gcg_output.txt` → Read→回應
+bash `python3 skills_py/gcg_display.py <state_path> error -o /tmp/gcg_output.txt` → Read→回應
 
 ---
 

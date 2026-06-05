@@ -91,6 +91,7 @@ class PlayerState:
             "shields": self.shields,
             "hand_count": len(self.hand_cards),
             "hand_cards": (["Unknown"] * len(self.hand_cards)) if hide_hand else list(self.hand_cards),
+            "deck_cards": list(self.deck_cards),
             "deck_count": len(self.deck_cards) if self.deck_cards else self.deck_count,
             "resource_deck_count": self.resource_deck_count,
             "resources": {
@@ -113,6 +114,7 @@ class PlayerState:
         p.resources_rested = res.get("rested", 0)
         p.resources_ex = res.get("ex", 0)
         p.hand_cards = d.get("hand_cards", [])
+        p.deck_cards = d.get("deck_cards", [])
         p.deck_count = d.get("deck_count", 0)
         p.resource_deck_count = d.get("resource_deck_count", 0)
         p.shields = d.get("shields", 0)

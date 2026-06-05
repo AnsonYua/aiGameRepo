@@ -101,10 +101,10 @@
 |------|---------|
 | 路由表 | start game / redraw/keep / auto_start / play/deploy/pair / activate / attack / block / pass / draw / resource / concede → 對應正確 skill |
 | AI auto-play | priority=P2 時自動呼叫 AI Player，不走使用者輸入 |
-| 啟動流程 | start game → skill_initialize → Judge → 寫 state → Display(mulligan) |
-| Redraw 流程 | skill_redraw → Judge → 寫 state → P2=AI → skill_start_phase → Judge → 寫 state → Display |
+| 啟動流程 | start game → bash gcg_initialGame.py --json → Display(mulligan) |
+| Redraw 流程 | 使用者輸入 → P2=AI → bash gcg_postmulligan.py --redraw-p1/p2 → 直接回應 display_text |
 | 其他指令 | 查路由 → skill → Judge → 寫 state → Display → Write→Read→Echo |
-| Write→Read→Echo | 強制：用 bash `python skills_py/gcg_display.py` 輸出到 /tmp/gcg_output.txt → Read 回來 → 回應 = Read 結果，一字不改 |
+| Write→Read→Echo | 強制：用 bash `python3 skills_py/gcg_display.py` 輸出到 /tmp/gcg_output.txt → Read 回來 → 回應 = Read 結果，一字不改 |
 | Judge 前置 | 呼叫 Judge 前需用 skill_card_db.md §3 預取 card_data |
 | Phase lock 驗證 | 路由前手動比對 game_state.phase 與 skill 的 phase_lock，不符 → err_phase_mismatch |
 | 150 行限制 | orchestrator 本身 ≤ 150 行 |

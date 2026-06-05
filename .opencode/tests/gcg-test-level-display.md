@@ -88,7 +88,7 @@ All 4 hand cards must show ✅ (including ST01-012's 2 usage modes). Any card sh
 ## Manual Execution
 
 1. Ensure runtime `game_state.md` (managed by orchestrator) is set to test scenario 1 state (active=1; if no existing file, manually create game_state.yaml matching scenario 1)
-2. Run `python skills_py/gcg_display.py <state_path> main_phase`
+2. Run `python3 skills_py/gcg_display.py <state_path> main_phase`
 3. Check the "Available Actions" section in output — confirm all cards show ❌
 4. No card should show ✅ (especially GM Cost=1 must not show ✅)
 

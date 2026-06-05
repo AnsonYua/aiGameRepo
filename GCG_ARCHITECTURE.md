@@ -23,7 +23,7 @@ gcg-orchestrator (subagent, via task tool in TUI)
 |-------|------|------|------------|
 | **gcg-orchestrator** | `.opencode/agents/gcg-orchestrator.md` | subagent | `task` tool in TUI only |
 | **gcg-ai-player** | `.opencode/agents/gcg-ai-player.md` | primary+subagent | `opencode run --agent` OR `task` tool |
-| **gcg-display** | `skills_py/gcg_display.py` | Python script | `python skills_py/gcg_display.py <state> <template>` |
+| **gcg-display** | `skills_py/gcg_display.py` | Python script | `python3 skills_py/gcg_display.py <state> <template>` |
 | **gcg-judge** | `.opencode/agents/gcg-judge.md` | primary+subagent | `opencode run --agent` OR `task` tool |
 
 ### gcg-orchestrator (subagent)
@@ -38,7 +38,7 @@ Flow per command:
 5. Call `gcg-judge` to validate state_diff
 6. If reject → display error template
 7. If accept → write state_diff to `game-states/<game_id>/gameState.md`
-8. Call `python skills_py/gcg_display.py game-states/<game_id>/gameState.md <template> --output /tmp/gcg_output.txt`
+8. Call `python3 skills_py/gcg_display.py game-states/<game_id>/gameState.md <template> --output /tmp/gcg_output.txt`
 9. Read `/tmp/gcg_output.txt` back, echo verbatim
 
 ### gcg-ai-player (primary + subagent)
@@ -75,7 +75,6 @@ cardAI/
   │   │   ├── gcg-ai-player.md
   │   │   └── gcg-judge.md
 │   ├── skills/gcg/
-│   │   ├── skill_initialize.md
 │   │   ├── skill_redraw.md
 │   │   ├── skill_start_phase.md
 │   │   ├── skill_draw.md
