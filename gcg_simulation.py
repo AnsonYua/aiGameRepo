@@ -1,424 +1,373 @@
 #!/usr/bin/env python3
-import argparse
-import atexit
-import json
-import os
-import readline
-import shutil
-import subprocess
+"""
+GCG Simulation - Gundam Card Game
+Zero game logic coordinator.
+P1=human, P2=AI by default.
+"""
 import sys
 import time
-import socket
-from datetime import datetime
+import random
+import atexit
 from pathlib import Path
-
+from datetime import datetime
 
 PROJECT_ROOT = Path(__file__).parent.absolute()
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from skills_py.game_state import GameState
+from skills_py.game_engine import (
+    init_game, save_state, load_state, mulligan_redraw, mulligan_keep,
+    setup_shields, start_phase, draw_phase, resource_phase,
+    play_card, declare_attack, resolve_block, resolve_unblocked_attack,
+    end_battle, pass_turn, cleanup_turn, can_play_card,
+    get_phase_display, determine_winner
+)
+from skills_py.ai_player import ai_decide_command
+from skills_py.card_db import build_card_summary, get_card_name, get_card, get_card_type
 
 
-def find_free_port():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('', 0))
-        return s.getsockname()[1]
+def print_banner():
+    print()
+    print("=" * 50)
+    print("   GCG - Gundam Card Game Simulation")
+    print("=" * 50)
+    print()
 
 
-def check_opencode():
-    if not shutil.which("opencode"):
-        print("Error: 'opencode' CLI not found. Please install opencode first.")
-        sys.exit(1)
+def print_state(state: GameState, viewer: str = "P1"):
+    player = state.get_player(viewer)
+    opponent = state.get_opponent(viewer)
+    phase_str = get_phase_display(state.phase, state.step)
+    print(f"\nTurn {state.turn} | {phase_str} | {state.active_player}'s turn")
+    print(f"Resources: active={player.resources_active}, rested={player.resources_rested}, EX={player.resources_ex} | Deck: {len(player.deck_cards)} | Resource Deck: {player.resource_deck_count}")
+    print(f"Level: {player.level}")
 
+    print(f"\nYour Hand ({len(player.hand_cards)}):")
+    for cid in player.hand_cards:
+        summary = build_card_summary(cid)
+        print(f"  {summary['display']}")
 
-def parse_run_output(output: str) -> str:
-    text = output.strip()
-    if not text:
-        return ""
-    try:
-        data = json.loads(text)
-        if isinstance(data, dict):
-            for key in ("content", "response", "text", "message", "output"):
-                if key in data:
-                    val = data[key]
-                    if isinstance(val, str):
-                        return val
-                    if isinstance(val, dict):
-                        for k2 in ("content", "text", "message"):
-                            if k2 in val:
-                                return str(val[k2])
-            return json.dumps(data, ensure_ascii=False)
-    except (json.JSONDecodeError, ValueError):
-        pass
-    return text
+    print(f"Opponent's Hand: {len(opponent.hand_cards)} cards")
 
-
-class GCGSimulation:
-    def __init__(self, p1_mode="human", p2_mode="ai"):
-        self.p1_mode = p1_mode
-        self.p2_mode = p2_mode
-        self.server_process = None
-        self.port = None
-        self.server_started = False
-
-        self.orchestrator_started = False
-        self.ai_player_started = False
-
-        self.conversation_log = []
-        self.game_id = None
-        self.state = None
-        self.step_count = 0
-
-        atexit.register(self.cleanup)
-
-    def cleanup(self):
-        if self.server_process:
-            self.server_process.terminate()
-            try:
-                self.server_process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                self.server_process.kill()
-            self.server_process = None
-
-    def _ensure_pw_env(self):
-        env = os.environ.copy()
-        env["OPENCODE_SERVER_PASSWORD"] = ""
-        return env
-
-    def start_server(self):
-        self.port = find_free_port()
-        env = self._ensure_pw_env()
-        self.server_process = subprocess.Popen(
-            ["opencode", "serve", "--port", str(self.port)],
-            env=env,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        time.sleep(3)
-        self.server_started = True
-        print(f"  Server started on port {self.port}")
-
-    def _run_opencode(self, message, agent=None, use_continue=False):
-        cmd = ["opencode", "run", message]
-        if use_continue:
-            cmd.append("-c")
-        cmd.extend(["--attach", f"http://127.0.0.1:{self.port}", "--format", "json"])
-        if agent:
-            cmd.extend(["--agent", agent])
-        try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=300,
-                env=self._ensure_pw_env(),
-            )
-            return result.stdout
-        except subprocess.TimeoutExpired:
-            print("  ! Command timed out after 300s")
-            return None
-
-    def _orchestrator(self, command):
-        raw = self._run_opencode(command, use_continue=self.orchestrator_started)
-        self.orchestrator_started = True
-        parsed = parse_run_output(raw) if raw else ""
-        self.conversation_log.append({"role": "orchestrator", "cmd": command, "resp": parsed})
-        return parsed
-
-    def _ai_player(self, message="decide"):
-        raw = self._run_opencode(message, agent="gcg-ai-player", use_continue=self.ai_player_started)
-        self.ai_player_started = True
-        parsed = parse_run_output(raw) if raw else ""
-        return parsed
-
-    def _read_game_id(self):
-        path = PROJECT_ROOT / ".gcg_active_game"
-        if path.exists():
-            self.game_id = path.read_text().strip()
-            return self.game_id
-        return None
-
-    def _read_game_state(self):
-        if not self.game_id:
-            if not self._read_game_id():
-                return None
-        path = PROJECT_ROOT / "game-states" / self.game_id / "gameState.md"
-        if path.exists():
-            import yaml
-            try:
-                content = path.read_text()
-                self.state = yaml.safe_load(content)
-                return self.state
-            except Exception:
-                return None
-        return None
-
-    def _phase_info(self):
-        if not self.state:
-            return None, None, None, None, None
-        return (
-            self.state.get("phase"),
-            self.state.get("step"),
-            self.state.get("priority"),
-            self.state.get("game_over", False),
-            self.state.get("winner"),
-        )
-
-    def _current_player_mode(self, priority):
-        if priority == "P1":
-            return self.p1_mode
-        if priority == "P2":
-            return self.p2_mode
-        return None
-
-    def run(self):
-        check_opencode()
-        print("╔" + "═" * 62 + "╗")
-        print(f"║  GCG 模擬器 — 零邏輯協調層                               ║")
-        print(f"║  P1={self.p1_mode.upper():5}  P2={self.p2_mode.upper():5}                                   ║")
-        print("║  輸入 help 查看指令，exit 離開                                ║")
-        print("╚" + "═" * 62 + "╝")
-        self.start_server()
-
-        print("  發送 start game 至 orchestrator...")
-        self._orchestrator("start game")
-        time.sleep(2)
-        self._read_game_id()
-
-        while True:
-            if not self._read_game_state():
-                time.sleep(1)
-                continue
-
-            phase, step, priority, game_over, winner = self._phase_info()
-
-            if game_over:
-                print(f"\n  遊戲結束 — 勝者：{winner}")
-                self._save_replay(winner)
-                break
-
-            mode = self._current_player_mode(priority)
-
-            if phase == "pre-game":
-                if mode == "ai":
-                    cmd = self._ai_player()
-                    self.conversation_log.append({"role": "ai", "cmd": cmd})
-                else:
-                    cmd = self._read_human()
-                if cmd:
-                    self._orchestrator(cmd)
-
-            elif phase == "start":
-                self._orchestrator("pass")
-
-            elif phase == "draw":
-                self._orchestrator("draw")
-
-            elif phase == "resource":
-                self._orchestrator("resource")
-
-            elif phase == "main":
-                if mode == "ai":
-                    cmd = self._ai_player()
-                    self.conversation_log.append({"role": "ai", "cmd": cmd})
-                else:
-                    cmd = self._read_human()
-                if cmd:
-                    self._orchestrator(cmd)
-
-            elif phase == "battle":
-                if step in ("damage", "battle_end"):
-                    time.sleep(0.3)
-                    continue
-                if mode == "ai":
-                    cmd = self._ai_player()
-                    self.conversation_log.append({"role": "ai", "cmd": cmd})
-                else:
-                    cmd = self._read_human()
-                if cmd:
-                    self._orchestrator(cmd)
-
-            elif phase == "end":
-                if step == "cleanup":
-                    self._orchestrator("pass")
-                    continue
-                if mode == "ai":
-                    cmd = self._ai_player()
-                    self.conversation_log.append({"role": "ai", "cmd": cmd})
-                else:
-                    cmd = self._read_human()
-                if cmd:
-                    self._orchestrator(cmd)
-
-            else:
-                time.sleep(1)
-
-            self.step_count += 1
-
-    def _read_human(self):
-        while True:
-            try:
-                cmd = input("  > ").strip()
-                if not cmd:
-                    continue
-                if cmd == "help":
-                    self._print_help()
-                    continue
-                if cmd == "exit":
-                    self.cleanup()
-                    sys.exit(0)
-                if cmd == "log":
-                    self._print_log()
-                    continue
-                if cmd == "replay":
-                    self._save_replay(None)
-                    continue
-                return cmd
-            except (KeyboardInterrupt, EOFError):
-                print()
-                self.cleanup()
-                sys.exit(0)
-
-    def _print_help(self):
-        print("""
-遊戲指令：
-  pass / end turn          讓過 / 結束回合
-  draw                     抽牌
-  resource                 部署資源
-  keep / redraw            保留 / 重抽（調度）
-  play/deploy <card_id>    出牌 / 部署卡牌
-  attack <slot>            宣告攻擊
-  block <slot>             宣告阻擋
-  concede                  投降
-
-系統指令：
-  help                     顯示此說明
-  log                      顯示對話記錄
-  replay                   立即儲存重播
-  exit                     離開""")
-
-    def _print_log(self):
-        print(f"\n  對話記錄（{len(self.conversation_log)} 筆）：")
-        for i, entry in enumerate(self.conversation_log):
-            role = entry.get("role", "orchestrator")
-            cmd = entry.get("cmd", "")
-            resp = entry.get("resp", "")
-            print(f"  [{i+1}] {role.upper()}：{cmd}")
-            if resp:
-                print(f"       ← {resp}")
-
-    def _shield_count(self, player):
-        shields = player.get("shields")
-        if isinstance(shields, list):
-            return len(shields)
-        if isinstance(shields, int):
-            return shields
-        return 0
-
-    def _save_replay(self, winner):
-        state = self._read_game_state()
-        if not state:
-            state = self.state or {}
-
-        ts = datetime.now()
-        lines = []
-        lines.append("=" * 64)
-        lines.append("  GCG 牌局重播")
-        lines.append("=" * 64)
-        lines.append("")
-        lines.append(f"日期：        {ts.strftime('%Y-%m-%d %H:%M:%S')}")
-        lines.append(f"勝者：      {winner or state.get('winner', 'N/A')}")
-        lines.append(f"總回合數：  {state.get('turn', 0)}")
-        lines.append(f"先手玩家：{state.get('first_player', 'N/A')}")
-        lines.append("")
-        lines.append("─" * 56)
-        lines.append("  戰鬥記錄")
-        lines.append("─" * 56)
-        lines.append("")
-
-        for entry in state.get("battle_log", []):
-            lines.append(f"  {entry}")
-
-        lines.append("")
-        lines.append("─" * 56)
-        lines.append("  最終統計")
-        lines.append("─" * 56)
-        lines.append("")
-
-        for p_key, label in [("p1", "P1"), ("p2", "P2")]:
-            pl = state.get(p_key, {})
-            lines.append(f"  {label}：")
-            base = pl.get("base", {})
-            hp = base.get("hp", 0) - base.get("damage", 0)
-            status = "存活" if base.get("alive") else "破壞"
-            lines.append(f"    基地：  {base.get('card_id', 'EX-BASE')} HP={hp}/{base.get('hp', 0)}（{status}）")
-            lines.append(f"    盾牌：{self._shield_count(pl)}")
-            hand = pl.get("hand_cards", [])
-            lines.append(f"    手牌：   {len(hand)}張")
-            lines.append(f"    牌庫：   {pl.get('deck_count', 0)}")
-            res = pl.get("resources", {})
-            lines.append(f"    資源：    直立={res.get('active', 0)} 橫置={res.get('rested', 0)} EX={res.get('ex', 0)}")
-            ba = pl.get("battle_area", [])
-            units = [s for s in ba if s.get("unit_id")]
-            lines.append(f"    戰區： {len(units)}個單位")
-            for s in ba:
-                uid = s.get("unit_id")
-                if uid:
-                    st = s.get("status")
-                    st_t = "直立" if st == "active" else "橫置" if st == "rested" else (st or "")
-                    lines.append(f"      欄位 {s['slot']}：{uid} AP={s['ap']}/HP={s['hp'] - s['damage']} {st_t}")
-            lines.append(f"    廢棄區：  {len(pl.get('trash', []))}張")
-            lines.append("")
-
-        lines.append("─" * 56)
-        lines.append("  對話記錄")
-        lines.append("─" * 56)
-        lines.append("")
-
-        if self.conversation_log:
-            for i, entry in enumerate(self.conversation_log):
-                role = entry.get("role", "orchestrator")
-                cmd = entry.get("cmd", "")
-                resp = entry.get("resp", "")
-                lines.append(f"  [{i+1}] {role.upper()}：{cmd}")
-                if resp:
-                    lines.append(f"       ← {resp}")
+    print(f"\nYour Battle Area ({player.occupied_slots}/6):")
+    for s in player.battle_area:
+        if s.unit_id:
+            name = get_card_name(s.unit_id)
+            rest = " [rested]" if s.status == "rested" else ""
+            kw = f" | {' '.join(s.keywords)}" if s.keywords else ""
+            print(f"  Slot{s.slot}: [{s.unit_id}] {name} | AP:{s.ap}/HP:{s.hp - s.damage} | turns:{s.turns_on_field}{rest}{kw}")
         else:
-            lines.append("  （無對話記錄）")
+            print(f"  Slot{s.slot}: empty")
 
-        lines.append("")
-        lines.append("─" * 56)
-        lines.append("  最終遊戲狀態（YAML）")
-        lines.append("─" * 56)
-        lines.append("")
+    print(f"\nOpponent's Battle Area ({opponent.occupied_slots}/6):")
+    for s in opponent.battle_area:
+        if s.unit_id:
+            name = get_card_name(s.unit_id)
+            rest = " [rested]" if s.status == "rested" else ""
+            kw = f" | {' '.join(s.keywords)}" if s.keywords else ""
+            print(f"  Slot{s.slot}: [{s.unit_id}] {name} | AP:{s.ap}/HP:{s.hp - s.damage}{rest}{kw}")
+        else:
+            print(f"  Slot{s.slot}: empty")
 
+    p_shields = player.shields
+    o_shields = opponent.shields
+    base_hp = f"{player.base.hp - player.base.damage}/{player.base.hp}"
+    print(f"\nShields: You {p_shields} remaining | Opponent {o_shields} remaining | Base: {player.base.card_id} | HP: {base_hp}")
+
+    if state.battle_log:
+        print(f"\nBattle Log:")
+        for log in state.battle_log[-3:]:
+            print(f"  {log}")
+
+    if state.game_over:
+        print()
+        print("=" * 40)
+        print(f"   GAME OVER - {state.winner} wins!")
+        print("=" * 40)
+        return
+
+    print()
+    if state.phase == "pre-game":
+        print("Available: redraw | keep")
+    elif state.phase == "main":
+        print("Available: play <card_id> [slot] | attack <slot> | pass | concede")
+    elif state.phase == "battle":
+        if state.step == "attack":
+            print("Available: block <slot> | pass")
+        elif state.step == "action":
+            print("Available: pass")
+    elif state.phase in ("draw", "resource", "start"):
+        print("Auto-progressing...")
+    elif state.phase == "end":
+        print("Available: activate <slot> | pass")
+
+
+def process_mulligan(state: GameState, p1_mode: str = "human"):
+    print_state(state, "P1")
+
+    if p1_mode == "human":
+        cmd = input("\nP1 mulligan (redraw/keep): ").strip().lower()
+    else:
+        cmd = ai_decide_command(state, "P1")
+
+    if cmd == "redraw":
+        mulligan_redraw(state, "P1")
+        print_state(state, "P1")
+        if p1_mode == "human":
+            cmd = input("\nP1 final (keep): ").strip().lower()
+        else:
+            cmd = "keep"
+    mulligan_keep(state, "P1")
+
+    cmd = ai_decide_command(state, "P2")
+    if cmd == "redraw":
+        mulligan_redraw(state, "P2")
+    mulligan_keep(state, "P2")
+
+    setup_shields(state)
+    start_phase(state)
+    draw_phase(state)
+    resource_phase(state)
+    state.phase = "main"
+    state.priority = state.active_player
+    save_state(state)
+
+
+def process_ai_turn(state: GameState, player_id: str):
+    while not state.game_over:
+        if state.phase == "main":
+            cmd = ai_decide_command(state, player_id)
+        elif state.phase == "battle":
+            cmd = ai_decide_command(state, player_id)
+        elif state.phase == "end":
+            cmd = ai_decide_command(state, player_id)
+        else:
+            cmd = "pass"
+
+        if cmd == "pass":
+            if state.phase == "main":
+                pass_turn(state, player_id)
+                save_state(state)
+                return
+            elif state.phase == "end" and state.step == "action":
+                if player_id == state.priority:
+                    if state.priority == state.active_player:
+                        cleanup_turn(state)
+                    else:
+                        state.priority = state.active_player
+                else:
+                    state.priority = state.active_player
+                save_state(state)
+                return
+            elif state.phase == "battle" and state.step == "action":
+                end_battle(state)
+                save_state(state)
+                return
+            continue
+
+        parts = cmd.split()
+        if parts[0] == "play" and len(parts) >= 2:
+            card_id = parts[1]
+            slot = int(parts[2]) if len(parts) >= 3 else None
+            ok, reason = play_card(state, player_id, card_id, slot)
+            if ok:
+                print(f"\n[AI {player_id}] played {card_id}")
+            else:
+                print(f"\n[AI {player_id}] failed to play {card_id}: {reason}")
+                pass_turn(state, player_id)
+                save_state(state)
+                return
+
+        elif parts[0] == "attack" and len(parts) >= 2:
+            slot = int(parts[1])
+            ok, reason = declare_attack(state, player_id, slot)
+            if ok:
+                print(f"\n[AI {player_id}] attacks with slot {slot}")
+                resolve_unblocked_attack(state)
+                end_battle(state)
+            else:
+                print(f"\n[AI {player_id}] failed to attack: {reason}")
+
+        save_state(state)
+
+        winner = determine_winner(state)
+        if winner:
+            return
+
+
+def process_command(state: GameState, cmd: str, player_id: str) -> bool:
+    parts = cmd.strip().split()
+    if not parts:
+        return True
+
+    action = parts[0].lower()
+
+    if action == "pass":
+        if state.phase == "main":
+            if player_id == state.active_player:
+                pass_turn(state, player_id)
+                save_state(state)
+                return True
+            else:
+                print("Not your turn to pass")
+        elif state.phase == "end" and state.step == "action":
+            if player_id == state.active_player:
+                cleanup_turn(state)
+                save_state(state)
+                return True
+            else:
+                state.priority = state.active_player
+                save_state(state)
+                return True
+
+    elif action == "play" and len(parts) >= 2:
+        card_id = parts[1]
+        slot = None
+        if len(parts) >= 3:
+            try:
+                slot = int(parts[2])
+            except ValueError:
+                print(f"Invalid slot: {parts[2]}")
+                return True
+        ok, reason = play_card(state, player_id, card_id, slot)
+        if ok:
+            print(f"Played {card_id} successfully")
+            save_state(state)
+        else:
+            print(f"Error: {reason}")
+        return True
+
+    elif action == "attack" and len(parts) >= 2:
+        try:
+            slot = int(parts[1])
+            ok, reason = declare_attack(state, player_id, slot)
+            if ok:
+                if state.step == "attack":
+                    resolve_unblocked_attack(state)
+                    end_battle(state)
+                save_state(state)
+            else:
+                print(f"Error: {reason}")
+        except ValueError:
+            print(f"Invalid slot: {parts[1]}")
+        return True
+
+    elif action == "concede":
+        state.game_over = True
+        state.winner = state.get_opponent(player_id).player_id
+        print(f"\n{player_id} concedes. {state.winner} wins!")
+        save_state(state)
+        return False
+
+    elif action == "state":
+        print_state(state, player_id)
+        return True
+
+    elif action == "quit" or action == "exit":
+        return False
+
+    else:
+        print(f"Unknown command: {action}")
+        print("Available: play <card_id> [slot] | attack <slot> | pass | concede | state | quit")
+        return True
+
+    return True
+
+
+def run_simulation(p1_mode: str = "human", p2_mode: str = "ai"):
+    print_banner()
+
+    game_id = f"game_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    state = init_game(game_id)
+    print(f"Game ID: {game_id}")
+    print(f"First player: {state.first_player}")
+    print(f"P1 mode: {p1_mode} | P2 mode: {p2_mode}")
+
+    save_state(state)
+
+    process_mulligan(state, p1_mode)
+
+    current_viewer = "P1"
+
+    while not state.game_over:
+        print_state(state, current_viewer)
+
+        if state.game_over:
+            break
+
+        if state.phase in ("draw", "resource", "start"):
+            continue
+
+        active = state.active_player
+
+        if active == "P2" and p2_mode == "ai":
+            print(f"\n[AI P2 is thinking...]")
+            time.sleep(1)
+            process_ai_turn(state, "P2")
+            if state.game_over:
+                break
+            continue
+
+        if active == "P1" and p1_mode == "ai":
+            print(f"\n[AI P1 is thinking...]")
+            time.sleep(1)
+            process_ai_turn(state, "P1")
+            if state.game_over:
+                break
+            continue
+
+        if active == current_viewer:
+            cmd = input(f"\n{active}> ").strip()
+            if not process_command(state, cmd, active):
+                break
+        else:
+            print(f"\nWaiting for {active}...")
+            time.sleep(1)
+
+    print(f"\nGame {state.game_id} finished.")
+    save_replay(state)
+    print(f"Replay saved.")
+
+
+def save_replay(state: GameState):
+    replay_dir = PROJECT_ROOT / "replays"
+    replay_dir.mkdir(exist_ok=True)
+    replay_file = replay_dir / f"gcg_replay_{state.game_id}.md"
+    with open(replay_file, "w") as f:
+        f.write(f"# GCG Replay — {state.game_id}\n\n")
+        f.write(f"- **Winner**: {state.winner}\n")
+        f.write(f"- **First Player**: {state.first_player}\n")
+        f.write(f"- **Final Turn**: {state.turn}\n\n")
+        f.write("## Battle Log\n\n")
+        for log in state.battle_log:
+            f.write(f"- {log}\n")
+        f.write(f"\n## Final State\n\n")
         import yaml
-        yaml_str = yaml.dump(state, default_flow_style=False, allow_unicode=True, sort_keys=False)
-        lines.append(yaml_str)
-
-        content = "\n".join(lines)
-        replay_dir = PROJECT_ROOT / "replays"
-        replay_dir.mkdir(exist_ok=True)
-        fname = f"gcg_replay_{ts.strftime('%Y%m%d_%H%M%S')}.md"
-        path = replay_dir / fname
-        path.write_text(content)
-        print(f"\n  ✓ 重播已儲存 → {path}")
+        f.write("```yaml\n")
+        yaml.dump(state.to_dict("P1"), f, allow_unicode=True, default_flow_style=False)
+        f.write("```\n")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="GCG 模擬器 — 零邏輯協調層")
-    parser.add_argument("--p1", choices=["human", "ai"], default="human", help="P1 mode (default: human)")
-    parser.add_argument("--p2", choices=["human", "ai"], default="ai", help="P2 mode (default: ai)")
-    parser.add_argument("--replay", action="store_true", help="Generate replay from existing state")
-    args = parser.parse_args()
+    p1_mode = "human"
+    p2_mode = "ai"
 
-    if args.replay:
-        sim = GCGSimulation()
-        sim._read_game_id()
-        state = sim._read_game_state()
-        winner = state.get("winner") if state else None
-        sim._save_replay(winner)
-        return
+    args = sys.argv[1:]
+    i = 0
+    while i < len(args):
+        if args[i] == "--p1" and i + 1 < len(args):
+            p1_mode = args[i + 1]
+            i += 2
+        elif args[i] == "--p2" and i + 1 < len(args):
+            p2_mode = args[i + 1]
+            i += 2
+        elif args[i] == "--replay":
+            print("Replay mode not yet implemented")
+            return
+        else:
+            i += 1
 
-    sim = GCGSimulation(p1_mode=args.p1, p2_mode=args.p2)
-    sim.run()
+    run_simulation(p1_mode, p2_mode)
 
 
 if __name__ == "__main__":

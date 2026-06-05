@@ -1,4 +1,21 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "default_agent": "gcg-primary"
+  "agent": {
+    "gcg-orchestrator": {
+      "description": "GCG Orchestrator - game state management",
+      "mode": "primary"
+    },
+    "gcg-ai-player": {
+      "description": "GCG AI Player - strategic decision engine",
+      "mode": "primary"
+    },
+    "gcg-display": {
+      "description": "GCG Display - state formatting",
+      "mode": "subagent"
+    },
+    "gcg-judge": {
+      "description": "GCG Judge - legality validation",
+      "mode": "subagent"
+    }
+  }
 }

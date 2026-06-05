@@ -1,13 +1,14 @@
 ---
 name: gcg-orchestrator
 description: GCG 鋼彈卡牌遊戲 總控 Orchestrator
-mode: subagent
+mode: all
 temperature: 0.0
-read: allow
-edit: allow
-write: allow
-bash: allow
-task: allow
+permission:
+  read: allow
+  edit: allow
+  write: allow
+  bash: allow
+  task: allow
 mcp:
   - memories
 ---
