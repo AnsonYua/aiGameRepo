@@ -76,6 +76,30 @@ python3 skills_py/gcg_runtime.py command --player P1 --cmd "<玩家原始指令>
 - 回覆與文件預設使用繁體中文。
 - 不提交或保留 `.DS_Store`、`__pycache__/`、`*.pyc`、`.opencode/node_modules/`。
 
+## Runtime / Display 約定
+
+- `skills_py/gcg_runtime.py status` 與一般 command 回覆前，會自動清理空的 action priority window。
+- 空 action priority window 指：`end/action` 或 `battle/action` 中，當前 priority 玩家手上沒有任何依既有 `can_play_card` Lv/cost 規則可合法使用的 `command` 卡。
+- 若空 action priority window 成立，runtime 會呼叫既有 `pass_turn` 自動讓過，並在 battle log 留下 `P? 自動讓過（沒有可使用的 action card）`。
+- 玩家可見的 runtime / display / battle log 文字預設使用繁體中文；不要新增 `draws a card`、`deploys a resource`、`Turn N begins`、`started game as first player` 這類英文系統事件。
+- battle log 系統事件範例：`P1 抽一張牌`、`P1 部署一張資源`、`回合 2 開始 — P1 的回合`、`P2 為先手 [CR-1.1]`、`P1 選擇重新調度`、`P2 保留手牌`。
+- 不要在主要階段自動跳過玩家決策；主要階段仍要顯示可部署、可使用、可攻擊與讓過選項。
+- 基地顯示格式固定為 `基地：<card_id> | AP|HP：<ap>|<remaining_hp>`，不要使用舊格式 `HP：x/y`。
+- 對手盾牌行必須同時顯示對手基地狀態，例如 `對手盾牌：6 剩餘 | 對手基地：有（EX-BASE | AP|HP：0|3）`；基地被摧毀時顯示 `對手基地：無`。
+
+## Gameplay Log / Replay 約定
+
+- Gameplay log / replay 寫入邏輯集中在 `skills_py/gameplay_log.py`；不要在 runtime 之外手寫另一套 replay 格式。
+- Runtime 每局必須維護 `game-states/<game_id>/gameplay.yaml` 作為 canonical structured gameplay log。
+- Runtime 每局必須維護 `game-states/<game_id>/replay.md` 作為玩家可讀 replay；此 Markdown 必須使用繁體中文。
+- `gameplay.yaml` / `replay.md` 只記錄 public-safe 資訊；不要寫入對手隱藏手牌 card id，也不要 dump 完整 raw `gameState.md`。
+- `gameplay.yaml` 使用單一 YAML document，至少包含 `schema_version`、`game_id`、`summary`、`events`；事件 `seq` 必須單調遞增且可被 `yaml.safe_load` 解析。
+- 每個事件應保留 public features，例如 active/priority、雙方 hand_count、resources、board summary、shields、base AP/HP/alive；不要加入 `hand_cards`、`deck_cards`、`shield_cards`。
+- `replay.md` 必須由 gameplay log 事件產生或同步更新，避免 YAML 與 Markdown 時間線不一致。
+- Runtime stdout 可以在最終完整 display 前輸出短事件行，例如 `P2 正在決定調度...`、`P2 選擇重新調度`，讓 chat room 看起來有進度。
+- 若 runtime 使用 `--json`，輸出需包含本次回覆的 `events`、完整累積的 `all_events`、`replay_path`、`gameplay_log_path`，且 `display_text` 仍保留完整顯示文字。
+- 實作或修改 gameplay log/replay 後，除了本地驗證，應 spawn subagent 做獨立驗證：start → keep/redraw → P2 mulligan/auto flow、YAML parse、繁中 replay、hidden-info safety。
+
 ## Memory 建立時機
 
 完成以下任一 section 後，建立一段 handoff memory：

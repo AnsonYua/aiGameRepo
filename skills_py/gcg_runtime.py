@@ -24,6 +24,7 @@ if str(PROJECT_ROOT / "skills_py") not in sys.path:
 
 from skills_py.ai_player import ai_decide_command
 from skills_py.game_engine import (
+    can_play_card,
     cleanup_turn,
     declare_attack,
     determine_winner,
@@ -41,6 +42,14 @@ from skills_py.game_engine import (
     resource_phase,
 )
 from skills_py.game_state import GameState
+from skills_py.card_db import get_card_type
+from skills_py.gameplay_log import (
+    append_checkpoint,
+    append_event,
+    gameplay_log_path,
+    read_events,
+    replay_path,
+)
 from gcg_display import render
 
 
@@ -81,22 +90,49 @@ def _display(state: GameState, viewer: str) -> str:
     return render(str(path), viewer=viewer)
 
 
-def _display_existing(state: GameState, viewer: str) -> str:
-    return render(str(_state_path(state.game_id)), viewer=viewer)
+def _record_event(
+    state: GameState,
+    events: list[dict],
+    event_type: str,
+    actor: Optional[str],
+    viewer: str,
+    message: str,
+    **kwargs,
+) -> None:
+    event = append_event(state, event_type, actor, viewer, message, **kwargs)
+    events.append(event)
 
 
-def _result(state: GameState, viewer: str, as_json: bool = False) -> str:
+def _result(
+    state: GameState,
+    viewer: str,
+    as_json: bool = False,
+    events: Optional[list[dict]] = None,
+    checkpoint: bool = True,
+) -> str:
+    events = events if events is not None else []
+    _auto_skip_empty_action_windows(state, viewer, events)
+    if checkpoint:
+        events.append(append_checkpoint(state, viewer, "輸出目前狀態"))
     text = _display(state, viewer)
     if not as_json:
-        return text
+        prefix = "\n".join(event["message"] for event in events)
+        footer = f"Replay：{replay_path(state.game_id).relative_to(PROJECT_ROOT)}"
+        if prefix:
+            return f"{prefix}\n\n{text}\n{footer}"
+        return f"{text}\n{footer}"
     return json.dumps({
         "game_id": state.game_id,
         "state_path": str(_state_path(state.game_id)),
+        "replay_path": str(replay_path(state.game_id)),
+        "gameplay_log_path": str(gameplay_log_path(state.game_id)),
         "viewer": viewer,
         "active_player": state.active_player,
         "priority": state.priority,
         "phase": state.phase,
         "step": state.step,
+        "events": events,
+        "all_events": read_events(state),
         "display_text": text,
     }, ensure_ascii=False, indent=2)
 
@@ -112,31 +148,29 @@ def _force_first_player(state: GameState, first_player: Optional[str]) -> None:
     state.priority = first_player
     state.p1.resources_ex = 1 if second_player == "P1" else 0
     state.p2.resources_ex = 1 if second_player == "P2" else 0
-    state.battle_log = [f"{first_player} started game as first player [CR-1.1]"]
+    state.battle_log = [f"{first_player} 為先手 [CR-1.1]"]
 
 
 def _start_game(viewer: str, as_json: bool, first_player: Optional[str]) -> str:
     game_id = f"game_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
     state = init_game(game_id)
     _force_first_player(state, first_player)
-    return _result(state, viewer, as_json)
+    events: list[dict] = []
+    _record_event(
+        state,
+        events,
+        "game_start",
+        None,
+        viewer,
+        f"遊戲開始，{state.first_player} 為先手",
+    )
+    return _result(state, viewer, as_json, events)
 
 
 def _status(viewer: str, as_json: bool, game_id: Optional[str]) -> str:
     state = _load_active_state(game_id)
-    text = _display_existing(state, viewer)
-    if not as_json:
-        return text
-    return json.dumps({
-        "game_id": state.game_id,
-        "state_path": str(_state_path(state.game_id)),
-        "viewer": viewer,
-        "active_player": state.active_player,
-        "priority": state.priority,
-        "phase": state.phase,
-        "step": state.step,
-        "display_text": text,
-    }, ensure_ascii=False, indent=2)
+    checkpoint = not gameplay_log_path(state.game_id).exists()
+    return _result(state, viewer, as_json, checkpoint=checkpoint)
 
 
 def _advance_to_main_after_mulligan(state: GameState) -> None:
@@ -151,38 +185,120 @@ def _advance_to_main_after_mulligan(state: GameState) -> None:
 
 def _mulligan(player_id: str, action: str, viewer: str, as_json: bool, game_id: Optional[str]) -> str:
     state = _load_active_state(game_id)
+    events: list[dict] = []
     if state.phase != "pre-game":
-        return _result(state, viewer, as_json)
+        return _result(state, viewer, as_json, events)
 
     if action == "redraw":
         mulligan_redraw(state, player_id)
+        message = f"{player_id} 選擇重新調度"
     else:
         mulligan_keep(state, player_id)
+        message = f"{player_id} 保留手牌"
+    _record_event(
+        state,
+        events,
+        "decision_applied",
+        player_id,
+        viewer,
+        message,
+        command=action,
+        result={"ok": True, "reason": ""},
+        legal_actions=["keep", "redraw"],
+    )
 
     if player_id == "P1":
+        _record_event(
+            state,
+            events,
+            "decision_requested",
+            "P2",
+            viewer,
+            "P2 正在決定調度...",
+            legal_actions=["keep", "redraw"],
+        )
         p2_cmd = ai_decide_command(state, "P2", {"keep", "redraw"})
         p2_action = p2_cmd.split(maxsplit=1)[0].lower()
         if p2_action == "redraw":
             mulligan_redraw(state, "P2")
+            p2_message = "P2 選擇重新調度"
         else:
             mulligan_keep(state, "P2")
+            p2_action = "keep"
+            p2_message = "P2 保留手牌"
+        _record_event(
+            state,
+            events,
+            "decision_applied",
+            "P2",
+            viewer,
+            p2_message,
+            command=p2_action,
+            result={"ok": True, "reason": ""},
+            legal_actions=["keep", "redraw"],
+            ai_evaluation={"chosen_command": p2_action, "candidates": []},
+        )
         _advance_to_main_after_mulligan(state)
+        _record_event(state, events, "auto_progress", None, viewer, "調度完成，建立盾牌並進入先手主要階段")
     elif player_id == "P2":
         _advance_to_main_after_mulligan(state)
+        _record_event(state, events, "auto_progress", None, viewer, "調度完成，建立盾牌並進入先手主要階段")
 
     if not state.game_over:
-        _auto_resolve_p2(state)
+        _auto_resolve_p2(state, viewer=viewer, events=events)
 
-    return _result(state, viewer, as_json)
+    return _result(state, viewer, as_json, events)
 
 
 def _handle_pass(state: GameState, player_id: str) -> tuple[bool, str]:
     if state.phase == "main" and player_id != state.active_player:
         return False, "不是你的主要階段。"
-    if state.phase == "end" and state.step == "action" and player_id != state.priority:
+    if state.phase in ("end", "battle") and state.step == "action" and player_id != state.priority:
         return False, "目前不是你的優先權。"
     pass_turn(state, player_id)
     return True, ""
+
+
+def _is_action_priority(state: GameState) -> bool:
+    return (
+        (state.phase == "end" and state.step == "action")
+        or (state.phase == "battle" and state.step == "action")
+    )
+
+
+def _has_eligible_action_card(state: GameState, player_id: str) -> bool:
+    player = state.get_player(player_id)
+    for card_id in player.hand_cards:
+        if get_card_type(card_id) != "command":
+            continue
+        ok, _ = can_play_card(state, player_id, card_id)
+        if ok:
+            return True
+    return False
+
+
+def _auto_skip_empty_action_windows(
+    state: GameState,
+    viewer: str = "P1",
+    events: Optional[list[dict]] = None,
+    max_passes: int = 4,
+) -> None:
+    events = events if events is not None else []
+    passes = 0
+    while (
+        not state.game_over
+        and state.priority
+        and _is_action_priority(state)
+        and passes < max_passes
+    ):
+        player_id = state.priority
+        if _has_eligible_action_card(state, player_id):
+            break
+        message = f"{player_id} 自動讓過：沒有可使用的 action card"
+        state.battle_log.append(f"{player_id} 自動讓過（沒有可使用的 action card）")
+        _record_event(state, events, "auto_progress", player_id, viewer, message)
+        pass_turn(state, player_id)
+        passes += 1
 
 
 def _handle_command(state: GameState, player_id: str, cmd: str) -> tuple[bool, str]:
@@ -197,7 +313,7 @@ def _handle_command(state: GameState, player_id: str, cmd: str) -> tuple[bool, s
     if action in ("concede", "投降"):
         state.game_over = True
         state.winner = state.get_opponent(player_id).player_id
-        state.battle_log.append(f"{player_id} concedes")
+        state.battle_log.append(f"{player_id} 投降")
         return True, ""
 
     if action in ("play", "deploy", "部署", "使用") and len(parts) >= 2:
@@ -207,6 +323,13 @@ def _handle_command(state: GameState, player_id: str, cmd: str) -> tuple[bool, s
                 slot = int(parts[2])
             except ValueError:
                 return False, f"非法欄位：{parts[2]}"
+        return play_card(state, player_id, parts[1], slot)
+
+    if action in ("pair", "配對") and len(parts) >= 3:
+        try:
+            slot = int(parts[2])
+        except ValueError:
+            return False, f"非法欄位：{parts[2]}"
         return play_card(state, player_id, parts[1], slot)
 
     if action in ("attack", "攻擊") and len(parts) >= 2:
@@ -226,44 +349,109 @@ def _handle_command(state: GameState, player_id: str, cmd: str) -> tuple[bool, s
     return False, f"未知指令：{action}"
 
 
-def _auto_resolve_p2(state: GameState, max_actions: int = 20) -> None:
+def _auto_resolve_p2(
+    state: GameState,
+    max_actions: int = 20,
+    viewer: str = "P1",
+    events: Optional[list[dict]] = None,
+) -> None:
+    events = events if events is not None else []
     actions = 0
     while not state.game_over and actions < max_actions:
+        _auto_skip_empty_action_windows(state, viewer, events)
         if state.priority and state.priority != "P2":
             break
         if state.active_player != "P2" and state.phase == "main":
             break
         try:
+            _record_event(state, events, "decision_requested", "P2", viewer, "P2 正在思考...")
             cmd = ai_decide_command(state, "P2")
         except RuntimeError as exc:
-            state.battle_log.append(f"P2 AI failed: {exc}")
+            message = f"P2 AI 決策失敗：{exc}"
+            state.battle_log.append(f"P2 AI 決策失敗：{exc}")
+            _record_event(
+                state,
+                events,
+                "ai_failure",
+                "P2",
+                viewer,
+                message,
+                result={"ok": False, "reason": str(exc)},
+            )
             break
+        _record_event(
+            state,
+            events,
+            "decision_received",
+            "P2",
+            viewer,
+            f"P2 回傳指令：{cmd}",
+            command=cmd,
+            ai_evaluation={"chosen_command": cmd, "candidates": []},
+        )
         ok, reason = _handle_command(state, "P2", cmd)
         actions += 1
         if not ok:
-            state.battle_log.append(f"P2 failed {cmd}: {reason}")
+            message = f"P2 指令失敗：{cmd}（{reason}）"
+            state.battle_log.append(f"P2 指令失敗：{cmd}（{reason}）")
+            _record_event(
+                state,
+                events,
+                "decision_applied",
+                "P2",
+                viewer,
+                message,
+                command=cmd,
+                result={"ok": False, "reason": reason},
+            )
             break
+        _record_event(
+            state,
+            events,
+            "decision_applied",
+            "P2",
+            viewer,
+            f"P2 執行：{cmd}",
+            command=cmd,
+            result={"ok": True, "reason": ""},
+        )
         determine_winner(state)
+        _auto_skip_empty_action_windows(state, viewer, events)
         if cmd.startswith("pass") or state.priority != "P2":
             break
 
 
 def _command(player_id: str, cmd: str, viewer: str, as_json: bool, game_id: Optional[str]) -> str:
     state = _load_active_state(game_id)
+    events: list[dict] = []
+    _record_event(state, events, "decision_received", player_id, viewer, f"{player_id} 輸入指令：{cmd}", command=cmd)
     ok, reason = _handle_command(state, player_id, cmd)
     if not ok:
         state.battle_log.append(f"非法指令：{reason}")
+    _record_event(
+        state,
+        events,
+        "decision_applied",
+        player_id,
+        viewer,
+        f"{player_id} 指令{'成功' if ok else '失敗'}：{cmd}",
+        command=cmd,
+        result={"ok": ok, "reason": reason},
+    )
     determine_winner(state)
     if not state.game_over:
-        _auto_resolve_p2(state)
-    return _result(state, viewer, as_json)
+        _auto_resolve_p2(state, viewer=viewer, events=events)
+    else:
+        _record_event(state, events, "game_end", state.winner, viewer, f"遊戲結束，勝者：{state.winner}")
+    return _result(state, viewer, as_json, events)
 
 
 def _auto(player_id: str, viewer: str, as_json: bool, game_id: Optional[str], max_actions: int = 20) -> str:
     state = _load_active_state(game_id)
+    events: list[dict] = []
     if player_id == "P2":
-        _auto_resolve_p2(state, max_actions)
-    return _result(state, viewer, as_json)
+        _auto_resolve_p2(state, max_actions, viewer, events)
+    return _result(state, viewer, as_json, events)
 
 
 def main() -> None:

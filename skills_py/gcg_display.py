@@ -76,7 +76,7 @@ def _card_line(card_id: str) -> str:
     return _fmt("card_line", **_build_card_data(card_id))
 
 
-def _check_legality(card_id: str, res: dict) -> str:
+def _check_legality(card_id: str, res: dict, has_unit: bool = True) -> str:
     """回傳合法性標記字串：✅ 或 ❌(原因)。"""
     card = get_card(card_id)
     if not card:
@@ -87,6 +87,8 @@ def _check_legality(card_id: str, res: dict) -> str:
     if total_lv < level:
         return _fmt("legality_fail_level", total_lv=total_lv, required_lv=level)
     if res["active"] >= cost or res["active"] + res["ex"] >= cost:
+        if card.get("cardType") == "pilot" and not has_unit:
+            return _fmt("legality_fail_pair")
         return _fmt("legality_ok")
     return _fmt("legality_fail_cost", active=res["active"], cost=cost)
 
@@ -125,12 +127,14 @@ def _battlefield_lines(ba: list[BattleSlot], is_opponent: bool) -> list[str]:
     return lines
 
 
-def _available_actions(hand_cards: list[str], res: dict) -> list[str]:
+def _available_actions(hand_cards: list[str], res: dict, battle_area: list[BattleSlot]) -> list[str]:
     """產生可行指令列表。"""
     lines = []
+    has_unit = any(slot.unit_id is not None for slot in battle_area)
     for card_id in hand_cards:
-        legality = _check_legality(card_id, res)
+        legality = _check_legality(card_id, res, has_unit)
         card = get_card(card_id) or {}
+        card_type = card.get("cardType")
         d = {
             "card_id": card_id,
             "name": card.get("name", card_id),
@@ -138,7 +142,12 @@ def _available_actions(hand_cards: list[str], res: dict) -> list[str]:
             "cost": card.get("cost", 0),
             "legality": legality,
         }
-        tpl_key = "action_play" if card.get("cardType") == "command" else "action_deploy"
+        if card_type == "command":
+            tpl_key = "action_play"
+        elif card_type == "pilot":
+            tpl_key = "action_pair"
+        else:
+            tpl_key = "action_deploy"
         lines.append(_fmt(tpl_key, **d))
     return lines
 
@@ -151,6 +160,12 @@ def _battle_log_text(logs: list[str]) -> str:
 
 def _you_suffix(state: GameState, viewer: str) -> str:
     return "(你)" if state.priority == viewer else ""
+
+
+def _base_status_text(base) -> str:
+    if not base.alive:
+        return "無"
+    return f"有（{base.card_id} | AP|HP：{base.ap}|{base.hp - base.damage}）"
 
 
 def _turn_owner_text(player_id: str, viewer: str) -> str:
@@ -232,8 +247,9 @@ def _build_common_block(state: GameState, viewer: str = "P1") -> str:
         shields=me.shields,
         opponent_shields=opp.shields,
         base_card_id=me.base.card_id,
+        base_ap=me.base.ap,
         base_hp=me.base.hp - me.base.damage,
-        base_max_hp=me.base.hp,
+        opponent_base_status=_base_status_text(opp.base),
         battle_log=_battle_log_text(state.battle_log),
         priority=state.priority,
         you_suffix=_you_suffix(state, viewer),
@@ -302,7 +318,7 @@ def _render_main_phase(state: GameState, viewer: str = "P1") -> str:
 
     me = state.get_player(viewer)
     res = _player_resources(me)
-    actions = _available_actions(me.hand_cards, res)
+    actions = _available_actions(me.hand_cards, res, me.battle_area)
     action_block = "\n".join(actions)
     return _fmt("main_phase",
         common_block=_build_common_block(state, viewer),

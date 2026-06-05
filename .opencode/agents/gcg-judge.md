@@ -1,6 +1,7 @@
 ---
 name: gcg-judge
 description: GCG 裁判 — state_diff 合法性驗證
+mode: subagent
 temperature: 0.0
 note: runs as task(general) subagent; orchestrator controls context, not frontmatter perms
 ---

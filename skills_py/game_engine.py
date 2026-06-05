@@ -53,7 +53,7 @@ def init_game(game_id: str, p1_deck: str = "playerId_1", p2_deck: str = "playerI
         state.p1.resources_ex = 1
         state.p2.resources_ex = 0
 
-    state.battle_log.append(f"{first} started game as first player [CR-1.1]")
+    state.battle_log.append(f"{first} 為先手 [CR-1.1]")
     return state
 
 
@@ -87,12 +87,12 @@ def mulligan_redraw(state: GameState, player_id: str) -> GameState:
     player.hand_cards = all_cards[:5]
     player.deck_cards = all_cards[5:]
     player.deck_count = len(player.deck_cards)
-    state.battle_log.append(f"{player_id} redraws")
+    state.battle_log.append(f"{player_id} 選擇重新調度")
     return state
 
 
 def mulligan_keep(state: GameState, player_id: str) -> GameState:
-    state.battle_log.append(f"{player_id} keeps")
+    state.battle_log.append(f"{player_id} 保留手牌")
     return state
 
 
@@ -126,12 +126,12 @@ def draw_phase(state: GameState):
     if len(player.deck_cards) == 0:
         state.game_over = True
         state.winner = state.get_opponent(state.active_player).player_id
-        state.battle_log.append(f"{state.winner} wins by deck-out [CR-8.2]")
+        state.battle_log.append(f"{state.winner} 因對手牌庫耗盡獲勝 [CR-8.2]")
         return
     card = player.deck_cards.pop(0)
     player.hand_cards.append(card)
     player.deck_count = len(player.deck_cards)
-    state.battle_log.append(f"{state.active_player} draws a card")
+    state.battle_log.append(f"{state.active_player} 抽一張牌")
 
 
 def resource_phase(state: GameState):
@@ -140,7 +140,7 @@ def resource_phase(state: GameState):
     if player.resource_deck_count > 0:
         player.resource_deck_count -= 1
         player.resources_active += 1
-        state.battle_log.append(f"{state.active_player} deploys a resource")
+        state.battle_log.append(f"{state.active_player} 部署一張資源")
 
 
 def can_play_card(state: GameState, player_id: str, card_id: str) -> Tuple[bool, str]:
@@ -150,8 +150,27 @@ def can_play_card(state: GameState, player_id: str, card_id: str) -> Tuple[bool,
     card_type = get_card_type(card_id)
     level = get_card_level(card_id)
     cost = get_card_cost(card_id)
+    if card_type == "unknown":
+        return False, "unknown card"
     if card_type == "token":
         return False, "token cannot be played from hand"
+    if card_type == "command":
+        if state.phase == "main":
+            if player_id != state.active_player:
+                return False, "not your main phase"
+            if state.priority and player_id != state.priority:
+                return False, "not your priority"
+        elif state.phase in ("end", "battle") and state.step == "action":
+            if player_id != state.priority:
+                return False, "not your priority"
+        else:
+            return False, "commands can only be played during main phase or action windows"
+    elif state.phase != "main":
+        return False, "can only deploy during main phase"
+    elif player_id != state.active_player:
+        return False, "not your main phase"
+    elif state.priority and player_id != state.priority:
+        return False, "not your priority"
     if player.level < level:
         return False, f"insufficient Level: need {level}, have {player.level}"
     if player.resources_active < cost:
@@ -159,6 +178,13 @@ def can_play_card(state: GameState, player_id: str, card_id: str) -> Tuple[bool,
         if player.resources_ex < ex_needed:
             return False, f"insufficient resources: need {cost}, have {player.resources_active} active + {player.resources_ex} EX"
     return True, ""
+
+
+def _first_empty_battle_slot(player: PlayerState) -> Optional[int]:
+    for slot in player.battle_area:
+        if slot.unit_id is None:
+            return slot.slot
+    return None
 
 
 def play_card(state: GameState, player_id: str, card_id: str, slot_idx: Optional[int] = None) -> Tuple[bool, str]:
@@ -169,6 +195,21 @@ def play_card(state: GameState, player_id: str, card_id: str, slot_idx: Optional
     player = state.get_player(player_id)
     cost = get_card_cost(card_id)
     card_type = get_card_type(card_id)
+
+    if card_type == "unit":
+        if slot_idx is None:
+            slot_idx = _first_empty_battle_slot(player)
+        if slot_idx is None:
+            return False, "no empty battle slot"
+        if slot_idx < 0 or slot_idx >= 6:
+            return False, "invalid slot"
+    elif card_type == "pilot":
+        if slot_idx is None:
+            return False, "pilot requires a unit slot"
+        if slot_idx < 0 or slot_idx >= 6:
+            return False, "invalid slot"
+        if player.battle_area[slot_idx].unit_id is None:
+            return False, "pilot requires a unit in that slot"
 
     player.hand_cards.remove(card_id)
 
@@ -224,7 +265,7 @@ def play_card(state: GameState, player_id: str, card_id: str, slot_idx: Optional
     elif card_type == "command":
         player.trash.append(card_id)
 
-    state.battle_log.append(f"{player_id} plays/deploys {card_id}")
+    state.battle_log.append(f"{player_id} 使用/部署 {card_id}")
     return True, ""
 
 
@@ -263,7 +304,7 @@ def declare_attack(state: GameState, player_id: str, slot_idx: int) -> Tuple[boo
     state.step = "attack"
     state.current_attacker = slot_idx
     state.priority = player_id
-    state.battle_log.append(f"{player_id} attacks with slot {slot_idx}")
+    state.battle_log.append(f"{player_id} 以欄位 {slot_idx} 攻擊")
     return True, ""
 
 
@@ -271,6 +312,8 @@ def can_block(state: GameState, defender_id: str, slot_idx: int) -> Tuple[bool, 
     if state.phase != "battle" or state.step not in ("attack", "block"):
         return False, "can only block during attack step"
     defender = state.get_player(defender_id)
+    if slot_idx < 0 or slot_idx >= 6:
+        return False, "invalid slot"
     slot = defender.battle_area[slot_idx]
     if slot.unit_id is None:
         return False, "no unit in that slot"
@@ -300,7 +343,7 @@ def resolve_block(state: GameState, blocker_slot: int):
             blk_slot.damage = 0
             blk_slot.keywords = []
             blk_slot.link = False
-            state.battle_log.append(f"Blocker slot {blocker_slot} destroyed by First Strike")
+            state.battle_log.append(f"防禦方欄位 {blocker_slot} 因 First Strike 被破壞")
         else:
             att_slot.damage += blk_slot.ap
             if att_slot.damage >= att_slot.hp:
@@ -312,7 +355,7 @@ def resolve_block(state: GameState, blocker_slot: int):
                 att_slot.damage = 0
                 att_slot.keywords = []
                 att_slot.link = False
-                state.battle_log.append(f"Attacker slot {state.current_attacker} destroyed in block")
+                state.battle_log.append(f"攻擊方欄位 {state.current_attacker} 在防禦中被破壞")
     else:
         att_slot.damage += blk_slot.ap
         blk_slot.damage += att_slot.ap
@@ -326,7 +369,7 @@ def resolve_block(state: GameState, blocker_slot: int):
             att_slot.damage = 0
             att_slot.keywords = []
             att_slot.link = False
-            state.battle_log.append(f"Attacker slot {state.current_attacker} destroyed")
+            state.battle_log.append(f"攻擊方欄位 {state.current_attacker} 被破壞")
 
         if blk_slot.damage >= blk_slot.hp:
             def_player.trash.append(blk_slot.unit_id)
@@ -337,7 +380,7 @@ def resolve_block(state: GameState, blocker_slot: int):
             blk_slot.damage = 0
             blk_slot.keywords = []
             blk_slot.link = False
-            state.battle_log.append(f"Blocker slot {blocker_slot} destroyed")
+            state.battle_log.append(f"防禦方欄位 {blocker_slot} 被破壞")
 
     state.step = "action"
     state.priority = def_player.player_id
@@ -353,26 +396,26 @@ def resolve_unblocked_attack(state: GameState):
     if def_player.shields > 0 or def_player.base.alive:
         if def_player.base.alive:
             def_player.base.damage += damage
-            state.battle_log.append(f"{att_slot.unit_id} deals {damage} damage to {def_player.player_id}'s Base")
+            state.battle_log.append(f"{att_slot.unit_id} 對 {def_player.player_id} 的基地造成 {damage} 點傷害")
             if def_player.base.damage >= def_player.base.hp:
                 def_player.base.alive = False
                 def_player.base.status = None
-                state.battle_log.append(f"{def_player.player_id}'s Base destroyed")
+                state.battle_log.append(f"{def_player.player_id} 的基地被破壞")
         elif def_player.shields > 0:
             def_player.shields -= 1
             destroyed_shield = def_player.shield_cards.pop(0) if def_player.shield_cards else "unknown"
             def_player.trash.append(destroyed_shield)
-            state.battle_log.append(f"{att_slot.unit_id} destroys {def_player.player_id}'s shield")
+            state.battle_log.append(f"{att_slot.unit_id} 破壞 {def_player.player_id} 的盾牌")
     else:
         state.game_over = True
         state.winner = att_player.player_id
-        state.battle_log.append(f"{att_player.player_id} wins by direct hit [CR-4.9]")
+        state.battle_log.append(f"{att_player.player_id} 因直接攻擊獲勝 [CR-4.9]")
 
     if "Breach" in [k for k in att_slot.keywords if k.startswith("Breach") or k == "Breach"]:
         breach_dmg = 1
         if def_player.base.alive:
             def_player.base.damage += breach_dmg
-            state.battle_log.append(f"Breach: {breach_dmg} additional damage to Base")
+            state.battle_log.append(f"Breach：對基地造成額外 {breach_dmg} 點傷害")
             if def_player.base.damage >= def_player.base.hp:
                 def_player.base.alive = False
                 def_player.base.status = None
@@ -380,7 +423,7 @@ def resolve_unblocked_attack(state: GameState):
             def_player.shields -= 1
             destroyed_shield = def_player.shield_cards.pop(0) if def_player.shield_cards else "unknown"
             def_player.trash.append(destroyed_shield)
-            state.battle_log.append(f"Breach: destroys {def_player.player_id}'s shield")
+            state.battle_log.append(f"Breach：破壞 {def_player.player_id} 的盾牌")
 
     state.step = "battle_end"
     state.current_attacker = None
@@ -399,7 +442,7 @@ def pass_turn(state: GameState, player_id: str):
         state.step = "action"
         opponent = state.get_opponent(state.active_player)
         state.priority = opponent.player_id
-        state.battle_log.append(f"{player_id} ends turn")
+        state.battle_log.append(f"{player_id} 結束回合")
     elif state.phase == "end" and state.step == "action":
         if player_id == state.priority:
             other = state.get_opponent(player_id).player_id
@@ -422,7 +465,7 @@ def cleanup_turn(state: GameState):
     state.turn += 1
     state.phase = "start"
     state.step = None
-    state.battle_log.append(f"Turn {state.turn} begins — {state.active_player}'s turn")
+    state.battle_log.append(f"回合 {state.turn} 開始 — {state.active_player} 的回合")
     start_phase(state)
     draw_phase(state)
     resource_phase(state)
@@ -441,15 +484,6 @@ def determine_winner(state: GameState) -> Optional[str]:
             state.game_over = True
             state.winner = opp.player_id
             return opp.player_id
-
-    if len(state.p1.deck_cards) == 0:
-        state.game_over = True
-        state.winner = "P2"
-        return "P2"
-    if len(state.p2.deck_cards) == 0:
-        state.game_over = True
-        state.winner = "P1"
-        return "P1"
 
     return None
 

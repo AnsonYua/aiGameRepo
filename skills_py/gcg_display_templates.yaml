@@ -14,12 +14,14 @@ bf_all_empty: "- 全部空格"
 
 action_deploy: "  - 部署 {card_id} — {name}（Lv{level}/Cost:{cost}）{legality}"
 action_play: "  - 使用 {card_id} — {name}（Lv{level}/Cost:{cost}）{legality}"
+action_pair: "  - 配對 {card_id} <欄位> — {name}（Lv{level}/Cost:{cost}）{legality}"
 
 battle_log_line: "• {message}"
 
 legality_ok: "✅"
 legality_fail_level: "❌ (Lv不足: {total_lv}/{required_lv})"
 legality_fail_cost: "❌ (費用不足: active={active}/cost={cost})"
+legality_fail_pair: "❌ (需要場上 Unit)"
 
 # ---------- common block ----------
 
@@ -38,8 +40,8 @@ common_block: |
   對手的場上（{opponent_occupied_slots}/6）：
   {opponent_battlefield}
 
-  盾牌：{shields} 剩餘 | 基地：{base_card_id} | HP：{base_hp}/{base_max_hp}
-  對手盾牌：{opponent_shields} 剩餘
+  盾牌：{shields} 剩餘 | 基地：{base_card_id} | AP|HP：{base_ap}|{base_hp}
+  對手盾牌：{opponent_shields} 剩餘 | 對手基地：{opponent_base_status}
 
   {battle_log}
 
