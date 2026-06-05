@@ -100,16 +100,14 @@ def _player_resources(player: PlayerState) -> dict:
 
 
 def _battlefield_lines(ba: list[BattleSlot], is_opponent: bool) -> list[str]:
-    """戰區格式化，對手未揭露單位顯示「未知」。"""
+    """戰區格式化。戰鬥區是公開區域，因此雙方單位都顯示明細。"""
+    _ = is_opponent
     if all(s.unit_id is None for s in ba):
         return [_fmt("bf_all_empty")]
     lines = []
     for slot in ba:
         if slot.unit_id is None:
             lines.append(_fmt("bf_slot_empty", slot=slot.slot))
-            continue
-        if is_opponent:
-            lines.append(_fmt("bf_slot_unknown", slot=slot.slot))
             continue
         pilot = f" | {slot.pilot_id}" if slot.pilot_id else ""
         kws = f" | [{', '.join(slot.keywords)}]" if slot.keywords else ""
@@ -155,6 +153,51 @@ def _you_suffix(state: GameState) -> str:
     return "(你)" if state.priority == state.active_player and state.active_player == "P1" else ""
 
 
+def _turn_owner_text(player_id: str) -> str:
+    if player_id == "P1":
+        return "你（P1）的回合"
+    return f"{player_id} 的回合"
+
+
+def _can_attack_from_slot(slot: BattleSlot) -> bool:
+    if slot.unit_id is None:
+        return False
+    if slot.status == "rested":
+        return False
+    if slot.ap <= 0:
+        return False
+    return slot.link or slot.turns_on_field >= 1
+
+
+def _is_playable(card_id: str, res: dict) -> bool:
+    card = get_card(card_id)
+    if not card or card.get("cardType") == "token":
+        return False
+    level = card.get("level", 0)
+    cost = card.get("cost", 0)
+    total_lv = res["active"] + res["rested"] + res["ex"]
+    return total_lv >= level and res["active"] + res["ex"] >= cost
+
+
+def _main_phase_summary(state: GameState, res: dict) -> str:
+    me = state.p1
+    if state.active_player != "P1":
+        return ""
+    has_play = any(_is_playable(card_id, res) for card_id in me.hand_cards)
+    has_attack = any(_can_attack_from_slot(slot) for slot in me.battle_area)
+    if has_play or has_attack:
+        return ""
+
+    levels = [
+        (get_card(card_id) or {}).get("level", 0)
+        for card_id in me.hand_cards
+        if (get_card(card_id) or {}).get("cardType") != "token"
+    ]
+    if levels and min(levels) > me.level:
+        return f"局勢提示：手牌全部需 Lv{min(levels)}+ 才能部署。唯一行動是 pass（讓過），進入結束階段。\n"
+    return "局勢提示：目前沒有可部署或可攻擊的行動。唯一行動是 pass（讓過），進入結束階段。\n"
+
+
 # ---------- common block ----------
 
 def _build_common_block(state: GameState) -> str:
@@ -172,10 +215,11 @@ def _build_common_block(state: GameState) -> str:
         turn=state.turn,
         phase_label=phase_label,
         step_label=step_label,
-        active_player=state.active_player,
+        turn_owner=_turn_owner_text(state.active_player),
         active=me.resources_active,
         rested=me.resources_rested,
         ex=me.resources_ex,
+        level=me.level,
         deck_count=me.deck_count,
         resource_deck_count=me.resource_deck_count,
         hand_count=me.hand_count,
@@ -226,12 +270,12 @@ def _render_main_phase(state: GameState) -> str:
 
       對手手牌：2 張
 
-      你的戰區（4/6）：
+      你地場上（4/6）：
       - 欄位0：[st01/ST01-008] Demi Trainer | AP:1/HP:1 | [Blocker] | 橫置
       ...
 
-      對手戰區（6/6）：
-      - 欄位0：未知
+      對手的場上（6/6）：
+      - 欄位0：[st01/ST01-008] Demi Trainer | AP:1/HP:1 | [Blocker] | 橫置
       ...
 
       盾牌：0 剩餘 | 基地：st01/ST01-016 | HP：0/5
@@ -256,6 +300,7 @@ def _render_main_phase(state: GameState) -> str:
     action_block = "\n".join(actions)
     return _fmt("main_phase",
         common_block=_build_common_block(state),
+        main_summary=_main_phase_summary(state, res),
         action_lines=action_block,
     )
 
@@ -272,10 +317,10 @@ def _render_start_phase(state: GameState) -> str:
 
       對手手牌：5 張
 
-      你的戰區（0/6）：
+      你地場上（0/6）：
       - 全部空格
 
-      對手戰區（0/6）：
+      對手的場上（0/6）：
       - 全部空格
 
       盾牌：6 剩餘 | 基地：EX-BASE | HP：3/3

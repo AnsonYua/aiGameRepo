@@ -122,7 +122,7 @@
 | 模板數量 | Mulligan / Main / Draw / Resource / Battle(attack/action/battle_end) / End / Start / Error 共 10 模板 |
 | 變數正確性 | {variable} 全部有值可填，無遺漏/錯字 |
 | Play Legality 計算 | 每張手牌依 Level (active+rested+ex) 與 Cost (active) 計算 ✅/❌ |
-| 隱私遮罩 | opponent_revealed 控制對手戰區顯示，opponent_shields 只顯示數字 |
+| 隱私遮罩 | 對手手牌與盾牌卡明細隱藏；戰鬥區是公開區域，對手場上單位顯示明細 |
 | hp_remaining | 顯示為 {hp-damage} |
 | action_prefix | command→使用, 其他→部署 |
 | Battle log 格式 | ✔ / ✘ / • 前綴 |
@@ -186,7 +186,7 @@
 |------|---------|
 | 階段模板 | Start / Draw / Resource / Main / Battle(3 substeps) / End |
 | 變數命名 | 所有模板變數格式一致（{variable}） |
-| 對手資訊 | opponent_shields 顯示、opponent_revealed 條件邏輯 |
+| 對手資訊 | opponent_shields 顯示；對手戰鬥區單位公開顯示 |
 | 動作列表 | play, deploy, pair, activate, attack, block, pass, draw, resource, end |
 
 ## Judge / Enforcement（驗證與強制力）

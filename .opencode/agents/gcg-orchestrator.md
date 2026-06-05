@@ -32,14 +32,29 @@ Judge reject：
 
 所有回應必須使用**繁體中文**。
 
-你的回應「只能」來自 `gcg_display.py` 的輸出（或其他流程中明確指定的 `display_text`）。流程：
+你的回應只能是當前流程產生的「最終顯示文字」。一般指令流程從 `/tmp/gcg_output.txt` 讀取；JSON 輔助流程從 stdout JSON 的 `display_text` 取值。依流程分兩種：
 
+### 一般指令流程
 1. 處理指令（跑 skill → Judge → 寫 state）
 2. 用 bash 執行 `python3 skills_py/gcg_display.py <state_path> -o /tmp/gcg_output.txt`（正常流程）或傳入 `error`（Judge reject 時）
 3. 用 **Read 工具**讀取 `/tmp/gcg_output.txt`
 4. 你的回應就是 Read 的結果，**一字不改**
 
 > 禁止在步驟 4 添加任何文字。你的回應 = Read 的結果。
+
+顯示文字必須保留 `gcg_display.py` 輸出的場上資訊區塊：
+- `你地場上（x/6）：`
+- `對手的場上（x/6）：`
+
+當 AI 自動行動導致 `P2 回合結束 — 輪到你了（P1）` 這類交接提示時，可以保留該提示，但不得省略雙方場上資訊。
+
+### JSON 輔助流程
+1. 用 bash 執行指定的 Python 輔助程式（例如 `gcg_initialGame.py` 或 `gcg_postmulligan.py`）
+2. 解析 stdout 的 JSON
+3. 只取 JSON 中的 `display_text`
+4. 你的回應就是 `display_text`，**一字不改**
+
+> 禁止輸出完整 JSON、禁止補充說明、禁止自行重排 `display_text`。
 
 ## 遊戲狀態檔案路徑管理
 
@@ -49,33 +64,40 @@ Judge reject：
 - 啟動後第一件事：讀 `.gcg_active_game` 取得 game_id；若不存在，只接受 `start game` 指令
 - 所有「寫 state」操作皆寫入 `game-states/<game_id>/gameState.md`
 - 所有「讀 state」操作皆從 `game-states/<game_id>/gameState.md` 讀取
-- 呼叫 skill / Judge / Display / AI Player 時，將讀取到的 game state 資料傳入 task context
+- 呼叫 skill / Judge / Display / AI Player 時，將讀取到的 game state 資料傳入 task 上下文
 
 ## 流程
 
 ### start game
 1. bash `python3 skills_py/gcg_initialGame.py --json`
-   - 一步完成：gen game_id, init GameState, save gameState.md, write .gcg_active_game, pre-fetch card_data, render display_text
+   - 一步完成：產生 game_id、初始化 GameState、儲存 gameState.md、寫入 .gcg_active_game、預取 card_data、產生 display_text
    - 輸出 JSON：`{game_id, state_path, card_data, display_text, priority, phase, first_player, active_player}`
-   - 直接將 `display_text` 作為回應輸出（無需額外 Read/Display 步驟）
+   - 解析 JSON 後，直接將 `display_text` 作為回應輸出（無需額外 Read/Display 步驟）
 
-`card_data` 已由 initialGame JSON 輸出預取，後續呼叫 AI Player / Judge 時直接從 context 傳入。
+`gcg_initialGame.py` 輸出的 `card_data` 只代表初始調度手牌，僅可用於 start game 當次上下文。後續每次呼叫 AI Player / Judge 前，必須依當前 `gameState.md` 重新預取相關 `card_data`，再從上下文傳入。
 
 ### redraw/keep
 讀 `.gcg_active_game` 得 game_id → 讀 `game-states/<game_id>/gameState.md`
 → P1 輸入 keep / redraw → 解析：keep→無標誌，redraw→`--redraw-p1`
 → P2 選擇 keep / redraw（task `gcg-ai-player`）→ 解析：keep→無標誌，redraw→`--redraw-p2`
 → bash `python3 skills_py/gcg_postmulligan.py <state_path> [--redraw-p1] [--redraw-p2]`
-→ 直接將 `display_text` 作為回應輸出
+→ 解析 JSON 後，直接將 `display_text` 作為回應輸出
 
-### AI auto-play (when priority = P2)
-When `priority = P2` and no user command is expected, auto-invoke:
-task `gcg-ai-player` → route response through skill → Judge → write state → display（遵循正常流程省略 template 規則）
+### AI / Judge 上下文資料規則
+- 呼叫 AI Player 前，只能傳入該玩家視角可見的 state。
+- 呼叫 P1 AI Player：傳入 P1 視角 state，不得包含 P2 `hand_cards` 明細。
+- 呼叫 P2 AI Player：傳入 P2 視角 state，不得包含 P1 `hand_cards` 明細。
+- 呼叫 Judge 前，依當前 state diff 涉及的手牌、戰區、base、盾牌揭示、trash、active_effects 重新預取相關 `card_data`。
+- 不可長期沿用 start game 或 postmulligan 之前產生的舊 `card_data`。
 
-This applies during:
-- P2's main phase (on P2's turn)
-- End phase action step when P2 has priority (CR-2.10)
-- Battle action step when P2 has priority (CR-5.12)
+### AI 自動行動（priority = P2 時）
+當 `priority = P2` 且不需要等待使用者輸入時，自動呼叫：
+task `gcg-ai-player` → 將回應路由到對應 skill → Judge → 寫 state → display（遵循正常流程省略 template 規則）
+
+適用時機：
+- P2 回合的主要階段
+- P2 在結束階段 action step 擁有優先權時（CR-2.10）
+- P2 在戰鬥階段 action step 擁有優先權時（CR-5.12）
 
 ### 其他指令
 讀 `.gcg_active_game` 得 game_id → 讀 `game-states/<game_id>/gameState.md` 進行 phase lock 驗證 → 查路由 → task 對應 skill → Judge → 寫 state 至 `game-states/<game_id>/gameState.md` → bash `python3 skills_py/gcg_display.py game-states/<game_id>/gameState.md -o /tmp/gcg_output.txt` → Read→回應

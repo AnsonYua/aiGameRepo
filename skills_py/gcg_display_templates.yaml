@@ -26,18 +26,18 @@ legality_fail_cost: "❌ (費用不足: active={active}/cost={cost})"
 # ---------- common block ----------
 
 common_block: |
-  回合 {turn} | {phase_label}{step_label} | {active_player} 的回合
-  資源：直立={active} 橫置={rested} EX={ex} | 牌庫：{deck_count} | 資源牌庫：{resource_deck_count}
+  回合 {turn} | {phase_label}{step_label} | {turn_owner}
+  資源：直立={active} 橫置={rested} EX={ex} | 牌庫：{deck_count} | 資源牌庫：{resource_deck_count} | 等級：Lv{level}
 
   你的手牌（{hand_count}）：
   {hand_lines}
 
   對手手牌：{opponent_hand_count} 張
 
-  你的戰區（{occupied_slots}/6）：
+  你地場上（{occupied_slots}/6）：
   {my_battlefield}
 
-  對手戰區（{opponent_occupied_slots}/6）：
+  對手的場上（{opponent_occupied_slots}/6）：
   {opponent_battlefield}
 
   盾牌：{shields} 剩餘 | 基地：{base_card_id} | HP：{base_hp}/{base_max_hp}
@@ -74,6 +74,7 @@ resource_phase: |
 
 main_phase: |
   {common_block}
+  {main_summary}
   可行指令（依出牌合法性 ✅/❌ 計算）：
   {action_lines}
   - 攻擊 <欄位>（若單位符合條件：直立 +（出場回合≥1 或 link=true）[CR-5.4]）

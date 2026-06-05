@@ -53,13 +53,12 @@ def apply_start_phase(state: GameState):
 
     state.phase = "start"
     state.step = None
-    state.battle_log.append("Shields set [CR-2.4]")
+    state.battle_log.append("Shields set [CR-1.3]")
 
     for pid in ("P1", "P2"):
         player = state.get_player(pid)
-        player.resources_active = player.resources_active + player.resources_rested + player.resources_ex
+        player.resources_active = player.resources_active + player.resources_rested
         player.resources_rested = 0
-        player.resources_ex = 0
 
     active_player = state.get_player(active)
     if active_player.deck_cards:

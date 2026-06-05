@@ -177,10 +177,10 @@
 - 顯示：「Your Battle Area (6/6): ...」
 - deploy 時需加註：可 trash 既有 Unit 騰空間
 
-### T12b: Opponent 戰區部分顯示
-**情境**：對手戰區 slot0 有 Unit，其餘未知
-- 顯示：「- Slot0: Unknown（有 Unit）」
-- 「- Slot1: empty」... 已知空位顯示 empty
+### T12b: Opponent 戰區公開顯示
+**情境**：對手戰區 slot0 有 Unit，其餘為空
+- 顯示：「- Slot0: [card_id] name | AP:x/HP:y | ...」
+- 「- Slot1: empty」... 空位顯示 empty
 
 ### T12c: 資源/EX 上限
 **情境**：resources.active=10（遊戲上限）+ ex=5

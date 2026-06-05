@@ -1,2 +1,5 @@
 replays/
 .gcg_conv_log.yaml
+.DS_Store
+__pycache__/
+*.pyc

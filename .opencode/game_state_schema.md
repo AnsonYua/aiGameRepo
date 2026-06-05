@@ -59,6 +59,8 @@ game_over: <bool>           # 遊戲是否結束
 winner: null|<string>       # 勝利者（P1/P2/null）
 ```
 
+> 可見性：`hand_cards` 會依視角遮罩對手手牌；`battle_area` 不遮罩。戰鬥區是公開區域，雙方場上機體、駕駛員、AP/HP、狀態與關鍵字都應顯示。
+
 ---
 
 ## Level 與費用（見 CR-3.x）

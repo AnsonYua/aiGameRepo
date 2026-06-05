@@ -57,7 +57,7 @@ Your Battle Area ({occupied_slots}/{total_slots}):
 ...
 
 Opponent's Battle Area ({opponent_occupied}/{total_slots}):
-- Slot{slot}: Unknown | {if visible show details}
+- Slot{slot}: [{card_id}] {name} | AP:{ap}/HP:{hp_remaining} | {pilot_id} | {keywords} | {status}
 - Slot{slot}: empty
 ...
 ```
@@ -187,7 +187,7 @@ Format:
 - Opponent hand → `"Unknown"`
 - Opponent deck → `"{deck_count} cards"` (count only)
 - Opponent shields → `"{opponent_shields} remaining"` (count only, no card_id)
-- Opponent battle area → `"Slot{slot}: Unknown / empty / AP:?/HP:?"` (known info exceptions apply)
+- Opponent battle area → public information. Show the same card_id/name/AP/HP/pilot/keywords/status details as your own battle area; empty slots show `empty`.
 
 ---
 
