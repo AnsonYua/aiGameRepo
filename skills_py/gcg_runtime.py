@@ -307,7 +307,7 @@ def _handle_command(state: GameState, player_id: str, cmd: str) -> tuple[bool, s
         return True, ""
 
     action = parts[0].lower()
-    if action in ("pass", "end", "讓過"):
+    if action in ("pass", "end", "endturn", "讓過"):
         return _handle_pass(state, player_id)
 
     if action in ("concede", "投降"):
@@ -318,7 +318,7 @@ def _handle_command(state: GameState, player_id: str, cmd: str) -> tuple[bool, s
 
     if action in ("play", "deploy", "部署", "使用") and len(parts) >= 2:
         slot: Optional[int] = None
-        if len(parts) >= 3:
+        if len(parts) >= 3 and parts[2].isdigit():
             try:
                 slot = int(parts[2])
             except ValueError:
@@ -349,20 +349,32 @@ def _handle_command(state: GameState, player_id: str, cmd: str) -> tuple[bool, s
     return False, f"未知指令：{action}"
 
 
-def _split_compound_commands(cmd: str) -> list[str]:
+def _split_compound_commands(cmd: str) -> tuple[list[str], str]:
     parts = cmd.strip().split()
     if not parts:
-        return []
+        return [], ""
 
     commands: list[list[str]] = [[]]
-    for token in parts:
-        if token.lower() in {"and", "then", "然後"}:
+    i = 0
+    while i < len(parts):
+        token = parts[i]
+        token_lower = token.lower()
+        if token_lower in {"and", "then", "然後"}:
+            if not commands[-1]:
+                return [], "複合指令格式錯誤：連接詞前缺少指令"
             if commands[-1]:
                 commands.append([])
+            if token_lower == "and" and i + 1 < len(parts) and parts[i + 1].lower() == "then":
+                i += 1
+            i += 1
             continue
         commands[-1].append(token)
+        i += 1
 
-    return [" ".join(part) for part in commands if part]
+    if not commands[-1]:
+        return [], "複合指令格式錯誤：連接詞後缺少指令"
+
+    return [" ".join(part) for part in commands], ""
 
 
 def _auto_resolve_p2(
@@ -443,7 +455,20 @@ def _command(player_id: str, cmd: str, viewer: str, as_json: bool, game_id: Opti
     _record_event(state, events, "decision_received", player_id, viewer, f"{player_id} 輸入指令：{cmd}", command=cmd)
     ok = True
     reason = ""
-    commands = _split_compound_commands(cmd)
+    commands, reason = _split_compound_commands(cmd)
+    if reason:
+        ok = False
+        state.battle_log.append(f"非法指令：{reason}")
+        _record_event(
+            state,
+            events,
+            "decision_applied",
+            player_id,
+            viewer,
+            f"{player_id} 指令失敗：{cmd}",
+            command=cmd,
+            result={"ok": False, "reason": reason},
+        )
     for sub_cmd in commands:
         ok, reason = _handle_command(state, player_id, sub_cmd)
         if not ok:

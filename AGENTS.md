@@ -37,6 +37,7 @@ Agent final: <runtime stdout 原文>
 - `keep`、`redraw`
 - `pass`、`讓過`
 - `play ...`、`deploy ...`、`部署 ...`、`使用 ...`
+- `play ... and end turn`、`deploy ... then pass`、`部署 ... 然後 讓過`
 - `attack ...`、`攻擊 ...`
 - `concede`、`投降`
 
@@ -59,6 +60,8 @@ python3 skills_py/gcg_runtime.py command --player P1 --cmd "<玩家原始指令>
 - `keep` → `mulligan --player P1 --action keep --viewer P1`
 - `redraw` → `mulligan --player P1 --action redraw --viewer P1`
 - 其他遊戲動作 → `command --player P1 --cmd "<玩家原始指令>" --viewer P1`
+
+複合指令（例如 `play st01/ST01-008 and end turn`）也必須原樣傳給 `gcg_runtime.py command --cmd "<玩家原始指令>"`。不要由 agent 或 orchestrator 自行拆句；runtime 會依 `and` / `then` / `然後` 拆成連續子指令並依序套用。
 
 `start gmae` 是常見 typo，等同 `start game`。
 

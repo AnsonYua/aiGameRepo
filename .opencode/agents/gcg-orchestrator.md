@@ -41,8 +41,17 @@ opencode 的 `task` / `@` spawn 只能作為選配能力，不是必需執行路
 | `status` | `python3 skills_py/gcg_runtime.py status --viewer P1` |
 | `keep` | `python3 skills_py/gcg_runtime.py mulligan --player P1 --action keep --viewer P1` |
 | `redraw` | `python3 skills_py/gcg_runtime.py mulligan --player P1 --action redraw --viewer P1` |
-| `play ...` / `deploy ...` / `attack ...` / `pass` / `concede` | `python3 skills_py/gcg_runtime.py command --player P1 --cmd "<原始指令>" --viewer P1` |
+| `play ...` / `deploy ...` / `attack ...` / `pass` / `concede` | 先正規化成可執行 command，再呼叫 `python3 skills_py/gcg_runtime.py command --player P1 --cmd "<command>" --viewer P1` |
 | P2 自動決策 | `python3 skills_py/gcg_runtime.py auto --player P2 --viewer P1` |
+
+玩家可能直接複製可行指令列，例如 `deploy st01/ST01-005 — GM and endturn`。在呼叫 runtime 前，必須先用目前 viewer display 與玩家輸入判斷真正要執行的 command：
+
+- 卡牌動作只保留 action 與 card id，例如 `deploy st01/ST01-005 — GM` → `deploy st01/ST01-005`。
+- 若有明確欄位，保留欄位，例如 `pair st01/ST01-011 0 — Suletta Mercury` → `pair st01/ST01-011 0`。
+- `endturn`、`end turn` 都正規化為 `pass`。
+- 複合指令保留連接詞語意，例如 `deploy st01/ST01-005 — GM and endturn` → `deploy st01/ST01-005 and pass`。
+
+`play ... and end turn`、`deploy ... then pass`、`部署 ... 然後 讓過` 這類複合指令仍用單次 `command --cmd "<command>"` 交給 runtime；拆分與連續套用由 runtime 負責。
 
 `mulligan` 與 `command --player P1` 之後，runtime 會自動處理可自動處理的 P2 行動。若 runtime stdout 已回完整 P1 viewer 狀態，不要另外要求玩家輸入 `auto`。
 
