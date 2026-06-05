@@ -18,8 +18,8 @@ from skills_py.game_state import GameState
 from skills_py.game_engine import (
     init_game, save_state, load_state, mulligan_redraw, mulligan_keep,
     setup_shields, start_phase, draw_phase, resource_phase,
-    play_card, declare_attack, resolve_block, resolve_unblocked_attack,
-    end_battle, pass_turn, cleanup_turn, can_play_card,
+    play_card, declare_attack, can_attack_unit, resolve_block, resolve_unit_attack, resolve_unblocked_attack,
+    end_battle, pass_turn, cleanup_turn, can_block, can_play_card,
     get_phase_display, determine_winner
 )
 from skills_py.ai_player import ai_decide_command
@@ -90,7 +90,7 @@ def print_state(state: GameState, viewer: str = "P1"):
     if state.phase == "pre-game":
         print("Available: redraw | keep")
     elif state.phase == "main":
-        print("Available: play <card_id> [slot] | attack <slot> | pass | concede")
+        print("Available: play <card_id> [slot] | attack <slot> | attack <slot> unit <enemy_slot> | pass | concede")
     elif state.phase == "battle":
         if state.step == "attack":
             print("Available: block <slot> | pass")
@@ -178,8 +178,33 @@ def process_ai_turn(state: GameState, player_id: str):
                 save_state(state)
                 return
 
+        elif parts[0] == "block" and len(parts) >= 2:
+            slot = int(parts[1])
+            ok, reason = can_block(state, player_id, slot)
+            if ok:
+                print(f"\n[AI {player_id}] blocks with slot {slot}")
+                resolve_block(state, slot)
+            else:
+                print(f"\n[AI {player_id}] failed to block: {reason}")
+
         elif parts[0] == "attack" and len(parts) >= 2:
             slot = int(parts[1])
+            target_slot = None
+            if len(parts) >= 4 and parts[2].lower() in ("unit", "enemy", "opponent"):
+                target_slot = int(parts[3])
+            elif len(parts) >= 3 and parts[2].isdigit():
+                target_slot = int(parts[2])
+            if target_slot is not None:
+                ok, reason = can_attack_unit(state, player_id, slot, target_slot)
+                if ok:
+                    declare_attack(state, player_id, slot)
+                    print(f"\n[AI {player_id}] attacks enemy unit slot {target_slot} with slot {slot}")
+                    resolve_unit_attack(state, target_slot)
+                    end_battle(state)
+                else:
+                    print(f"\n[AI {player_id}] failed to attack unit: {reason}")
+                save_state(state)
+                continue
             ok, reason = declare_attack(state, player_id, slot)
             if ok:
                 print(f"\n[AI {player_id}] attacks with slot {slot}")
@@ -237,9 +262,37 @@ def process_command(state: GameState, cmd: str, player_id: str) -> bool:
             print(f"Error: {reason}")
         return True
 
+    elif action == "block" and len(parts) >= 2:
+        try:
+            slot = int(parts[1])
+            ok, reason = can_block(state, player_id, slot)
+            if ok:
+                resolve_block(state, slot)
+                save_state(state)
+            else:
+                print(f"Error: {reason}")
+        except ValueError:
+            print(f"Invalid slot: {parts[1]}")
+        return True
+
     elif action == "attack" and len(parts) >= 2:
         try:
             slot = int(parts[1])
+            target_slot = None
+            if len(parts) >= 4 and parts[2].lower() in ("unit", "enemy", "opponent"):
+                target_slot = int(parts[3])
+            elif len(parts) >= 3 and parts[2].isdigit():
+                target_slot = int(parts[2])
+            if target_slot is not None:
+                ok, reason = can_attack_unit(state, player_id, slot, target_slot)
+                if ok:
+                    declare_attack(state, player_id, slot)
+                    resolve_unit_attack(state, target_slot)
+                    end_battle(state)
+                    save_state(state)
+                else:
+                    print(f"Error: {reason}")
+                return True
             ok, reason = declare_attack(state, player_id, slot)
             if ok:
                 if state.step == "attack":
@@ -268,7 +321,7 @@ def process_command(state: GameState, cmd: str, player_id: str) -> bool:
 
     else:
         print(f"Unknown command: {action}")
-        print("Available: play <card_id> [slot] | attack <slot> | pass | concede | state | quit")
+        print("Available: play <card_id> [slot] | attack <slot> | attack <slot> unit <enemy_slot> | pass | concede | state | quit")
         return True
 
     return True

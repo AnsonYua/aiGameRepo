@@ -93,8 +93,8 @@
 | Runtime | `skills_py/gcg_runtime.py` | chat adapter 內部 CLI；統一 start/status/mulligan/command/auto |
 | Orchestrator | `gcg-orchestrator.md` | opencode chat adapter；呼叫 runtime，轉發完整顯示文字 |
 | Display | `skills_py/gcg_display.py` | 將 game_state 填入模板 → 格式化人眼可讀輸出（Python 腳本，非 agent） |
-| Judge | `gcg-judge.md` | 規則驗證 prompt/reference；非 Codex 必需執行路徑 |
-| AI Player | `gcg-ai-player.md` | 決策引擎，輸出單行指令 |
+| Judge / Effect Reviewer | `gcg-judge.md` | 複雜效果語意 reviewer；可檢查 proposed state_diff，但非最終 state applier |
+| AI Player | `gcg-ai-player.md` | 唯一 AI 策略來源，輸出 public-safe 考量與單一指令 |
 
 ### Runtime / Orchestrator — Chat-first 流程
 
@@ -102,7 +102,7 @@
 |------|---------|
 | Runtime 指令 | `start` / `status` / `mulligan` / `command` / `auto` 全部可用 |
 | Chat 入口 | 玩家輸入由 chat adapter 轉成 runtime command；玩家不直接跑 CLI |
-| AI auto-play | priority=P2 時可用 `gcg_runtime.py auto --player P2` 自動處理 |
+| AI auto-play | priority=P1/P2 時可用 `gcg_runtime.py auto --player <player>` 自動處理；玩家 chat 預設仍自動處理 P2 |
 | 啟動流程 | start game → `gcg_runtime.py start --viewer P1` → 回完整調度狀態 |
 | Redraw 流程 | 使用者輸入 → `gcg_runtime.py mulligan --player P1 --action keep|redraw` → 回 display_text |
 | 其他指令 | chat 指令 → `gcg_runtime.py command --player P1 --cmd ...` → 回完整 display text |
@@ -129,33 +129,33 @@
 | Error 模板 | mismatched phase → 非法指令: {reason} |
 | 速度 | 無 LLM 推論，純字串插值，~0.1s |
 
-### Judge — 驗證引擎
+### Judge — 效果語意 Reviewer
 
 | 範圍 | 檢查要點 |
 |------|---------|
-| 輸入 | game state（當前狀態，orchestrator 傳入）+ state_diff（提議變更）+ card_data |
-| 輸出格式 | 僅 `accept` 或 `reject: <reason> [CR-X.Y]` |
+| 輸入 | public-safe state features / viewer context + proposed state_diff + card_data |
+| 輸出格式 | 僅 semantic `accept` 或 `reject: <reason> [CR-X.Y]` |
 | CR-ID 驗證 | state_diff 附帶的 CR-ID 引用是否正確 |
 | 卡片數據驗證 | 新部署 unit 的 ap/hp 必須符合 card_data 基礎值 |
 | 效果驗證 | trigger/cost/oncePerTurn 是否符合 card_data 的 interpreted effects |
 | 語義驗证 | 資源變化→CR-3.x, 防禦層→CR-4.x, 戰鬥→CR-5.x |
 | 邊界檢查 | 數值不可為負、欄位不可為 null |
-| 不越權 | 只驗證規則，不修改 state、不提替代方案 |
-| 輸出合約缺口 (P3-9) | skill 的 state_diff / AI 的單行指令 / Judge 的 accept-reject — 無 runtime 強制驗證 |
+| 不越權 | 只驗證效果語意與規則引用，不修改 state、不提替代方案 |
+| Python final gate | Judge accept 不可直接 apply；必須由 Python validator 檢查 schema、zone/card count、resource、phase、priority、hidden-info safety 後才可套用 |
 
 ### AI Player — 決策引擎
 
 | 範圍 | 檢查要點 |
 |------|---------|
-| 輸出格式 | 僅單行指令：play/deploy/pair/activate/attack/block/pass/end turn/draw/resource/redraw/keep/concede |
-| CLI 相容輸出 | 直接回覆單行指令；不得用 Write/Read 寫入 `/tmp` |
+| 輸出格式 | `CONSIDER: <public-safe 短考量>` + `COMMAND: <單一指令>` |
+| CLI 相容輸出 | 不得用 Write/Read 寫入 `/tmp`；runtime 只套用 COMMAND，replay 記錄 CONSIDER |
 | 視角映射 | player_id=P1→me=p1,opponent=p2；player_id=P2→me=p2,opponent=p1 |
 | 先後手 | first_player 決定 EX resource 有無 |
 | 階段對應 | pre-game→keep/redraw, start→pass, draw→draw, resource→resource, main→策略, battle→attack/block, end→end turn |
 | 5 策略分支 | 橫掃/發展/搶血/反打/絕望 — 各分支條件與權重正確 |
 | 局勢評估 | 防禦差、場面差、可攻擊 Unit 數、資源差、手牌差計算 |
 | Blocker 影響 | 對方 Blocker 直立數、HP vs AP 補刀判斷 |
-| 攻擊優先順序 | 補刀(20) > Blocker(18) > 依 AP 擊殺(15+) > 傷害(10+) |
+| 攻擊優先順序 | 補刀(20) > Blocker(18) > 依 AP 擊殺(15+) > 傷害(10+)；敵方橫置 Unit 可用 `attack <slot> unit <enemy_slot>` |
 | Block 決策 | 直立+Blocker 關鍵字檢查，HP>AP 存活判斷，致命覆寫 |
 | 投降條件 (CR-8.4) | 6 條件全滿足才 concede |
 | 經驗 YAML 橋接 | 5 分支映射到 Python scoring 權重，MCP 記憶層為可選橋接 |
@@ -185,8 +185,9 @@
 
 | 範圍 | 檢查要點 |
 |------|---------|
-| Judge 輸出 | 僅 accept 或 reject: <reason> [CR-X.Y] |
+| Judge 輸出 | 僅 semantic accept 或 reject: <reason> [CR-X.Y] |
 | Phase Mismatch | phase_lock 違反時是否拒絕 |
+| Python validator | 所有 proposed command / proposed state_diff 必須先通過 Python safety checks，再由 runtime apply |
 | 輸出合約 | orchestrator 僅轉發 display template，不自由生成 |
 | CLI 相容輸出 | agent 直接輸出合約文字，不依賴 `/tmp` Write/Read |
 
@@ -198,7 +199,7 @@
 | 預期輸出 | 測試案例的 expected output 是否與實際一致 |
 | 邊界案例 | 空戰區、滿盾牌、0 AP、token 限制等 |
 | Codex subagent | 實作後 spawn explorer 驗證 start → keep → P2 auto → P1 status |
-| opencode CLI | 使用 `opencode run --agent gcg-ai-player` 驗證 AI 可讀完整 viewer status 並回 command |
+| opencode CLI | 使用 `opencode run --agent gcg-ai-player` 驗證 AI 可讀完整 viewer status 並回 CONSIDER / COMMAND |
 
 ## 全域規定
 

@@ -233,6 +233,11 @@ def write_replay(state: GameState, data: Optional[dict[str, Any]] = None) -> Non
             if "legal_actions" in event:
                 actions = ", ".join(event["legal_actions"]) if event["legal_actions"] else "未記錄"
                 lines.append(f"- 可行選項：{actions}")
+            ai_evaluation = event.get("ai_evaluation")
+            if isinstance(ai_evaluation, dict):
+                consideration = ai_evaluation.get("consideration")
+                if consideration:
+                    lines.append(f"- 考量：{consideration}")
             result = event.get("result")
             if isinstance(result, dict):
                 ok_text = "成功" if result.get("ok") else "失敗"

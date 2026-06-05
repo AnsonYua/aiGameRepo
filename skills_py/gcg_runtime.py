@@ -22,8 +22,10 @@ if str(PROJECT_ROOT) not in sys.path:
 if str(PROJECT_ROOT / "skills_py") not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT / "skills_py"))
 
-from skills_py.ai_player import ai_decide_command
+from skills_py.ai_player import AIDecision, ai_decide
 from skills_py.game_engine import (
+    can_block,
+    can_attack_unit,
     can_play_card,
     cleanup_turn,
     declare_attack,
@@ -34,6 +36,8 @@ from skills_py.game_engine import (
     mulligan_redraw,
     pass_turn,
     play_card,
+    resolve_block,
+    resolve_unit_attack,
     resolve_unblocked_attack,
     save_state,
     setup_shields,
@@ -120,6 +124,13 @@ def _format_battle_details(logs: list[str]) -> str:
     if not logs:
         return ""
     return "（" + "；".join(logs) + "）"
+
+
+def _ai_evaluation(decision: AIDecision) -> dict:
+    data = {"chosen_command": decision.command, "candidates": []}
+    if decision.consideration:
+        data["consideration"] = decision.consideration
+    return data
 
 
 def _result(
@@ -238,7 +249,8 @@ def _mulligan(player_id: str, action: str, viewer: str, as_json: bool, game_id: 
             "P2 正在決定調度...",
             legal_actions=["keep", "redraw"],
         )
-        p2_cmd = ai_decide_command(state, "P2", {"keep", "redraw"})
+        p2_decision = ai_decide(state, "P2", {"keep", "redraw"})
+        p2_cmd = p2_decision.command
         p2_action = p2_cmd.split(maxsplit=1)[0].lower()
         if p2_action == "redraw":
             mulligan_redraw(state, "P2")
@@ -257,7 +269,7 @@ def _mulligan(player_id: str, action: str, viewer: str, as_json: bool, game_id: 
             command=p2_action,
             result={"ok": True, "reason": ""},
             legal_actions=["keep", "redraw"],
-            ai_evaluation={"chosen_command": p2_action, "candidates": []},
+            ai_evaluation=_ai_evaluation(AIDecision(command=p2_action, consideration=p2_decision.consideration)),
         )
         _advance_to_main_after_mulligan(state)
         _record_event(state, events, "auto_progress", None, viewer, "調度完成，建立盾牌並進入先手主要階段")
@@ -274,6 +286,16 @@ def _mulligan(player_id: str, action: str, viewer: str, as_json: bool, game_id: 
 def _handle_pass(state: GameState, player_id: str) -> tuple[bool, str]:
     if state.phase == "main" and player_id != state.active_player:
         return False, "不是你的主要階段。"
+    if state.phase == "battle" and state.step in ("attack", "block"):
+        if player_id != state.priority:
+            return False, "目前不是你的阻擋優先權。"
+        resolve_unblocked_attack(state)
+        if not state.game_over:
+            end_battle(state)
+        return True, ""
+    if state.phase == "battle" and state.step == "battle_end":
+        end_battle(state)
+        return True, ""
     if state.phase in ("end", "battle") and state.step == "action" and player_id != state.priority:
         return False, "目前不是你的優先權。"
     pass_turn(state, player_id)
@@ -296,6 +318,10 @@ def _has_eligible_action_card(state: GameState, player_id: str) -> bool:
         if ok:
             return True
     return False
+
+
+def _has_eligible_blocker(state: GameState, player_id: str) -> bool:
+    return any(can_block(state, player_id, slot.slot)[0] for slot in state.get_player(player_id).battle_area)
 
 
 def _auto_skip_empty_action_windows(
@@ -353,19 +379,61 @@ def _handle_command(state: GameState, player_id: str, cmd: str) -> tuple[bool, s
             return False, f"非法欄位：{parts[2]}"
         return play_card(state, player_id, parts[1], slot)
 
+    if action in ("block", "阻擋") and len(parts) >= 2:
+        if state.phase != "battle" or state.step not in ("attack", "block"):
+            return False, "目前不能阻擋。"
+        if player_id != state.priority:
+            return False, "目前不是你的阻擋優先權。"
+        try:
+            slot = int(parts[1])
+        except ValueError:
+            return False, f"非法欄位：{parts[1]}"
+        ok, reason = can_block(state, player_id, slot)
+        if not ok:
+            return False, reason
+        resolve_block(state, slot)
+        return True, ""
+
     if action in ("attack", "攻擊") and len(parts) >= 2:
         try:
             slot = int(parts[1])
         except ValueError:
             return False, f"非法欄位：{parts[1]}"
+        target_slot: Optional[int] = None
+        if len(parts) >= 3:
+            target_token = parts[2].lower()
+            if target_token in ("base", "基地", "shield", "盾牌", "player", "玩家"):
+                target_slot = None
+            elif target_token in ("unit", "enemy", "opponent", "單位", "敵方", "對手") and len(parts) >= 4:
+                try:
+                    target_slot = int(parts[3])
+                except ValueError:
+                    return False, f"非法目標欄位：{parts[3]}"
+            elif parts[2].isdigit():
+                target_slot = int(parts[2])
+            else:
+                return False, f"未知攻擊目標：{parts[2]}"
+        if target_slot is not None:
+            ok, reason = can_attack_unit(state, player_id, slot, target_slot)
+            if not ok:
+                return False, reason
+            ok, reason = declare_attack(state, player_id, slot)
+            if not ok:
+                return False, reason
+            resolve_unit_attack(state, target_slot)
+            if not state.game_over:
+                end_battle(state)
+            return True, ""
         ok, reason = declare_attack(state, player_id, slot)
         if not ok:
             return False, reason
-        # Current engine has no interactive block window in runtime yet; resolve
-        # the attack immediately to preserve existing gcg_simulation behavior.
-        resolve_unblocked_attack(state)
-        if not state.game_over:
-            end_battle(state)
+        defender_id = state.get_opponent(player_id).player_id
+        state.step = "block"
+        state.priority = defender_id
+        if not _has_eligible_blocker(state, defender_id):
+            resolve_unblocked_attack(state)
+            if not state.game_over:
+                end_battle(state)
         return True, ""
 
     return False, f"未知指令：{action}"
@@ -399,7 +467,8 @@ def _split_compound_commands(cmd: str) -> tuple[list[str], str]:
     return [" ".join(part) for part in commands], ""
 
 
-def _auto_resolve_p2(
+def _auto_resolve_player(
+    player_id: str,
     state: GameState,
     max_actions: int = 20,
     viewer: str = "P1",
@@ -409,21 +478,22 @@ def _auto_resolve_p2(
     actions = 0
     while not state.game_over and actions < max_actions:
         _auto_skip_empty_action_windows(state, viewer, events)
-        if state.priority and state.priority != "P2":
+        if state.priority and state.priority != player_id:
             break
-        if state.active_player != "P2" and state.phase == "main":
+        if state.active_player != player_id and state.phase == "main":
             break
         try:
-            _record_event(state, events, "decision_requested", "P2", viewer, "P2 正在思考...")
-            cmd = ai_decide_command(state, "P2")
+            _record_event(state, events, "decision_requested", player_id, viewer, f"{player_id} 正在思考...")
+            decision = ai_decide(state, player_id)
+            cmd = decision.command
         except RuntimeError as exc:
-            message = f"P2 AI 決策失敗：{exc}"
-            state.battle_log.append(f"P2 AI 決策失敗：{exc}")
+            message = f"{player_id} AI 決策失敗：{exc}"
+            state.battle_log.append(message)
             _record_event(
                 state,
                 events,
                 "ai_failure",
-                "P2",
+                player_id,
                 viewer,
                 message,
                 result={"ok": False, "reason": str(exc)},
@@ -433,24 +503,24 @@ def _auto_resolve_p2(
             state,
             events,
             "decision_received",
-            "P2",
+            player_id,
             viewer,
-            f"P2 回傳指令：{cmd}",
+            f"{player_id} 回傳指令：{cmd}",
             command=cmd,
-            ai_evaluation={"chosen_command": cmd, "candidates": []},
+            ai_evaluation=_ai_evaluation(decision),
         )
         log_start = len(state.battle_log)
-        ok, reason = _handle_command(state, "P2", cmd)
+        ok, reason = _handle_command(state, player_id, cmd)
         details = _format_battle_details(state.battle_log[log_start:])
         actions += 1
         if not ok:
-            message = f"P2 指令失敗：{cmd}（{reason}）"
-            state.battle_log.append(f"P2 指令失敗：{cmd}（{reason}）")
+            message = f"{player_id} 指令失敗：{cmd}（{reason}）"
+            state.battle_log.append(message)
             _record_event(
                 state,
                 events,
                 "decision_applied",
-                "P2",
+                player_id,
                 viewer,
                 message,
                 command=cmd,
@@ -461,9 +531,9 @@ def _auto_resolve_p2(
             state,
             events,
             "decision_applied",
-            "P2",
+            player_id,
             viewer,
-            f"P2 執行：{cmd}{details}",
+            f"{player_id} 執行：{cmd}{details}",
             command=cmd,
             result={"ok": True, "reason": ""},
         )
@@ -472,8 +542,17 @@ def _auto_resolve_p2(
         if state.game_over:
             break
         _auto_skip_empty_action_windows(state, viewer, events)
-        if cmd.startswith("pass") or state.priority != "P2":
+        if cmd.startswith("pass") or state.priority != player_id:
             break
+
+
+def _auto_resolve_p2(
+    state: GameState,
+    max_actions: int = 20,
+    viewer: str = "P1",
+    events: Optional[list[dict]] = None,
+) -> None:
+    _auto_resolve_player("P2", state, max_actions, viewer, events)
 
 
 def _command(player_id: str, cmd: str, viewer: str, as_json: bool, game_id: Optional[str]) -> str:
@@ -524,8 +603,73 @@ def _command(player_id: str, cmd: str, viewer: str, as_json: bool, game_id: Opti
 def _auto(player_id: str, viewer: str, as_json: bool, game_id: Optional[str], max_actions: int = 20) -> str:
     state = _load_active_state(game_id)
     events: list[dict] = []
-    if player_id == "P2":
-        _auto_resolve_p2(state, max_actions, viewer, events)
+    if state.phase == "pre-game":
+        _record_event(
+            state,
+            events,
+            "decision_requested",
+            player_id,
+            viewer,
+            f"{player_id} 正在決定調度...",
+            legal_actions=["keep", "redraw"],
+        )
+        decision = ai_decide(state, player_id, {"keep", "redraw"})
+        cmd = decision.command
+        action = cmd.split(maxsplit=1)[0].lower()
+        if action == "redraw":
+            mulligan_redraw(state, player_id)
+            message = f"{player_id} 選擇重新調度"
+        else:
+            mulligan_keep(state, player_id)
+            action = "keep"
+            message = f"{player_id} 保留手牌"
+        _record_event(
+            state,
+            events,
+            "decision_applied",
+            player_id,
+            viewer,
+            message,
+            command=action,
+            result={"ok": True, "reason": ""},
+            legal_actions=["keep", "redraw"],
+            ai_evaluation=_ai_evaluation(AIDecision(command=action, consideration=decision.consideration)),
+        )
+        if player_id == "P1":
+            _record_event(
+                state,
+                events,
+                "decision_requested",
+                "P2",
+                viewer,
+                "P2 正在決定調度...",
+                legal_actions=["keep", "redraw"],
+            )
+            p2_decision = ai_decide(state, "P2", {"keep", "redraw"})
+            p2_cmd = p2_decision.command
+            p2_action = p2_cmd.split(maxsplit=1)[0].lower()
+            if p2_action == "redraw":
+                mulligan_redraw(state, "P2")
+                p2_message = "P2 選擇重新調度"
+            else:
+                mulligan_keep(state, "P2")
+                p2_action = "keep"
+                p2_message = "P2 保留手牌"
+            _record_event(
+                state,
+                events,
+                "decision_applied",
+                "P2",
+                viewer,
+                p2_message,
+                command=p2_action,
+                result={"ok": True, "reason": ""},
+                legal_actions=["keep", "redraw"],
+                ai_evaluation=_ai_evaluation(AIDecision(command=p2_action, consideration=p2_decision.consideration)),
+            )
+        _advance_to_main_after_mulligan(state)
+        _record_event(state, events, "auto_progress", None, viewer, "調度完成，建立盾牌並進入先手主要階段")
+    _auto_resolve_player(player_id, state, max_actions, viewer, events)
     _record_game_end_if_needed(state, events, viewer)
     return _result(state, viewer, as_json, events)
 
@@ -536,26 +680,31 @@ def main() -> None:
     sub = parser.add_subparsers(dest="command_name", required=True)
 
     start = sub.add_parser("start")
+    start.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
     start.add_argument("--viewer", choices=("P1", "P2"), default="P1")
     start.add_argument("--first-player", choices=("P1", "P2"), help="測試用：固定先手玩家")
 
     status = sub.add_parser("status")
+    status.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
     status.add_argument("--viewer", choices=("P1", "P2"), default="P1")
     status.add_argument("--game-id", help="內部測試/adapter 用：固定讀取指定 game_id")
 
     mulligan = sub.add_parser("mulligan")
+    mulligan.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
     mulligan.add_argument("--player", choices=("P1", "P2"), required=True)
     mulligan.add_argument("--action", choices=("keep", "redraw"), required=True)
     mulligan.add_argument("--viewer", choices=("P1", "P2"), default="P1")
     mulligan.add_argument("--game-id", help="內部測試/adapter 用：固定讀取指定 game_id")
 
     command = sub.add_parser("command")
+    command.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
     command.add_argument("--player", choices=("P1", "P2"), required=True)
     command.add_argument("--cmd", required=True)
     command.add_argument("--viewer", choices=("P1", "P2"), default="P1")
     command.add_argument("--game-id", help="內部測試/adapter 用：固定讀取指定 game_id")
 
     auto = sub.add_parser("auto")
+    auto.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
     auto.add_argument("--player", choices=("P1", "P2"), required=True)
     auto.add_argument("--viewer", choices=("P1", "P2"), default="P1")
     auto.add_argument("--game-id", help="內部測試/adapter 用：固定讀取指定 game_id")

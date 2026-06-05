@@ -141,8 +141,8 @@ Next:
 ```text
 Section: opencode-agent
 Scope: .opencode/agents/gcg-ai-player.md
-Changed: AI Player 改為直接輸出單行 command，不再寫 /tmp/gcg_ai_output.txt。
-Verification: opencode run --agent gcg-ai-player "請只回覆 pass" 成功回 pass。
+Changed: AI Player 直接輸出 CONSIDER / COMMAND，不再寫 /tmp/gcg_ai_output.txt；runtime 只套用 COMMAND，replay 記錄 public-safe CONSIDER。
+Verification: opencode run --agent gcg-ai-player "<完整 viewer display>" 成功回 CONSIDER / COMMAND。
 Constraints: AI Player 只能讀 viewer display text，不讀 gameState.md。
 Next: 若 AI command 要套用 state，交給 skills_py/gcg_runtime.py command --player P2 --cmd "<command>"。
 ```

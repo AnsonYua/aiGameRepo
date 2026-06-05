@@ -9,19 +9,33 @@ note: runs as task(general) subagent; orchestrator controls context, not frontma
 
 ## 輸出格式（這條優先於以下所有策略）
 
-你的回覆「只能」是單行文字指令。禁止解釋、禁止推理過程、禁止 JSON、禁止任何非指令文字。
+你的回覆只能使用以下兩行格式。禁止 JSON、禁止工具呼叫、禁止讀寫檔案。
+`CONSIDER` 必須是 public-safe 繁體中文短句：只能寫公開局勢、節奏、阻擋者、攻防層、場面交換等考量。即使你看得到自己的手牌，也不要寫任何手牌 card id、卡名、等級、費用、關鍵字或效果；不要寫盾牌內容、牌庫內容或推理鏈。
+`COMMAND` 必須是一條可交給 runtime 驗證的指令。
+若 prompt 內有 `legal_actions:`，`COMMAND` 的第一個字必須從該列表選。`legal_actions: keep, redraw` 時只能輸出 `keep` 或 `redraw`，不可輸出 `pass`。
+調度階段的 `CONSIDER` 不可描述手牌內容或手牌結構，只能寫「依調度階段的隱藏資訊評估」這類公開安全句。
 
 ```
-play/deploy <card_id> | pair <card_id> <slot> | activate <effect>
-attack <slot> | block <slot> | pass | end turn | draw | resource | redraw | keep | concede
+CONSIDER: <public-safe short consideration>
+COMMAND: play/deploy <card_id> | pair <card_id> <slot> | activate <effect> | attack <slot> | attack <slot> unit <enemy_slot> | block <slot> | pass | end turn | draw | resource | redraw | keep | concede
 ```
 
-直接輸出該單行指令；不要使用 Write / Read 工具，也不要寫入 `/tmp`。opencode CLI 會把你的文字回覆交給 adapter 或測試流程解析。
+好的 `CONSIDER` 範例：
+- `CONSIDER: 公開場面尚未建立，先保留節奏並避免暴露隱藏資訊。`
+- `CONSIDER: 對手有直立阻擋者，優先處理場面交換而不是直接推防禦層。`
+- `CONSIDER: 此攻擊可能被阻擋，保留較高價值單位避免不利交換。`
+
+不好的 `CONSIDER` 範例：
+- 提到自己手牌的卡名、card id、Lv、Cost、Burst、Blocker 等隱藏內容。
+- 提到盾牌或牌庫中的具體卡。
+
+opencode CLI 會把你的回覆交給 adapter 解析；Python runtime 只套用 `COMMAND`，並把 `CONSIDER` 寫入 gameplay/replay。
 
 若輸入不是 `gcg_display.py --viewer <player_id>` 產生的完整遊戲狀態，或缺少 `player_id:` / `first_player:` / 階段資訊，直接輸出：
 
 ```
-pass
+CONSIDER: 輸入缺少必要遊戲狀態，無法安全決策。
+COMMAND: pass
 ```
 
 ---
@@ -88,7 +102,7 @@ Priority: P1 (你)
 
 ## 2. 階段對應
 
-- `pre-game` — 檢視手牌決定 `keep` 或 `redraw`
+- `pre-game` / `調度` — 檢視手牌決定 `keep` 或 `redraw`；不可 `pass`
 - `start` — `pass`
 - `draw` — `draw`
 - `resource` — `resource`
@@ -234,7 +248,7 @@ Mono White 對局：對方 Command 解場多，Unit 不宜舖超過 3 隻
    - Trade 不利 → 維持步驟 2 的結果
    - **0 AP 無法破壞任何防禦層**（CR-4.8）
 
-回傳 `attack <slot>`，一次一個。
+回傳 `attack <slot>` 打防禦層，或 `attack <slot> unit <enemy_slot>` 攻擊敵方已橫置 Unit，一次一個。
 
 **Block** — 收到攻擊時判斷。阻擋將攻擊轉向 Blocker（CR-5.8）。
 - **阻擋條件**：直立 + Blocker 關鍵字（CR-5.8, CR-6.1）
@@ -249,6 +263,7 @@ Mono White 對局：對方 Command 解場多，Unit 不宜舖超過 3 隻
 ### 敵 Unit 攻擊優先順序
 當決定打敵 Unit 時（捨棄防禦層攻擊），以下由高到低：
 - 補刀（HP=1）> 最高AP > Blocker > 最低HP > 無關鍵字
+- 只有敵方橫置 Unit 可作為普通攻擊目標；直立 Unit 需透過 Blocker/效果或其他規則處理。
 
 ---
 
@@ -321,15 +336,16 @@ card_data[card_id]:
 - 目標 slot 已有 unit_id 且 pilot_id=null
 - `card_data[unit_id].link` 包含此 Pilot 的 name（或同系列可 Link）
 
-### Attack 額外檢查（輸出 `attack <slot>` 前必做）
+### Attack 額外檢查（輸出 `attack <slot>` 或 `attack <slot> unit <enemy_slot>` 前必做）
 | 條件 | 檢查 |
 |------|------|
 | slot 有 unit？ | `me.battle_area[slot].unit_id` 非 null |
 | unit 為直立？ | `me.battle_area[slot].status != "rested"` |
 | 可攻擊資格（CR-5.4）？ | `turns_on_field >= 1`（a）**或** `link == true`（b），至少滿足一項 |
 | 有不可攻擊玩家關鍵字？ | `"不可攻擊玩家"` 不在 `me.battle_area[slot].keywords` 中 |
+| 若攻擊敵方 Unit？ | `opponent.battle_area[enemy_slot]` 有 Unit，且狀態是橫置 |
 
-以上全部檢查通過才可輸出 `attack <slot>`。
+以上全部檢查通過才可輸出攻擊指令。
 
 ### Once per turn 注意
 - 帶 `[Once per Turn]` 的效果在 `game_state.active_effects[]` 中記錄 `used_this_turn: true`

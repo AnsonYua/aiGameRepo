@@ -15,7 +15,7 @@
 
 玩家或 AI 決策前都必須收到該玩家視角的完整可見狀態。玩家與 AI Player 不直接讀 `gameState.md`。
 
-設計邊界詳見 `GCG_ARCHITECTURE.md`：Python 負責真相、規則、狀態與驗證；LLM 負責語言、策略、解釋與建議。所有 LLM 產生的 command 都必須回到 runtime，由 Python 驗證與套用。
+設計邊界詳見 `GCG_ARCHITECTURE.md`：Python 是狀態安全層、基礎規則層、唯一寫入者；LLM 是語意解析層、效果解釋層、策略層。所有 LLM 產生的 proposed command / proposed state_diff 都必須回到 runtime，由 Python 驗證與套用。
 
 ## 玩家體驗
 
@@ -61,12 +61,32 @@ python3 skills_py/gcg_runtime.py auto --player P2 --viewer P1
 ## Opencode / Codex 相容策略
 
 - Codex：直接呼叫 `gcg_runtime.py`，不依賴 opencode `@` 或 `task` spawn。
-- opencode：保留 `.opencode/agents/*.md` 作為 chat adapter / AI prompt / 規則參考，但執行路徑應 fallback 到同一個 runtime。
-- `gcg-ai-player` 只應讀完整 display text 並回單行 command，不直接改 state。
+- opencode：保留 `.opencode/agents/*.md` 作為 chat adapter / AI prompt / 規則參考；狀態變更仍回到同一個 runtime。
+- `gcg-ai-player` 是唯一 AI 策略來源。`skills_py/ai_player.py` 只呼叫 agent、解析 `CONSIDER` / `COMMAND`，不寫 Python 策略 fallback。
+- `gcg-ai-player` 只應讀完整 display text，回 public-safe 考量與單一 command，不直接改 state。
+- `gcg-judge` / `.opencode/skills/gcg/*.md` 可作為複雜效果語意 reviewer，產生 proposed state_diff；最終 apply 仍必須由 Python validator/runtime 負責。
 
 ## 目前保留的 legacy/debug 入口
 
 `gcg_simulation.py` 暫時保留作為 debug/legacy CLI。正式相容路徑以 chat adapter 呼叫 `skills_py/gcg_runtime.py` 為準。
+
+## Regression Harness
+
+修改 AI 決策、runtime combat、gameplay log 或 replay 後，至少跑：
+
+```bash
+python3 tests/gcg_direction_harness.py
+```
+
+這個 harness 不呼叫 live opencode；它用 fake subprocess 驗證 `skills_py/ai_player.py` 只會透過 `gcg-ai-player.md` adapter 決策，並檢查 public-safe consideration、`attack <slot> unit <enemy_slot>`、`block <slot>`、YAML/replay 記錄。
+
+若要額外驗證 live LLM / opencode agent 合約：
+
+```bash
+python3 tests/gcg_direction_harness.py --live-llm
+```
+
+`--live-llm` 會實際呼叫 `opencode run --agent gcg-ai-player`，只檢查 `CONSIDER` / `COMMAND` 合約與 public-safe 輸出，不套用狀態。
 
 ## 清理規則
 

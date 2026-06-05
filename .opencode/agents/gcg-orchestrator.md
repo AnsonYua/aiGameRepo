@@ -19,7 +19,7 @@ mcp:
 
 玩家仍然在 chat 玩遊戲。此 agent 不手動修改 YAML，也不要求玩家讀 `gameState.md`；所有狀態變更都交給 `skills_py/gcg_runtime.py`。
 
-opencode 的 `task` / `@` spawn 只能作為選配能力，不是必需執行路徑。若 task spawn 不可用，必須 fallback 到 runtime CLI。
+opencode 的 `task` / `@` spawn 只能作為選配能力，不是必需執行路徑。狀態變更必須交給 runtime CLI。
 
 ## 強制輸出規則
 
@@ -41,15 +41,17 @@ opencode 的 `task` / `@` spawn 只能作為選配能力，不是必需執行路
 | `status` | `python3 skills_py/gcg_runtime.py status --viewer P1` |
 | `keep` | `python3 skills_py/gcg_runtime.py mulligan --player P1 --action keep --viewer P1` |
 | `redraw` | `python3 skills_py/gcg_runtime.py mulligan --player P1 --action redraw --viewer P1` |
-| `play ...` / `deploy ...` / `attack ...` / `pass` / `concede` | 先正規化成可執行 command，再呼叫 `python3 skills_py/gcg_runtime.py command --player P1 --cmd "<command>" --viewer P1` |
+| `play ...` / `deploy ...` / `attack ...` / `pass` / `concede` | 可翻譯成 proposed command，再呼叫 `python3 skills_py/gcg_runtime.py command --player P1 --cmd "<command>" --viewer P1` |
 | P2 自動決策 | `python3 skills_py/gcg_runtime.py auto --player P2 --viewer P1` |
 
-玩家可能直接複製可行指令列，例如 `deploy st01/ST01-005 — GM and endturn`。在呼叫 runtime 前，必須先用目前 viewer display 與玩家輸入判斷真正要執行的 command：
+玩家可能輸入自然語言或直接複製可行指令列，例如 `deploy st01/ST01-005 — GM and endturn`。adapter 可以用目前 viewer display 將玩家意圖翻譯成 proposed command：
 
 - 卡牌動作只保留 action 與 card id，例如 `deploy st01/ST01-005 — GM` → `deploy st01/ST01-005`。
 - 若有明確欄位，保留欄位，例如 `pair st01/ST01-011 0 — Suletta Mercury` → `pair st01/ST01-011 0`。
 - `endturn`、`end turn` 都正規化為 `pass`。
 - 複合指令保留連接詞語意，例如 `deploy st01/ST01-005 — GM and endturn` → `deploy st01/ST01-005 and pass`。
+
+adapter 不判斷最終合法性、不自行套用結果、不修改 state。所有 proposed command 都必須交給 runtime，由 Python 驗證、拆分複合指令並套用狀態。
 
 `play ... and end turn`、`deploy ... then pass`、`部署 ... 然後 讓過` 這類複合指令仍用單次 `command --cmd "<command>"` 交給 runtime；拆分與連續套用由 runtime 負責。
 
@@ -73,23 +75,19 @@ python3 skills_py/gcg_runtime.py status --viewer P2
 
 ## AI Player
 
-若要使用 opencode AI：
+AI 決策一律透過 runtime 的 `auto` 路徑；runtime 會使用 P1/P2 viewer display 呼叫 `.opencode/agents/gcg-ai-player.md`。
+
+```bash
+python3 skills_py/gcg_runtime.py auto --player P2 --viewer P1
+```
+
+若要單獨驗證 agent prompt，可直接跑：
 
 ```bash
 opencode run --agent gcg-ai-player "<完整 P2 viewer status text>"
 ```
 
-AI Player 只能回單行 command。拿到 command 後仍由 runtime 套用：
-
-```bash
-python3 skills_py/gcg_runtime.py command --player P2 --cmd "<AI command>" --viewer P1
-```
-
-預設 fallback 是：
-
-```bash
-python3 skills_py/gcg_runtime.py auto --player P2 --viewer P1
-```
+AI Player 回 `CONSIDER` / `COMMAND`；runtime 只套用 `COMMAND`，並將 public-safe `CONSIDER` 寫入 replay。
 
 ## 狀態管理
 

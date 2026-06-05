@@ -14,8 +14,17 @@ from typing import Optional
 
 import yaml
 
-from card_db import build_card_summary, get_card, get_card_keywords
-from game_state import BattleSlot, GameState, PlayerState
+try:
+    from .card_db import build_card_summary, get_card, get_card_keywords
+    from .game_engine import can_play_card
+    from .game_state import BattleSlot, GameState, PlayerState
+except ImportError:
+    PROJECT_ROOT = Path(__file__).parent.parent.absolute()
+    if str(PROJECT_ROOT) not in sys.path:
+        sys.path.insert(0, str(PROJECT_ROOT))
+    from skills_py.card_db import build_card_summary, get_card, get_card_keywords
+    from skills_py.game_engine import can_play_card
+    from skills_py.game_state import BattleSlot, GameState, PlayerState
 
 TEMPLATE_DIR = Path(__file__).parent
 TEMPLATE_FILE = TEMPLATE_DIR / "gcg_display_templates.yaml"
@@ -76,21 +85,21 @@ def _card_line(card_id: str) -> str:
     return _fmt("card_line", **_build_card_data(card_id))
 
 
-def _check_legality(card_id: str, res: dict, has_unit: bool = True) -> str:
+def _check_legality(card_id: str, state: GameState, viewer: str, has_unit: bool = True) -> str:
     """回傳合法性標記字串：✅ 或 ❌(原因)。"""
     card = get_card(card_id)
     if not card:
         return _fmt("legality_ok")
-    level = card.get("level", 0)
-    cost = card.get("cost", 0)
-    total_lv = res["active"] + res["rested"] + res["ex"]
-    if total_lv < level:
-        return _fmt("legality_fail_level", total_lv=total_lv, required_lv=level)
-    if res["active"] >= cost or res["active"] + res["ex"] >= cost:
-        if card.get("cardType") == "pilot" and not has_unit:
-            return _fmt("legality_fail_pair")
+    if card.get("cardType") == "pilot" and not has_unit:
+        return _fmt("legality_fail_pair")
+    ok, reason = can_play_card(state, viewer, card_id)
+    if ok:
         return _fmt("legality_ok")
-    return _fmt("legality_fail_cost", active=res["active"], cost=cost)
+    if reason.startswith("insufficient Level"):
+        return _fmt("legality_fail_level", total_lv=state.get_player(viewer).level, required_lv=card.get("level", 0))
+    if reason.startswith("insufficient resources"):
+        return _fmt("legality_fail_cost", active=state.get_player(viewer).resources_active, cost=card.get("cost", 0))
+    return f"❌ ({reason})"
 
 
 def _player_resources(player: PlayerState) -> dict:
@@ -127,12 +136,13 @@ def _battlefield_lines(ba: list[BattleSlot], is_opponent: bool) -> list[str]:
     return lines
 
 
-def _available_actions(hand_cards: list[str], res: dict, battle_area: list[BattleSlot]) -> list[str]:
+def _available_actions(state: GameState, viewer: str, battle_area: list[BattleSlot]) -> list[str]:
     """產生可行指令列表。"""
     lines = []
+    hand_cards = state.get_player(viewer).hand_cards
     has_unit = any(slot.unit_id is not None for slot in battle_area)
     for card_id in hand_cards:
-        legality = _check_legality(card_id, res, has_unit)
+        legality = _check_legality(card_id, state, viewer, has_unit)
         card = get_card(card_id) or {}
         card_type = card.get("cardType")
         d = {
@@ -318,7 +328,7 @@ def _render_main_phase(state: GameState, viewer: str = "P1") -> str:
 
     me = state.get_player(viewer)
     res = _player_resources(me)
-    actions = _available_actions(me.hand_cards, res, me.battle_area)
+    actions = _available_actions(state, viewer, me.battle_area)
     action_block = "\n".join(actions)
     return _fmt("main_phase",
         common_block=_build_common_block(state, viewer),

@@ -264,7 +264,7 @@ def play_card(state: GameState, player_id: str, card_id: str, slot_idx: Optional
         player.base.alive = True
         player.base.status = "active"
         if player.shields > 0:
-            reclaimed = player.deck_cards.pop(0) if player.deck_cards else None
+            reclaimed = player.shield_cards.pop(0) if player.shield_cards else None
             if reclaimed:
                 player.hand_cards.append(reclaimed)
             player.shields -= 1
@@ -314,6 +314,70 @@ def declare_attack(state: GameState, player_id: str, slot_idx: int) -> Tuple[boo
     state.priority = player_id
     state.battle_log.append(f"{player_id} 以欄位 {slot_idx} {_card_label(slot.unit_id)}（AP:{slot.ap}）攻擊")
     return True, ""
+
+
+def can_attack_unit(state: GameState, player_id: str, attacker_slot_idx: int, target_slot_idx: int) -> Tuple[bool, str]:
+    ok, reason = can_attack(state, player_id, attacker_slot_idx)
+    if not ok:
+        return False, reason
+    defender = state.get_opponent(player_id)
+    if target_slot_idx < 0 or target_slot_idx >= 6:
+        return False, "invalid target slot"
+    target = defender.battle_area[target_slot_idx]
+    if target.unit_id is None:
+        return False, "no enemy unit in target slot"
+    if target.status != "rested":
+        return False, "enemy unit must be rested to attack"
+    return True, ""
+
+
+def _clear_unit_slot(slot: BattleSlot) -> None:
+    slot.unit_id = None
+    slot.pilot_id = None
+    slot.ap = 0
+    slot.hp = 0
+    slot.damage = 0
+    slot.keywords = []
+    slot.link = False
+    slot.status = None
+    slot.turns_on_field = 0
+
+
+def resolve_unit_attack(state: GameState, target_slot_idx: int):
+    att_player = state.get_active()
+    def_player = state.get_opponent(state.active_player)
+    att_slot = att_player.battle_area[state.current_attacker]
+    target_slot = def_player.battle_area[target_slot_idx]
+    att_slot.status = "rested"
+    state.battle_log.append(
+        f"目標：{def_player.player_id} 欄位 {target_slot_idx} {_card_label(target_slot.unit_id)}；"
+        f"{_card_label(att_slot.unit_id)} 進行單位戰鬥"
+    )
+
+    if "First Strike" in att_slot.keywords:
+        target_slot.damage += att_slot.ap
+        if target_slot.damage >= target_slot.hp:
+            def_player.trash.append(target_slot.unit_id)
+            _clear_unit_slot(target_slot)
+            state.battle_log.append(f"防禦方欄位 {target_slot_idx} 因 First Strike 被破壞")
+        else:
+            att_slot.damage += target_slot.ap
+    else:
+        att_slot.damage += target_slot.ap
+        target_slot.damage += att_slot.ap
+
+    if att_slot.unit_id and att_slot.damage >= att_slot.hp:
+        att_player.trash.append(att_slot.unit_id)
+        _clear_unit_slot(att_slot)
+        state.battle_log.append(f"攻擊方欄位 {state.current_attacker} 被破壞")
+
+    if target_slot.unit_id and target_slot.damage >= target_slot.hp:
+        def_player.trash.append(target_slot.unit_id)
+        _clear_unit_slot(target_slot)
+        state.battle_log.append(f"防禦方欄位 {target_slot_idx} 被破壞")
+
+    state.step = "battle_end"
+    state.current_attacker = None
 
 
 def can_block(state: GameState, defender_id: str, slot_idx: int) -> Tuple[bool, str]:
@@ -476,6 +540,8 @@ def cleanup_turn(state: GameState):
     state.battle_log.append(f"回合 {state.turn} 開始 — {state.active_player} 的回合")
     start_phase(state)
     draw_phase(state)
+    if state.game_over:
+        return
     resource_phase(state)
     state.phase = "main"
     state.priority = state.active_player

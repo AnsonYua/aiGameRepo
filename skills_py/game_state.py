@@ -85,10 +85,11 @@ class PlayerState:
     def hand_count(self) -> int:
         return len(self.hand_cards)
 
-    def to_dict(self, hide_hand: bool = False):
+    def to_dict(self, hide_hand: bool = False, include_private: bool = False):
         return {
             "base": self.base.to_dict(),
             "shields": self.shields,
+            "shield_cards": list(self.shield_cards) if include_private else ["Unknown"] * len(self.shield_cards),
             "hand_count": len(self.hand_cards),
             "hand_cards": (["Unknown"] * len(self.hand_cards)) if hide_hand else list(self.hand_cards),
             "deck_cards": list(self.deck_cards),
@@ -118,6 +119,7 @@ class PlayerState:
         p.deck_count = d.get("deck_count", 0)
         p.resource_deck_count = d.get("resource_deck_count", 0)
         p.shields = d.get("shields", 0)
+        p.shield_cards = d.get("shield_cards", [])
         p.trash = d.get("trash", [])
         p.removal = d.get("removal", [])
         p.base = BaseState.from_dict(d.get("base", {}))
@@ -153,6 +155,7 @@ class GameState:
     def to_dict(self, viewer: str = "P1") -> dict:
         hide_p1 = viewer == "P2"
         hide_p2 = viewer == "P1"
+        include_private = viewer == "none"
         return {
             "game_id": self.game_id,
             "turn": self.turn,
@@ -162,8 +165,8 @@ class GameState:
             "step": self.step,
             "current_attacker": self.current_attacker,
             "priority": self.priority,
-            "p1": self.p1.to_dict(hide_hand=hide_p1),
-            "p2": self.p2.to_dict(hide_hand=hide_p2),
+            "p1": self.p1.to_dict(hide_hand=hide_p1, include_private=include_private),
+            "p2": self.p2.to_dict(hide_hand=hide_p2, include_private=include_private),
             "active_effects": list(self.active_effects),
             "battle_log": list(self.battle_log),
             "game_over": self.game_over,

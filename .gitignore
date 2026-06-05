@@ -1,4 +1,6 @@
 replays/
+game-states/game_*/
+game-states/harness_*/
 .gcg_conv_log.yaml
 .DS_Store
 __pycache__/
