@@ -103,6 +103,25 @@ def _record_event(
     events.append(event)
 
 
+def _record_game_end_if_needed(state: GameState, events: list[dict], viewer: str) -> None:
+    if not state.game_over or not state.winner:
+        return
+    if any(event.get("event_type") == "game_end" for event in events):
+        return
+    reason = ""
+    if state.battle_log:
+        last_log = state.battle_log[-1]
+        if "獲勝" in last_log or "投降" in last_log:
+            reason = f"（{last_log}）"
+    _record_event(state, events, "game_end", state.winner, viewer, f"遊戲結束，勝者：{state.winner}{reason}")
+
+
+def _format_battle_details(logs: list[str]) -> str:
+    if not logs:
+        return ""
+    return "（" + "；".join(logs) + "）"
+
+
 def _result(
     state: GameState,
     viewer: str,
@@ -131,6 +150,8 @@ def _result(
         "priority": state.priority,
         "phase": state.phase,
         "step": state.step,
+        "game_over": state.game_over,
+        "winner": state.winner,
         "events": events,
         "all_events": read_events(state),
         "display_text": text,
@@ -343,7 +364,8 @@ def _handle_command(state: GameState, player_id: str, cmd: str) -> tuple[bool, s
         # Current engine has no interactive block window in runtime yet; resolve
         # the attack immediately to preserve existing gcg_simulation behavior.
         resolve_unblocked_attack(state)
-        end_battle(state)
+        if not state.game_over:
+            end_battle(state)
         return True, ""
 
     return False, f"未知指令：{action}"
@@ -417,7 +439,9 @@ def _auto_resolve_p2(
             command=cmd,
             ai_evaluation={"chosen_command": cmd, "candidates": []},
         )
+        log_start = len(state.battle_log)
         ok, reason = _handle_command(state, "P2", cmd)
+        details = _format_battle_details(state.battle_log[log_start:])
         actions += 1
         if not ok:
             message = f"P2 指令失敗：{cmd}（{reason}）"
@@ -439,11 +463,14 @@ def _auto_resolve_p2(
             "decision_applied",
             "P2",
             viewer,
-            f"P2 執行：{cmd}",
+            f"P2 執行：{cmd}{details}",
             command=cmd,
             result={"ok": True, "reason": ""},
         )
         determine_winner(state)
+        _record_game_end_if_needed(state, events, viewer)
+        if state.game_over:
+            break
         _auto_skip_empty_action_windows(state, viewer, events)
         if cmd.startswith("pass") or state.priority != "P2":
             break
@@ -470,7 +497,9 @@ def _command(player_id: str, cmd: str, viewer: str, as_json: bool, game_id: Opti
             result={"ok": False, "reason": reason},
         )
     for sub_cmd in commands:
+        log_start = len(state.battle_log)
         ok, reason = _handle_command(state, player_id, sub_cmd)
+        details = _format_battle_details(state.battle_log[log_start:])
         if not ok:
             state.battle_log.append(f"非法指令：{reason}")
         _record_event(
@@ -479,7 +508,7 @@ def _command(player_id: str, cmd: str, viewer: str, as_json: bool, game_id: Opti
             "decision_applied",
             player_id,
             viewer,
-            f"{player_id} 指令{'成功' if ok else '失敗'}：{sub_cmd}",
+            f"{player_id} 指令{'成功' if ok else '失敗'}：{sub_cmd}{details if ok else ''}",
             command=sub_cmd,
             result={"ok": ok, "reason": reason},
         )
@@ -488,8 +517,7 @@ def _command(player_id: str, cmd: str, viewer: str, as_json: bool, game_id: Opti
     determine_winner(state)
     if not state.game_over:
         _auto_resolve_p2(state, viewer=viewer, events=events)
-    else:
-        _record_event(state, events, "game_end", state.winner, viewer, f"遊戲結束，勝者：{state.winner}")
+    _record_game_end_if_needed(state, events, viewer)
     return _result(state, viewer, as_json, events)
 
 
@@ -498,6 +526,7 @@ def _auto(player_id: str, viewer: str, as_json: bool, game_id: Optional[str], ma
     events: list[dict] = []
     if player_id == "P2":
         _auto_resolve_p2(state, max_actions, viewer, events)
+    _record_game_end_if_needed(state, events, viewer)
     return _result(state, viewer, as_json, events)
 
 

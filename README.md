@@ -15,6 +15,8 @@
 
 玩家或 AI 決策前都必須收到該玩家視角的完整可見狀態。玩家與 AI Player 不直接讀 `gameState.md`。
 
+設計邊界詳見 `GCG_ARCHITECTURE.md`：Python 負責真相、規則、狀態與驗證；LLM 負責語言、策略、解釋與建議。所有 LLM 產生的 command 都必須回到 runtime，由 Python 驗證與套用。
+
 ## 玩家體驗
 
 玩家在 chat 輸入自然指令：

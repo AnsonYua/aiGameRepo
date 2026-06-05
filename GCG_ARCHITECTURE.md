@@ -16,6 +16,25 @@
 
 `gameState.md` 是內部 state source。玩家與 AI Player 不直接讀取它；所有決策前都先產生該玩家視角的完整可見狀態。
 
+## Python / LLM Boundary
+
+核心原則：
+
+```text
+Python 負責真相、規則、狀態與驗證。
+LLM 負責語言、策略、解釋與建議。
+```
+
+本專案中，Python 是裁判與記錄員；LLM 是玩家、顧問、旁白或 reviewer。任何會改變遊戲狀態、判定合法性、決定勝負、抽牌洗牌、支付費用、造成傷害、更新 replay/gameplay log、或過濾 hidden information 的工作，都必須由 Python runtime / engine / display / log 層執行。
+
+LLM 可以提出單行 command、解釋局面、產生策略建議、整理 replay、或協助 review code。但 LLM 輸出只能被視為提案，不能直接成為 game state、state diff、裁判結果、或 canonical replay event。所有 LLM 產生的 command 都必須回到 `skills_py/gcg_runtime.py`，由 Python 驗證與套用。
+
+實作分界：
+
+- 放 Python：state mutation、legal move validation、phase/priority、card cost/level/AP/HP、combat resolution、randomness、hidden-info filtering、viewer display、gameplay log/replay、regression tests。
+- 放 LLM：AI 玩家決策、策略排序、自然語言解釋、玩家指令意圖輔助、文件/程式 review、replay 摘要。
+- 不可交給 LLM：是否合法、狀態如何改、誰贏誰輸、抽到哪張牌、對手隱藏牌資訊、canonical event sequence。
+
 ## Runtime Boundary
 
 `skills_py/gcg_runtime.py` 是 opencode 與 Codex 共用的穩定介面：

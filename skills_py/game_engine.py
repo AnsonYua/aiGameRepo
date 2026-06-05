@@ -14,6 +14,12 @@ GAME_STATES_DIR = PROJECT_ROOT / "game-states"
 ACTIVE_GAME_FILE = PROJECT_ROOT / ".gcg_active_game"
 
 
+def _card_label(card_id: Optional[str]) -> str:
+    if not card_id:
+        return "無"
+    return f"[{card_id}] {get_card_name(card_id)}"
+
+
 def init_game(game_id: str, p1_deck: str = "playerId_1", p2_deck: str = "playerId_2"):
     import random as rnd
     rnd.seed()
@@ -300,11 +306,13 @@ def declare_attack(state: GameState, player_id: str, slot_idx: int) -> Tuple[boo
     ok, reason = can_attack(state, player_id, slot_idx)
     if not ok:
         return False, reason
+    player = state.get_player(player_id)
+    slot = player.battle_area[slot_idx]
     state.phase = "battle"
     state.step = "attack"
     state.current_attacker = slot_idx
     state.priority = player_id
-    state.battle_log.append(f"{player_id} 以欄位 {slot_idx} 攻擊")
+    state.battle_log.append(f"{player_id} 以欄位 {slot_idx} {_card_label(slot.unit_id)}（AP:{slot.ap}）攻擊")
     return True, ""
 
 
@@ -396,7 +404,7 @@ def resolve_unblocked_attack(state: GameState):
     if def_player.shields > 0 or def_player.base.alive:
         if def_player.base.alive:
             def_player.base.damage += damage
-            state.battle_log.append(f"{att_slot.unit_id} 對 {def_player.player_id} 的基地造成 {damage} 點傷害")
+            state.battle_log.append(f"目標：{def_player.player_id} 基地；{_card_label(att_slot.unit_id)} 造成 {damage} 點傷害")
             if def_player.base.damage >= def_player.base.hp:
                 def_player.base.alive = False
                 def_player.base.status = None
@@ -405,11 +413,11 @@ def resolve_unblocked_attack(state: GameState):
             def_player.shields -= 1
             destroyed_shield = def_player.shield_cards.pop(0) if def_player.shield_cards else "unknown"
             def_player.trash.append(destroyed_shield)
-            state.battle_log.append(f"{att_slot.unit_id} 破壞 {def_player.player_id} 的盾牌")
+            state.battle_log.append(f"目標：{def_player.player_id} 盾牌；{_card_label(att_slot.unit_id)} 破壞 1 張盾牌")
     else:
         state.game_over = True
         state.winner = att_player.player_id
-        state.battle_log.append(f"{att_player.player_id} 因直接攻擊獲勝 [CR-4.9]")
+        state.battle_log.append(f"目標：{def_player.player_id} 玩家；{_card_label(att_slot.unit_id)} 直接攻擊，{att_player.player_id} 獲勝 [CR-4.9]")
 
     if "Breach" in [k for k in att_slot.keywords if k.startswith("Breach") or k == "Breach"]:
         breach_dmg = 1
@@ -474,18 +482,7 @@ def cleanup_turn(state: GameState):
 
 
 def determine_winner(state: GameState) -> Optional[str]:
-    if state.game_over:
-        return state.winner
-
-    for pid in ["P1", "P2"]:
-        player = state.get_player(pid)
-        if player.shields <= 0 and not player.base.alive:
-            opp = state.get_opponent(pid)
-            state.game_over = True
-            state.winner = opp.player_id
-            return opp.player_id
-
-    return None
+    return state.winner if state.game_over else None
 
 
 def get_phase_display(phase: str, step: Optional[str]) -> str:
