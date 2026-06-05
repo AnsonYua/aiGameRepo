@@ -91,7 +91,7 @@
 | Agent | 檔案 | 職責 |
 |-------|------|------|
 | Orchestrator | `gcg-orchestrator.md` | 路由指令 → skill → Judge → 寫 state → Display → 輸出 |
-| Display | `gcg-display.md` | 將 game_state 填入模板 → 格式化人眼可讀輸出 |
+| Display | `skills_py/gcg_display.py` | 將 game_state 填入模板 → 格式化人眼可讀輸出（Python 腳本，非 agent） |
 | Judge | `gcg-judge.md` | 驗證 state_diff 合法性，回傳 accept/reject |
 | AI Player | `gcg-ai-player.md` | 決策引擎，輸出單行指令 |
 
@@ -104,7 +104,7 @@
 | 啟動流程 | start game → skill_initialize → Judge → 寫 state → Display(mulligan) |
 | Redraw 流程 | skill_redraw → Judge → 寫 state → P2=AI → skill_start_phase → Judge → 寫 state → Display |
 | 其他指令 | 查路由 → skill → Judge → 寫 state → Display → Write→Read→Echo |
-| Write→Read→Echo | 強制：Display 的回傳必須 Write 到 /tmp/gcg_output.txt → Read 回來 → 回應 = Read 結果，一字不改 |
+| Write→Read→Echo | 強制：用 bash `python skills_py/gcg_display.py` 輸出到 /tmp/gcg_output.txt → Read 回來 → 回應 = Read 結果，一字不改 |
 | Judge 前置 | 呼叫 Judge 前需用 skill_card_db.md §3 預取 card_data |
 | Phase lock 驗證 | 路由前手動比對 game_state.phase 與 skill 的 phase_lock，不符 → err_phase_mismatch |
 | 150 行限制 | orchestrator 本身 ≤ 150 行 |
@@ -114,19 +114,21 @@
 | 子代理資料傳遞 | 呼叫 skill / Judge / Display / AI Player 時，將 game state 資料（從 game-specific 檔案讀取後）傳入 task context。子代理不直接讀取 game state 檔案 |
 | 路徑初始化檢查 | 啟動後先讀 `.gcg_active_game`；不存在時只接受 `start game` 指令，拒絕其他操作 |
 
-### Display — 格式化輸出
+### Display — 格式化輸出（Python 腳本）
 
 | 範圍 | 檢查要點 |
 |------|---------|
-| 模板數量 | Mulligan / Main / Draw / Resource / Battle(attack/action+battle_end) / End / Start / Error 共 9 模板 |
+| 腳本路徑 | `skills_py/gcg_display.py` |
+| 模板數量 | Mulligan / Main / Draw / Resource / Battle(attack/action/battle_end) / End / Start / Error 共 10 模板 |
 | 變數正確性 | {variable} 全部有值可填，無遺漏/錯字 |
 | Play Legality 計算 | 每張手牌依 Level (active+rested+ex) 與 Cost (active) 計算 ✅/❌ |
 | 隱私遮罩 | opponent_revealed 控制對手戰區顯示，opponent_shields 只顯示數字 |
 | hp_remaining | 顯示為 {hp-damage} |
-| action_prefix | command→play, 其他→deploy |
+| action_prefix | command→使用, 其他→部署 |
 | Battle log 格式 | ✔ / ✘ / • 前綴 |
 | Phase 對應 | orchestrator 依當前 phase/step 選擇正確模板 |
-| Error 模板 | mismatched phase → illegal command: {reason} |
+| Error 模板 | mismatched phase → 非法指令: {reason} |
+| 速度 | 無 LLM 推論，純字串插值，~0.1s |
 
 ### Judge — 驗證引擎
 

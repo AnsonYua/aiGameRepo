@@ -13,17 +13,31 @@ mcp:
   - memories
 ---
 
+## 調用 gcg_display.py 規則
+
+```
+正常流程（所有指令成功執行後）：
+  bash: python skills_py/gcg_display.py <state_path> -o /tmp/gcg_output.txt
+  → 省略 template，腳本自動從 state 的 phase 選取對應模板（phase_table + battle_step_map）
+
+Judge reject：
+  bash: python skills_py/gcg_display.py <state_path> error -o /tmp/gcg_output.txt
+  → 手動指定 error 模板，覆蓋自動偵測
+```
+
+規則：只要 template **不是 error**，就省略它，腳本自己從 state_path 讀取 phase 決定。
+這樣 orchestrator 不用維護模板路由表，路由邏輯集中到 YAML 檔。
+
 ## 強制輸出規則
 
-你的回應「只能」來自 `gcg-display` 的回傳。流程：
+你的回應「只能」來自 `gcg_display.py` 的輸出。流程：
 
 1. 處理指令（跑 skill → Judge → 寫 state）
-2. 用 task 執行 `gcg-display.md`，傳入 game_state + 模板名稱
-3. 把 gcg-display 的回傳文字用 **Write 工具**寫入 `/tmp/gcg_output.txt`
-4. 用 **Read 工具**讀取 `/tmp/gcg_output.txt`
-5. 你的回應就是 Read 的結果，**一字不改**
+2. 用 bash 執行 `python skills_py/gcg_display.py <state_path> -o /tmp/gcg_output.txt`（正常流程）或傳入 `error`（Judge reject 時）
+3. 用 **Read 工具**讀取 `/tmp/gcg_output.txt`
+4. 你的回應就是 Read 的結果，**一字不改**
 
-> 禁止在步驟 5 添加任何文字。你的回應 = Read 的結果。
+> 禁止在步驟 4 添加任何文字。你的回應 = Read 的結果。
 
 ## 遊戲狀態檔案路徑管理
 
@@ -43,7 +57,7 @@ mcp:
 3. 用 **Write 工具**將 game_id 寫入 `.gcg_active_game`
 4. 讀 `card/gcgdecks.json` → task `skill_initialize` → Judge
 5. 將 state 寫入 `game-states/<game_id>/gameState.md`
-6. task `gcg-display`(mulligan) → Write→Read→回應
+6. bash `python skills_py/gcg_display.py game-states/<game_id>/gameState.md -o /tmp/gcg_output.txt` → Read→回應
 
 Judge 需要 `card_data` 來驗證效果（見 `gcg-judge.md:31-33`）：
 在呼叫 Judge 前，用 `skill_card_db.md` §3 `build_card_data(relevant_cards[])` 預取相關卡片的解釋資料，
@@ -52,11 +66,11 @@ Judge 需要 `card_data` 來驗證效果（見 `gcg-judge.md:31-33`）：
 AI Player 也需要 `card_data` 對照表 — 在呼叫 AI Player 前同樣用 `skill_card_db.md` §3 預取其手牌中每張 card_id 的詳細資料。
 
 ### redraw/keep
-讀 `.gcg_active_game` 得 game_id → 讀 `game-states/<game_id>/gameState.md` → task `skill_redraw` → Judge → 寫 state 至 `game-states/<game_id>/gameState.md` → P2=AI(task `gcg-ai-player`) → task `skill_start_phase` → Judge → 寫 state → task `gcg-display`(main_phase) → Write→Read→回應
+讀 `.gcg_active_game` 得 game_id → 讀 `game-states/<game_id>/gameState.md` → task `skill_redraw` → Judge → 寫 state 至 `game-states/<game_id>/gameState.md` → P2=AI(task `gcg-ai-player`) → task `skill_start_phase` → Judge → 寫 state → bash `python skills_py/gcg_display.py game-states/<game_id>/gameState.md -o /tmp/gcg_output.txt` → Read→回應
 
 ### AI auto-play (when priority = P2)
 When `priority = P2` and no user command is expected, auto-invoke:
-task `gcg-ai-player` → route response through skill → Judge → display
+task `gcg-ai-player` → route response through skill → Judge → write state → display（遵循正常流程省略 template 規則）
 
 This applies during:
 - P2's main phase (on P2's turn)
@@ -64,48 +78,18 @@ This applies during:
 - Battle action step when P2 has priority (CR-5.12)
 
 ### 其他指令
-讀 `.gcg_active_game` 得 game_id → 讀 `game-states/<game_id>/gameState.md` 進行 phase lock 驗證 → 查路由 → task 對應 skill → Judge → 寫 state 至 `game-states/<game_id>/gameState.md` → task `gcg-display`(對應模板名) → Write→Read→回應
-
-### 顯示模板路由
-| 當前階段 | 顯示模板 |
-|---------|---------|
-| pre-game | mulligan |
-| start | start_phase |
-| draw | draw_phase |
-| resource | resource_phase |
-| main | main_phase |
-| battle(attack) | battle_attack |
-| battle(action) | battle_action |
-| battle(damage/battle_end) | battle_end |
-| end | end_phase |
-| error | error |
-
-### 路由
-| 指令 | skill |
-|------|-------|
-| start game | `skill_initialize` |
-| redraw/keep | `skill_redraw` |
-| auto_start | `skill_start_phase`（Mulligan 完成後自動推進到 main） |
-| battle pass | `skill_pass` + `skill_damage`（phase=battle 時） |
-| play/deploy/pair | `skill_play_card` |
-| activate | `skill_activate` |
-| attack | `skill_battle` |
-| block | `skill_block` |
-| pass/end turn | `skill_pass` |
-| draw | `skill_draw` |
-| resource | `skill_resource` |
-| concede | `skill_termination` |
+讀 `.gcg_active_game` 得 game_id → 讀 `game-states/<game_id>/gameState.md` 進行 phase lock 驗證 → 查路由 → task 對應 skill → Judge → 寫 state 至 `game-states/<game_id>/gameState.md` → bash `python skills_py/gcg_display.py game-states/<game_id>/gameState.md -o /tmp/gcg_output.txt` → Read→回應
 
 ### Phase Lock 驗證程序
 在任何 skill 路由前執行：
 1. 讀 `.gcg_active_game` 得 game_id
 2. 讀取 `game-states/<game_id>/gameState.md` 中的 `phase` 與 `step`
 3. 比對目標 skill 的 `phase_lock` frontmatter
-4. 若當前 phase 不在 phase_lock 列表中 → 跳過 skill，直接回傳 `err_phase_mismatch` 模板
+4. 若當前 phase 不在 phase_lock 列表中 → 跳過 skill，bash `python skills_py/gcg_display.py <state_path> error -o /tmp/gcg_output.txt` → Read→回應
 5. 若符合 → 正常路由到 skill
 
-### Judge reject
-task `gcg-display`(error) → Write→Read→回應
+### Judge reject (Judge 回傳 reject 時)
+bash `python skills_py/gcg_display.py <state_path> error -o /tmp/gcg_output.txt` → Read→回應
 
 ---
 
@@ -121,9 +105,9 @@ task `gcg-display`(error) → Write→Read→回應
 
 ```
 User / gcg_simulation.py  →  gcg-orchestrator  →  skill_* (task)
-                                                   →  gcg-judge (task)
-                                                   →  gcg-display (task)
-                                                   →  gcg-ai-player (task, AI 自動模式)
+                                                    →  gcg-judge (task)
+                                                    →  gcg_display.py (bash)
+                                                    →  gcg-ai-player (task, AI 自動模式)
 ```
 
 ### 與 gcg_simulation.py 的關係
@@ -147,5 +131,5 @@ User / gcg_simulation.py  →  gcg-orchestrator  →  skill_* (task)
 |-------|------|------|
 | gcg-orchestrator | `.opencode/agents/gcg-orchestrator.md` | subagent |
 | gcg-ai-player | `.opencode/agents/gcg-ai-player.md` | primary + subagent |
-| gcg-display | `.opencode/agents/gcg-display.md` | primary + subagent |
+| gcg-display | `skills_py/gcg_display.py` | Python script |
 | gcg-judge | `.opencode/agents/gcg-judge.md` | primary + subagent |

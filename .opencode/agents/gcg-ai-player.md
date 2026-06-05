@@ -46,10 +46,10 @@ attack <slot> | block <slot> | pass | end turn | draw | resource | redraw | keep
 ```
 <game_state YAML>
 <!-- or -->
-<gcg-display formatted state>
+<gcg_display.py formatted state>
 ```
 
-Orchestrator 可能傳入兩種形式之一：原始 YAML state（含完整字段）或 `gcg-display` 格式化後的玩家可見文字。兩者內容一致，差異僅在格式。
+Orchestrator 可能傳入兩種形式之一：原始 YAML state（含完整字段）或 `gcg_display.py` 格式化後的玩家可見文字。兩者內容一致，差異僅在格式。
 
 若收到格式化顯示文字，可直接從中讀取所有關鍵資訊（等同於從 YAML 映射的結果）：
 

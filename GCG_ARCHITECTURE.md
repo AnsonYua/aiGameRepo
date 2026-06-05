@@ -12,7 +12,7 @@ gcg-orchestrator (subagent, via task tool in TUI)
   │
   ├── skill_* (13 skills, via task tool)
   ├── gcg-judge (subagent)
-  ├── gcg-display (subagent)
+  ├── gcg_display.py (Python script, via bash)
   │
   └── gcg-ai-player (primary+subagent, for AI auto-play)
 ```
@@ -23,7 +23,7 @@ gcg-orchestrator (subagent, via task tool in TUI)
 |-------|------|------|------------|
 | **gcg-orchestrator** | `.opencode/agents/gcg-orchestrator.md` | subagent | `task` tool in TUI only |
 | **gcg-ai-player** | `.opencode/agents/gcg-ai-player.md` | primary+subagent | `opencode run --agent` OR `task` tool |
-| **gcg-display** | `.opencode/agents/gcg-display.md` | primary+subagent | `opencode run --agent` OR `task` tool |
+| **gcg-display** | `skills_py/gcg_display.py` | Python script | `python skills_py/gcg_display.py <state> <template>` |
 | **gcg-judge** | `.opencode/agents/gcg-judge.md` | primary+subagent | `opencode run --agent` OR `task` tool |
 
 ### gcg-orchestrator (subagent)
@@ -38,8 +38,8 @@ Flow per command:
 5. Call `gcg-judge` to validate state_diff
 6. If reject → display error template
 7. If accept → write state_diff to `game-states/<game_id>/gameState.md`
-8. Call `gcg-display` with appropriate template name
-9. Write display output to `/tmp/gcg_output.txt`, read it back, echo verbatim
+8. Call `python skills_py/gcg_display.py game-states/<game_id>/gameState.md <template> --output /tmp/gcg_output.txt`
+9. Read `/tmp/gcg_output.txt` back, echo verbatim
 
 ### gcg-ai-player (primary + subagent)
 
@@ -54,9 +54,9 @@ Decision engine. Returns single-line commands only. Supports 5 strategy branches
 
 Validation engine. Checks state_diff against game rules (CR-IDs). Outputs only `accept` or `reject: <reason> [CR-X.Y]`.
 
-### gcg-display (primary + subagent)
+### gcg-display (Python script)
 
-Template filler. Transforms game_state YAML into human-readable strings using templates from `ui_templates.md`.
+Template filler. Transforms game_state YAML into human-readable strings using templates. Runs via `bash python skills_py/gcg_display.py` — no LLM inference needed.
 
 ## File Structure
 
@@ -70,11 +70,10 @@ cardAI/
 │       └── gameState.md
 ├── .gcg_active_game             # Current game_id (plain text)
 ├── .opencode/
-│   ├── agents/
-│   │   ├── gcg-orchestrator.md
-│   │   ├── gcg-ai-player.md
-│   │   ├── gcg-judge.md
-│   │   └── gcg-display.md
+  │   ├── agents/
+  │   │   ├── gcg-orchestrator.md
+  │   │   ├── gcg-ai-player.md
+  │   │   └── gcg-judge.md
 │   ├── skills/gcg/
 │   │   ├── skill_initialize.md
 │   │   ├── skill_redraw.md

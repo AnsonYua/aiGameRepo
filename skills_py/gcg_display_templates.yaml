@@ -1,0 +1,129 @@
+# ===========================================================================
+# GCG Display Templates — 遊戲畫面排版配置
+# 修改此檔案即可調整對話輸出格式，不用改 Python 程式碼。
+# 所有 {placeholder} 由 Python 程式自動填入。
+# ===========================================================================
+
+# ---------- sub-templates ----------
+
+card_line: "{card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}{link_suffix}{keyword_suffix}"
+card_line_unknown: "??? | 未知 | ? | Lv? | Cost:? | AP:?/HP:?"
+
+bf_slot_known: "- 欄位{slot}：[{unit_id}] {name} | AP:{ap}/HP:{hp}{pilot}{keywords} | {status}"
+bf_slot_unknown: "- 欄位{slot}：未知"
+bf_slot_empty: "- 欄位{slot}：空"
+bf_all_empty: "- 全部空格"
+
+action_deploy: "  - 部署 {card_id} — {name}（Lv{level}/Cost:{cost}）{legality}"
+action_play: "  - 使用 {card_id} — {name}（Lv{level}/Cost:{cost}）{legality}"
+
+battle_log_line: "• {message}"
+
+legality_ok: "✅"
+legality_fail_level: "❌ (Lv不足: {total_lv}/{required_lv})"
+legality_fail_cost: "❌ (費用不足: active={active}/cost={cost})"
+
+# ---------- common block ----------
+
+common_block: |
+  回合 {turn} | {phase_label}{step_label} | {active_player} 的回合
+  資源：直立={active} 橫置={rested} EX={ex} | 牌庫：{deck_count} | 資源牌庫：{resource_deck_count}
+
+  你的手牌（{hand_count}）：
+  {hand_lines}
+
+  對手手牌：{opponent_hand_count} 張
+
+  你的戰區（{occupied_slots}/6）：
+  {my_battlefield}
+
+  對手戰區（{opponent_occupied_slots}/6）：
+  {opponent_battlefield}
+
+  盾牌：{shields} 剩餘 | 基地：{base_card_id} | HP：{base_hp}/{base_max_hp}
+  對手盾牌：{opponent_shields} 剩餘
+
+  {battle_log}
+
+  優先權：{priority}{you_suffix}
+
+# ---------- phase templates ----------
+
+mulligan: |
+  調度 — {player} 為{first_or_second}
+
+  你的手牌：
+  {hand_lines}
+
+  請輸入 redraw 或 keep
+
+start_phase: |
+  {common_block}
+  可行指令：
+  - 讓過 — 進入抽牌階段
+
+draw_phase: |
+  {common_block}
+  可行指令：
+  - 讓過 — 抽牌完成，進入資源階段
+
+resource_phase: |
+  {common_block}
+  可行指令：
+  - 讓過 — 部署資源完成，進入主要階段
+
+main_phase: |
+  {common_block}
+  可行指令（依出牌合法性 ✅/❌ 計算）：
+  {action_lines}
+  - 攻擊 <欄位>（若單位符合條件：直立 +（出場回合≥1 或 link=true）[CR-5.4]）
+  - 讓過 — 進入結束階段
+  - 投降
+
+battle_attack: |
+  {common_block}
+  可行指令：
+  - 攻擊 <欄位>（若單位符合攻擊條件）
+  - 讓過 — 跳過攻擊，進入結束階段
+  - 投降
+
+battle_action: |
+  {common_block}
+  可行指令：
+  - 阻擋 <欄位>（若單位有 Blocker 關鍵字）
+  - 讓過 — 不阻擋
+
+battle_end: |
+  {common_block}
+  可行指令：
+  - 讓過 — 戰鬥結束，進入結束階段
+  - 投降
+
+end_phase: |
+  {common_block}
+  可行指令：
+  - 讓過 — 結束回合
+  - 投降
+
+error: |
+  非法指令：{reason}
+
+# ---------- routing ----------
+
+# 階段 → 模板名稱對照表
+phase_table:
+  pre-game: mulligan
+  start: start_phase
+  draw: draw_phase
+  resource: resource_phase
+  main: main_phase
+  end: end_phase
+
+# 戰鬥階段子步驟分流
+battle_step_map:
+  attack: battle_attack
+  battle_init: battle_attack
+  action: battle_action
+  block: battle_action
+  damage: battle_action
+  battle_end: battle_end

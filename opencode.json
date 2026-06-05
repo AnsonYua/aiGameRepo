@@ -9,10 +9,6 @@
       "description": "GCG AI Player - strategic decision engine",
       "mode": "primary"
     },
-    "gcg-display": {
-      "description": "GCG Display - state formatting",
-      "mode": "subagent"
-    },
     "gcg-judge": {
       "description": "GCG Judge - legality validation",
       "mode": "subagent"

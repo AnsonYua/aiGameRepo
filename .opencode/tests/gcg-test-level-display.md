@@ -1,7 +1,7 @@
 # GCG Level Display Test — 驗證 Level + Cost 雙重檢查
 
 ## 測試目標
-確認 `gcg-display.md` 生成「可行指令」時，同時檢查 **Level (CR-3.2)** 和 **Cost (CR-3.3)**，不只看 Cost。
+確認 `skills_py/gcg_display.py` 生成「可行指令」時，同時檢查 **Level (CR-3.2)** 和 **Cost (CR-3.3)**，不只看 Cost。
 
 ## 測試情境：P1 Turn 1 Main — active=1
 
@@ -88,8 +88,8 @@ All 4 hand cards must show ✅ (including ST01-012's 2 usage modes). Any card sh
 ## Manual Execution
 
 1. Ensure runtime `game_state.md` (managed by orchestrator) is set to test scenario 1 state (active=1; if no existing file, manually create game_state.yaml matching scenario 1)
-2. Run orchestrator to invoke `gcg-display` (main_phase template)
+2. Run `python skills_py/gcg_display.py <state_path> main_phase`
 3. Check the "Available Actions" section in output — confirm all cards show ❌
 4. No card should show ✅ (especially GM Cost=1 must not show ✅)
 
-Or directly verify `gcg-display.md` template already includes Level calculation rules (lines 11-21).
+Or directly verify `skills_py/gcg_display.py` `_check_legality()` function handles Level + Cost correctly.
