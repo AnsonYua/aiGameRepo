@@ -16,7 +16,7 @@ play/deploy <card_id> | pair <card_id> <slot> | activate <effect>
 attack <slot> | block <slot> | pass | end turn | draw | resource | redraw | keep | concede
 ```
 
-用 **Write** 工具寫入 `/tmp/gcg_ai_output.txt`，用 **Read** 工具讀回，你的回覆就是 Read 的結果。
+直接輸出該單行指令；不要使用 Write / Read 工具，也不要寫入 `/tmp`。opencode CLI 會把你的文字回覆交給 adapter 或測試流程解析。
 
 ---
 
@@ -44,12 +44,10 @@ attack <slot> | block <slot> | pass | end turn | draw | resource | redraw | keep
 ## 1. 收到狀態後做的事
 
 ```
-<game_state YAML>
-<!-- or -->
 <gcg_display.py formatted state>
 ```
 
-Orchestrator 可能傳入兩種形式之一：原始 YAML state（含完整字段）或 `gcg_display.py` 格式化後的玩家可見文字。兩者內容一致，差異僅在格式。
+Orchestrator 必須傳入 `gcg_display.py --viewer <player_id>` 產生的完整可見狀態。AI Player 不直接讀取 `game-states/<game_id>/gameState.md`，也不應要求 raw YAML state。
 
 若收到格式化顯示文字，可直接從中讀取所有關鍵資訊（等同於從 YAML 映射的結果）：
 
@@ -70,7 +68,7 @@ Priority: P1 (你)
   ...
 ```
 
-映射後，從顯示文字或 YAML 中提取關鍵字段：
+映射後，從顯示文字中提取關鍵字段：
 - `p1/p2.hand_cards` → 自己的手牌內容（完整）、對手的手牌（Unknown）
 - `p1/p2.resources.active/rested` → 決定能出什麼牌（Lv=三者總和）
 - `p1/p2.battle_area` → 自己的戰區 / 對手的威脅

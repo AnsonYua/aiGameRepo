@@ -2,152 +2,107 @@
 
 ## Overview
 
-GCG is a Gundam card game driven by **opencode subagents** with **zero game logic in Python**. The Python script is a thin coordinator that routes commands to subagents and captures conversation.
+本專案採用 chat-first 架構。玩家在 Codex 或 opencode chat 中輸入指令；adapter 在背後呼叫 Python runtime；runtime 負責讀寫 state、套用遊戲行為、產生完整顯示文字。
 
-```
-User / gcg_simulation.py
-  │
-  ▼
-gcg-orchestrator (subagent, via task tool in TUI)
-  │
-  ├── skill_* (13 skills, via task tool)
-  ├── gcg-judge (subagent)
-  ├── gcg_display.py (Python script, via bash)
-  │
-  └── gcg-ai-player (primary+subagent, for AI auto-play)
+```text
+玩家 chat
+  -> Codex / opencode adapter
+  -> skills_py/gcg_runtime.py
+  -> skills_py/game_engine.py
+  -> game-states/<game_id>/gameState.md
+  -> skills_py/gcg_display.py --viewer P1|P2
+  -> chat 完整狀態回覆
 ```
 
-## Agent Roles
+`gameState.md` 是內部 state source。玩家與 AI Player 不直接讀取它；所有決策前都先產生該玩家視角的完整可見狀態。
 
-| Agent | File | Mode | Invocation |
-|-------|------|------|------------|
-| **gcg-orchestrator** | `.opencode/agents/gcg-orchestrator.md` | subagent | `task` tool in TUI only |
-| **gcg-ai-player** | `.opencode/agents/gcg-ai-player.md` | primary+subagent | `opencode run --agent` OR `task` tool |
-| **gcg-display** | `skills_py/gcg_display.py` | Python script | `python3 skills_py/gcg_display.py <state> <template>` |
-| **gcg-judge** | `.opencode/agents/gcg-judge.md` | primary+subagent | `opencode run --agent` OR `task` tool |
+## Runtime Boundary
 
-### gcg-orchestrator (subagent)
+`skills_py/gcg_runtime.py` 是 opencode 與 Codex 共用的穩定介面：
 
-The master controller. **Cannot be invoked via CLI** (`opencode run --agent`). Must be called via the `task` tool from within a running opencode TUI session.
-
-Flow per command:
-1. Read game state from `game-states/<game_id>/gameState.md`
-2. Phase lock validation (check phase vs skill's `phase_lock`)
-3. Pre-fetch card data via `skill_card_db.md`
-4. Route to corresponding skill (via `task` tool)
-5. Call `gcg-judge` to validate state_diff
-6. If reject → display error template
-7. If accept → write state_diff to `game-states/<game_id>/gameState.md`
-8. Call `python3 skills_py/gcg_display.py game-states/<game_id>/gameState.md <template> --output /tmp/gcg_output.txt`
-9. Read `/tmp/gcg_output.txt` back, echo verbatim
-
-### gcg-ai-player (primary + subagent)
-
-Decision engine. Returns single-line commands only. Supports 5 strategy branches:
-- Suppression (压制) — clear enemy units first when ahead
-- Development (发展) — build board when behind
-- Aggro (抢血) — all-out face damage when weak
-- Counterattack (反打) — fill board for next turn
-- Desperation (绝望) — all-in gamble
-
-### gcg-judge (primary + subagent)
-
-Validation engine. Checks state_diff against game rules (CR-IDs). Outputs only `accept` or `reject: <reason> [CR-X.Y]`.
-
-### gcg-display (Python script)
-
-Template filler. Transforms game_state YAML into human-readable strings using templates. Runs via `bash python skills_py/gcg_display.py` — no LLM inference needed.
-
-## File Structure
-
+```bash
+python3 skills_py/gcg_runtime.py start --viewer P1
+python3 skills_py/gcg_runtime.py start --viewer P1 --first-player P1  # 測試用固定先手
+python3 skills_py/gcg_runtime.py status --viewer P1
+python3 skills_py/gcg_runtime.py status --viewer P2
+python3 skills_py/gcg_runtime.py mulligan --player P1 --action keep --viewer P1
+python3 skills_py/gcg_runtime.py command --player P1 --cmd "pass" --viewer P1
+python3 skills_py/gcg_runtime.py auto --player P2 --viewer P1
 ```
+
+Runtime 只回傳最終 display text；`--json` 可供 adapter 測試與工具整合。
+
+`.gcg_active_game` 適合單一 chat session。並行測試或多 agent 驗證應從 `start --json` 取得 `game_id`，再對 `status` / `mulligan` / `command` / `auto` 加上 `--game-id <game_id>`，避免共享 active game 被其他流程切換。
+
+## Components
+
+| Component | Role |
+|---|---|
+| `skills_py/gcg_runtime.py` | Chat adapter 內部 CLI；統一 start/status/mulligan/command/auto |
+| `skills_py/game_engine.py` | 唯一 state mutation 層 |
+| `skills_py/game_state.py` | 資料結構：BaseState（EX-BASE 預設 AP:0 / HP:3）、BattleSlot、PlayerState、GameState |
+| `skills_py/gcg_display.py` | 顯示層；用 `--viewer P1/P2` 套用視角與隱私 |
+| `skills_py/ai_player.py` | 目前預設 P2 自動決策器 |
+| `.opencode/agents/*.md` | opencode adapter / AI prompt / judge prompt 參考 |
+| `.opencode/skills/gcg/*.md` | 規則與 state_diff 參考，非 Codex 必需執行依賴 |
+| `gcg_simulation.py` | legacy/debug CLI，暫時保留 |
+
+## Viewer Rules
+
+- 任一玩家需要決策時，必須先呼叫 `gcg_display.py --viewer <player>` 或 runtime 等效命令。
+- P1 viewer 顯示 P1 手牌完整內容，P2 手牌只顯示張數。
+- P2 viewer 顯示 P2 手牌完整內容，P1 手牌只顯示張數。
+- 戰鬥區是公開區域，對手場上單位不遮罩。
+
+## Opencode Compatibility
+
+opencode 可以繼續使用 `.opencode/agents/gcg-orchestrator.md` 作為 chat adapter 說明，但不應把 `@` 或 `task` spawn 視為唯一執行路徑。可用 runtime fallback：
+
+```bash
+python3 skills_py/gcg_runtime.py <subcommand> ...
+```
+
+`gcg-ai-player` 仍可用 opencode CLI 驗證：
+
+```bash
+opencode run --agent gcg-ai-player "<完整 P2 viewer status text>"
+```
+
+## Codex Compatibility
+
+Codex adapter 直接呼叫 runtime，不依賴 opencode spawn。若未來使用 Codex subagent，subagent 只做決策驗證或回單行 command，不直接修改 state。
+
+## File Layout
+
+```text
 cardAI/
-├── gcg_simulation.py            # Thin coordinator (zero game logic)
-├── GCG_ARCHITECTURE.md          # This file
-├── game_state.md                # Runtime state (YAML in .md)
-├── game-states/                 # Per-game state files
-│   └── <game_id>/
-│       └── gameState.md
-├── .gcg_active_game             # Current game_id (plain text)
-├── .opencode/
-  │   ├── agents/
-  │   │   ├── gcg-orchestrator.md
-  │   │   ├── gcg-ai-player.md
-  │   │   └── gcg-judge.md
-│   ├── skills/gcg/
-│   │   ├── skill_redraw.md
-│   │   ├── skill_start_phase.md
-│   │   ├── skill_draw.md
-│   │   ├── skill_resource.md
-│   │   ├── skill_pass.md
-│   │   ├── skill_play_card.md
-│   │   ├── skill_battle.md
-│   │   ├── skill_block.md
-│   │   ├── skill_damage.md
-│   │   ├── skill_activate.md
-│   │   ├── skill_termination.md
-│   │   └── skill_card_db.md
-│   ├── game_state_schema.md
-│   ├── gcg-rulebook.md
-│   ├── ui_templates.md
-│   └── tests/
-│       └── gcg-test-suite.md
+├── README.md
+├── GCG_ARCHITECTURE.md
+├── opencode.json
+├── gcg_simulation.py
+├── skills_py/
+│   ├── gcg_runtime.py
+│   ├── game_engine.py
+│   ├── game_state.py
+│   ├── gcg_display.py
+│   ├── gcg_display_templates.yaml
+│   ├── ai_player.py
+│   └── card_db.py
 ├── card/
 │   ├── gcgdecks.json
 │   └── data/
-│       ├── st01Card.json  ...  st09Card.json
-│       ├── gd01Card.json  ...  gd03Card.json
-├── replays/
-│   └── gcg_replay_*.md
-└── experience/
-    ├── early-game-rush.yaml
-    ├── defend-low-base.yaml
-    └── ... (10 YAML files)
+├── game-states/
+│   └── <game_id>/gameState.md
+└── .opencode/
+    ├── agents/
+    ├── skills/gcg/
+    └── tests/
 ```
 
-## gcg_simulation.py — Design
+## Development Rules
 
-**Zero game logic. Zero AI logic.** Thin coordinator, all output in 繁體中文.
-
-1. **Reads** game state from `game-states/<game_id>/gameState.md` (via `.gcg_active_game`)
-2. **Routes** commands:
-   - AI decisions → `opencode run --agent gcg-ai-player --attach <server>`
-   - Game commands → `opencode run "<cmd>" --attach <server>` (default agent via headless server)
-3. **Captures** conversation history in 繁體中文
-4. **Saves** replays in 繁體中文 markdown on `game_over`
-
-### When to use
-
-```
-python gcg_simulation.py                       # P1=human, P2=AI
-python gcg_simulation.py --p1 ai --p2 ai       # both AI, auto-play
-python gcg_simulation.py --p1 human --p2 human # both human
-python gcg_simulation.py --replay              # replay from existing state
-```
-
-### Constraints
-
-- Requires `opencode` CLI installed
-- Starts a headless `opencode serve` subprocess at launch
-- Each AI decision call takes 10-30s
-- `gcg-orchestrator` is a subagent and NOT callable via CLI — must use the task tool in TUI
-- gcg-ai-player IS callable via CLI (`opencode run --agent gcg-ai-player --attach`)
-
-## Phase Machine (game flow)
-
-```
-pre-game (mulligan) → start → draw → resource → main
-                                                       ↘
-main → pass → end(action) → (both pass) → cleanup → start (next turn)
-main → attack → battle(attack) → block/pass → battle(action) → (both pass) → damage → main
-```
-
-Win conditions: direct hit (CR-4.9), deck-out (CR-8.2), concede (CR-8.4).
-
-## Development Guidelines
-
-1. **NEVER** add game logic to `gcg_simulation.py`
-2. **NEVER** modify agent files (`.opencode/agents/*.md`) without asking
-3. All game rules, card data, and AI strategy live in subagent definitions and skills
-4. Replay format is fixed — see existing files in `replays/`
-5. All output uses 繁體中文
+1. 玩家入口是 chat，CLI 是內部介面。
+2. 不要讓玩家或 AI 直接讀 `gameState.md`。
+3. State mutation 只能經過 runtime / `game_engine.py`。
+4. 回覆玩家時輸出完整 display text，不自行重排。
+5. 不提交 `.DS_Store`、`__pycache__/`、`*.pyc`。

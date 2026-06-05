@@ -86,32 +86,31 @@
 | 150 行限制 | 技能檔案不超過 150 行 |
 | 委派模式 | 不重複其他技能的邏輯，透過 orchestrator 路由 |
 
-## Sub-Agents（4 個代理）
+## Runtime / Agents
 
-| Agent | 檔案 | 職責 |
+| 元件 | 檔案 | 職責 |
 |-------|------|------|
-| Orchestrator | `gcg-orchestrator.md` | 路由指令 → skill → Judge → 寫 state → Display → 輸出 |
+| Runtime | `skills_py/gcg_runtime.py` | chat adapter 內部 CLI；統一 start/status/mulligan/command/auto |
+| Orchestrator | `gcg-orchestrator.md` | opencode chat adapter；呼叫 runtime，轉發完整顯示文字 |
 | Display | `skills_py/gcg_display.py` | 將 game_state 填入模板 → 格式化人眼可讀輸出（Python 腳本，非 agent） |
-| Judge | `gcg-judge.md` | 驗證 state_diff 合法性，回傳 accept/reject |
+| Judge | `gcg-judge.md` | 規則驗證 prompt/reference；非 Codex 必需執行路徑 |
 | AI Player | `gcg-ai-player.md` | 決策引擎，輸出單行指令 |
 
-### Orchestrator — 總控路由
+### Runtime / Orchestrator — Chat-first 流程
 
 | 範圍 | 檢查要點 |
 |------|---------|
-| 路由表 | start game / redraw/keep / auto_start / play/deploy/pair / activate / attack / block / pass / draw / resource / concede → 對應正確 skill |
-| AI auto-play | priority=P2 時自動呼叫 AI Player，不走使用者輸入 |
-| 啟動流程 | start game → bash gcg_initialGame.py --json → Display(mulligan) |
-| Redraw 流程 | 使用者輸入 → P2=AI → bash gcg_postmulligan.py --redraw-p1/p2 → 直接回應 display_text |
-| 其他指令 | 查路由 → skill → Judge → 寫 state → Display → Write→Read→Echo |
-| Write→Read→Echo | 強制：用 bash `python3 skills_py/gcg_display.py` 輸出到 /tmp/gcg_output.txt → Read 回來 → 回應 = Read 結果，一字不改 |
-| Judge 前置 | 呼叫 Judge 前需用 skill_card_db.md §3 預取 card_data |
-| Phase lock 驗證 | 路由前手動比對 game_state.phase 與 skill 的 phase_lock，不符 → err_phase_mismatch |
+| Runtime 指令 | `start` / `status` / `mulligan` / `command` / `auto` 全部可用 |
+| Chat 入口 | 玩家輸入由 chat adapter 轉成 runtime command；玩家不直接跑 CLI |
+| AI auto-play | priority=P2 時可用 `gcg_runtime.py auto --player P2` 自動處理 |
+| 啟動流程 | start game → `gcg_runtime.py start --viewer P1` → 回完整調度狀態 |
+| Redraw 流程 | 使用者輸入 → `gcg_runtime.py mulligan --player P1 --action keep|redraw` → 回 display_text |
+| 其他指令 | chat 指令 → `gcg_runtime.py command --player P1 --cmd ...` → 回完整 display text |
+| 決策狀態輸出 | 任一玩家需要決策時，先用 `gcg_display.py --viewer <P1/P2>` 或 runtime 等效輸出完整可見狀態；玩家/AI 不直接讀 `gameState.md` |
 | 150 行限制 | orchestrator 本身 ≤ 150 行 |
-| 內嵌模板 | mulligan / compose_state 模板直接內嵌在 orchestrator 中，不依賴 ui_templates.md 讀取 |
 | 遊戲狀態檔管理 | start game 時產生唯一 game_id（`game_<YYYYMMDD_HHMMSS>`），建立 `game-states/<game_id>/` 目錄，將 game_id 寫入 `.gcg_active_game` |
 | State I/O 路徑 | 所有「讀 state」從 `game-states/<game_id>/gameState.md`，所有「寫 state」至同一路徑。非 `game_state.md` |
-| 子代理資料傳遞 | 呼叫 skill / Judge / Display / AI Player 時，將 game state 資料（從 game-specific 檔案讀取後）傳入 task context。子代理不直接讀取 game state 檔案 |
+| 子代理資料傳遞 | 呼叫 AI Player 時傳入該玩家視角的完整顯示文字；子代理不直接讀取 game state 檔案 |
 | 路徑初始化檢查 | 啟動後先讀 `.gcg_active_game`；不存在時只接受 `start game` 指令，拒絕其他操作 |
 
 ### Display — 格式化輸出（Python 腳本）
@@ -149,7 +148,7 @@
 | 範圍 | 檢查要點 |
 |------|---------|
 | 輸出格式 | 僅單行指令：play/deploy/pair/activate/attack/block/pass/end turn/draw/resource/redraw/keep/concede |
-| Write→Read→Echo | 輸出 Write 到 /tmp/gcg_ai_output.txt → Read 回 → 回應 = Read 結果 |
+| CLI 相容輸出 | 直接回覆單行指令；不得用 Write/Read 寫入 `/tmp` |
 | 視角映射 | player_id=P1→me=p1,opponent=p2；player_id=P2→me=p2,opponent=p1 |
 | 先後手 | first_player 決定 EX resource 有無 |
 | 階段對應 | pre-game→keep/redraw, start→pass, draw→draw, resource→resource, main→策略, battle→attack/block, end→end turn |
@@ -168,17 +167,10 @@
 
 | 範圍 | 檢查要點 |
 |------|---------|
-| 與技能一致性 | Python 實作邏輯與 13 個 skill .md 一致 |
-| 回合流程 | run_game() main loop 正確經過所有階段 |
-| 隨機種子 | init_game(seed) 可重現 |
-| 批次模式 | run_batch(N) 統計正確（勝率、回合數） |
-| Command Effect | 11+ action types 全部實作 |
-| 經驗載入 | load_matching_experience() 匹配正確 |
-| 日誌 | log_action() 輸出格式與 §12 一致 |
-| Game state 路徑解析 | `_resolve_state_path()` 依優先級：`--game-state` CLI > `.gcg_active_game` > `game_state.md` 回退 |
-| 循環重新載入 | `load_state()` 每次呼叫重新解析路徑（除非 `--game-state` 鎖定），自動跟隨 orchestrator 新開遊戲 |
-| 活躍遊戲追蹤 | 讀取 `.gcg_active_game` 取得 game_id，組合路徑 `game-states/<game_id>/gameState.md`；檔案不存在時回退 |
-| Replay 路徑正確 | `save_replay()` 從正確的 game state 檔案讀取最終狀態，不因路徑變更而中斷 |
+| Runtime 一致性 | Runtime 只呼叫 `game_engine.py` mutation，不讓 adapter 手動改 YAML |
+| Game state 路徑解析 | 讀取 `.gcg_active_game` 取得 game_id，組合 `game-states/<game_id>/gameState.md` |
+| Viewer 正確性 | `status --viewer P1/P2` 與 `gcg_display.py --viewer P1/P2` 一致 |
+| Legacy 邊界 | `gcg_simulation.py` 保留為 debug/legacy，不作正式 chat adapter 入口 |
 
 ## UI Templates（ui_templates.md）
 
@@ -196,7 +188,7 @@
 | Judge 輸出 | 僅 accept 或 reject: <reason> [CR-X.Y] |
 | Phase Mismatch | phase_lock 違反時是否拒絕 |
 | 輸出合約 | orchestrator 僅轉發 display template，不自由生成 |
-| Write→Read→Echo | 所有 agent 是否遵守此模式 |
+| CLI 相容輸出 | agent 直接輸出合約文字，不依賴 `/tmp` Write/Read |
 
 ## 測試
 
@@ -205,6 +197,8 @@
 | 測試覆蓋 | gcg-test-level-display.md + gcg-test-suite.md 涵蓋哪些情境 |
 | 預期輸出 | 測試案例的 expected output 是否與實際一致 |
 | 邊界案例 | 空戰區、滿盾牌、0 AP、token 限制等 |
+| Codex subagent | 實作後 spawn explorer 驗證 start → keep → P2 auto → P1 status |
+| opencode CLI | 使用 `opencode run --agent gcg-ai-player` 驗證 AI 可讀完整 viewer status 並回 command |
 
 ## 全域規定
 
@@ -217,7 +211,7 @@
 | 無 .deck_tracking.json | 已全部移除，無遺留參考 |
 | CR-ID 參考 | 所有規則引用使用 CR-X.Y 格式 |
 | 遊戲狀態隔離 | 每局遊戲使用獨立 `game-states/<game_id>/gameState.md`，永不覆寫單一 `game_state.md` |
-| `.gcg_active_game` 同步 | orchestrator 與 simulation runner 透過 `.gcg_active_game` 溝通當前遊戲 ID，檔案內容須一致 |
+| `.gcg_active_game` 同步 | runtime 與 chat adapter 透過 `.gcg_active_game` 溝通當前遊戲 ID，檔案內容須一致 |
 
 ---
 

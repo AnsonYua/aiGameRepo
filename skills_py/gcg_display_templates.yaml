@@ -7,10 +7,8 @@
 # ---------- sub-templates ----------
 
 card_line: "{card_id} | {name} | {cardType} | Lv{level} | Cost:{cost} | AP:{ap}/HP:{hp}{link_suffix}{keyword_suffix}"
-card_line_unknown: "??? | 未知 | ? | Lv? | Cost:? | AP:?/HP:?"
 
 bf_slot_known: "- 欄位{slot}：[{unit_id}] {name} | AP:{ap}/HP:{hp}{pilot}{keywords} | {status}"
-bf_slot_unknown: "- 欄位{slot}：未知"
 bf_slot_empty: "- 欄位{slot}：空"
 bf_all_empty: "- 全部空格"
 
@@ -80,6 +78,11 @@ main_phase: |
   - 攻擊 <欄位>（若單位符合條件：直立 +（出場回合≥1 或 link=true）[CR-5.4]）
   - 讓過 — 進入結束階段
   - 投降
+
+main_phase_waiting: |
+  {common_block}
+  可行指令：
+  - 等待 {priority} 決策（目前不是你的優先權）
 
 battle_attack: |
   {common_block}

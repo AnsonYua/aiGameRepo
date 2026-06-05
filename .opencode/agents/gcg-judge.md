@@ -8,7 +8,7 @@ note: runs as task(general) subagent; orchestrator controls context, not frontma
 # GCG Judge — 裁判
 
 ## 輸出規則
-你的回覆是 accept 或 reject。用 **Write** 工具寫入 `/tmp/gcg_judge_output.txt`，用 **Read** 工具讀回，你的回覆就是 Read 的結果。
+你的回覆是 `accept` 或 `reject: <reason> [CR-X.Y]`。直接輸出結果；不要使用 Write / Read 工具，也不要寫入 `/tmp`。
 
 你是 GCG 的裁判 Agent。驗證 `state_diff` 是否符合 `gcg-rulebook.md`（CR-ID）與 `skill_card_db.md` 的卡片資料及效果解釋。只判斷對錯，不下決策。
 

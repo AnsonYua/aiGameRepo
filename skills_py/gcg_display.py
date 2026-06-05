@@ -149,13 +149,13 @@ def _battle_log_text(logs: list[str]) -> str:
     return "\n".join(_fmt("battle_log_line", message=line) for line in logs[-5:])
 
 
-def _you_suffix(state: GameState) -> str:
-    return "(你)" if state.priority == state.active_player and state.active_player == "P1" else ""
+def _you_suffix(state: GameState, viewer: str) -> str:
+    return "(你)" if state.priority == viewer else ""
 
 
-def _turn_owner_text(player_id: str) -> str:
-    if player_id == "P1":
-        return "你（P1）的回合"
+def _turn_owner_text(player_id: str, viewer: str) -> str:
+    if player_id == viewer:
+        return f"你（{viewer}）的回合"
     return f"{player_id} 的回合"
 
 
@@ -179,9 +179,9 @@ def _is_playable(card_id: str, res: dict) -> bool:
     return total_lv >= level and res["active"] + res["ex"] >= cost
 
 
-def _main_phase_summary(state: GameState, res: dict) -> str:
-    me = state.p1
-    if state.active_player != "P1":
+def _main_phase_summary(state: GameState, viewer: str, res: dict) -> str:
+    me = state.get_player(viewer)
+    if state.priority != viewer:
         return ""
     has_play = any(_is_playable(card_id, res) for card_id in me.hand_cards)
     has_attack = any(_can_attack_from_slot(slot) for slot in me.battle_area)
@@ -200,10 +200,10 @@ def _main_phase_summary(state: GameState, res: dict) -> str:
 
 # ---------- common block ----------
 
-def _build_common_block(state: GameState) -> str:
+def _build_common_block(state: GameState, viewer: str = "P1") -> str:
     """根據 state 計算所有欄位，填入 common_block 模板。"""
-    p1, p2 = state.p1, state.p2
-    me, opp = p1, p2
+    me = state.get_player(viewer)
+    opp = state.get_opponent(viewer)
     hand_lines = "\n".join(f"- {_card_line(cid)}" for cid in me.hand_cards)
     my_ba = "\n".join(_battlefield_lines(me.battle_area, False))
     opp_ba = "\n".join(_battlefield_lines(opp.battle_area, True))
@@ -215,7 +215,7 @@ def _build_common_block(state: GameState) -> str:
         turn=state.turn,
         phase_label=phase_label,
         step_label=step_label,
-        turn_owner=_turn_owner_text(state.active_player),
+        turn_owner=_turn_owner_text(state.active_player, viewer),
         active=me.resources_active,
         rested=me.resources_rested,
         ex=me.resources_ex,
@@ -236,13 +236,13 @@ def _build_common_block(state: GameState) -> str:
         base_max_hp=me.base.hp,
         battle_log=_battle_log_text(state.battle_log),
         priority=state.priority,
-        you_suffix=_you_suffix(state),
+        you_suffix=_you_suffix(state, viewer),
     )
 
 
 # ---------- render functions ----------
 
-def _render_mulligan(state: GameState) -> str:
+def _render_mulligan(state: GameState, viewer: str = "P1") -> str:
     """調度模板
     輸出示例:
       調度 — P1 為後手
@@ -252,13 +252,13 @@ def _render_mulligan(state: GameState) -> str:
       ...
       請輸入 redraw 或 keep
     """
-    p1 = state.p1
-    first = "先手" if state.first_player == "P1" else "後手"
-    hand_lines = "\n".join(f"- {_card_line(cid)}" for cid in p1.hand_cards)
-    return _fmt("mulligan", player="P1", first_or_second=first, hand_lines=hand_lines)
+    me = state.get_player(viewer)
+    first = "先手" if state.first_player == viewer else "後手"
+    hand_lines = "\n".join(f"- {_card_line(cid)}" for cid in me.hand_cards)
+    return _fmt("mulligan", player=viewer, first_or_second=first, hand_lines=hand_lines)
 
 
-def _render_main_phase(state: GameState) -> str:
+def _render_main_phase(state: GameState, viewer: str = "P1") -> str:
     """主要階段模板 — 含出牌合法性檢查
     輸出示例:
       回合 9 | 主要階段 | P2 的回合
@@ -294,18 +294,24 @@ def _render_main_phase(state: GameState) -> str:
       - 讓過 — 進入結束階段
       - 投降
     """
-    me = state.p1
+    if state.priority != viewer:
+        return _fmt("main_phase_waiting",
+            common_block=_build_common_block(state, viewer),
+            priority=state.priority,
+        )
+
+    me = state.get_player(viewer)
     res = _player_resources(me)
     actions = _available_actions(me.hand_cards, res)
     action_block = "\n".join(actions)
     return _fmt("main_phase",
-        common_block=_build_common_block(state),
-        main_summary=_main_phase_summary(state, res),
+        common_block=_build_common_block(state, viewer),
+        main_summary=_main_phase_summary(state, viewer, res),
         action_lines=action_block,
     )
 
 
-def _render_start_phase(state: GameState) -> str:
+def _render_start_phase(state: GameState, viewer: str = "P1") -> str:
     """開始階段模板
     輸出示例:
       回合 1 | 開始階段 | P1 的回合
@@ -331,10 +337,10 @@ def _render_start_phase(state: GameState) -> str:
       可行指令：
       - 讓過 — 進入抽牌階段
     """
-    return _fmt("start_phase", common_block=_build_common_block(state))
+    return _fmt("start_phase", common_block=_build_common_block(state, viewer))
 
 
-def _render_draw_phase(state: GameState) -> str:
+def _render_draw_phase(state: GameState, viewer: str = "P1") -> str:
     """抽牌階段模板
     輸出示例:
       回合 1 | 抽牌階段 — 自動抽牌 | P1 的回合
@@ -343,10 +349,10 @@ def _render_draw_phase(state: GameState) -> str:
       可行指令：
       - 讓過 — 抽牌完成，進入資源階段
     """
-    return _fmt("draw_phase", common_block=_build_common_block(state))
+    return _fmt("draw_phase", common_block=_build_common_block(state, viewer))
 
 
-def _render_resource_phase(state: GameState) -> str:
+def _render_resource_phase(state: GameState, viewer: str = "P1") -> str:
     """資源階段模板
     輸出示例:
       回合 1 | 資源階段 — 自動部署資源 | P1 的回合
@@ -355,10 +361,10 @@ def _render_resource_phase(state: GameState) -> str:
       可行指令：
       - 讓過 — 部署資源完成，進入主要階段
     """
-    return _fmt("resource_phase", common_block=_build_common_block(state))
+    return _fmt("resource_phase", common_block=_build_common_block(state, viewer))
 
 
-def _render_battle_attack(state: GameState) -> str:
+def _render_battle_attack(state: GameState, viewer: str = "P1") -> str:
     """戰鬥階段 — 攻擊宣言模板
     輸出示例:
       回合 2 | 戰鬥階段 — 攻擊宣言 | P1 的回合
@@ -369,10 +375,10 @@ def _render_battle_attack(state: GameState) -> str:
       - 讓過 — 跳過攻擊，進入結束階段
       - 投降
     """
-    return _fmt("battle_attack", common_block=_build_common_block(state))
+    return _fmt("battle_attack", common_block=_build_common_block(state, viewer))
 
 
-def _render_battle_action(state: GameState) -> str:
+def _render_battle_action(state: GameState, viewer: str = "P1") -> str:
     """戰鬥階段 — 動作子步驟模板
     輸出示例:
       回合 2 | 戰鬥階段 — 動作子步驟 | P1 的回合
@@ -382,10 +388,10 @@ def _render_battle_action(state: GameState) -> str:
       - 阻擋 <欄位>（若單位有 Blocker 關鍵字）
       - 讓過 — 不阻擋
     """
-    return _fmt("battle_action", common_block=_build_common_block(state))
+    return _fmt("battle_action", common_block=_build_common_block(state, viewer))
 
 
-def _render_battle_end(state: GameState) -> str:
+def _render_battle_end(state: GameState, viewer: str = "P1") -> str:
     """戰鬥階段 — 結束步驟模板
     輸出示例:
       回合 2 | 戰鬥階段 — 結束 | P1 的回合
@@ -395,10 +401,10 @@ def _render_battle_end(state: GameState) -> str:
       - 讓過 — 戰鬥結束，進入結束階段
       - 投降
     """
-    return _fmt("battle_end", common_block=_build_common_block(state))
+    return _fmt("battle_end", common_block=_build_common_block(state, viewer))
 
 
-def _render_end_phase(state: GameState) -> str:
+def _render_end_phase(state: GameState, viewer: str = "P1") -> str:
     """結束階段模板
     輸出示例:
       回合 1 | 結束階段 | P1 的回合
@@ -408,7 +414,7 @@ def _render_end_phase(state: GameState) -> str:
       - 讓過 — 結束回合
       - 投降
     """
-    return _fmt("end_phase", common_block=_build_common_block(state))
+    return _fmt("end_phase", common_block=_build_common_block(state, viewer))
 
 
 def _render_error(reason: str = "") -> str:
@@ -431,7 +437,7 @@ RENDER_MAP = {
     "battle_action": _render_battle_action,
     "battle_end": _render_battle_end,
     "end_phase": _render_end_phase,
-    "error": lambda s: _render_error("階段不匹配"),
+    "error": lambda s, viewer="P1": _render_error("階段不匹配"),
 }
 
 
@@ -442,14 +448,14 @@ def resolve_template(state: GameState) -> str:
     return _tpl["phase_table"].get(state.phase, "error")
 
 
-def render(state_path: str, template_name: Optional[str] = None) -> str:
+def render(state_path: str, template_name: Optional[str] = None, viewer: str = "P1") -> str:
     state = GameState.from_dict(yaml.safe_load(Path(state_path).read_text()))
     if template_name is None:
         template_name = resolve_template(state)
     render_fn = RENDER_MAP.get(template_name)
     if render_fn is None:
         return _render_error(f"未知模板: {template_name}")
-    return render_fn(state)
+    return render_fn(state, viewer)
 
 
 def main():
@@ -485,6 +491,10 @@ def main():
         help="將輸出寫入指定檔案（預設輸出到 stdout）。orchestrator 用此寫入 /tmp/gcg_output.txt",
     )
     ap.add_argument(
+        "--viewer", choices=("P1", "P2"), default="P1",
+        help="指定顯示視角。玩家/AI 決策時必須使用該玩家視角的完整可見狀態",
+    )
+    ap.add_argument(
         "--list", action="store_true",
         help="列出 gcg_display_templates.yaml 中所有可用模板名稱後退出",
     )
@@ -501,7 +511,7 @@ def main():
         return
 
     try:
-        text = render(args.state_path, args.template)
+        text = render(args.state_path, args.template, viewer=args.viewer)
     except Exception as e:
         text = _render_error(str(e))
 

@@ -62,7 +62,7 @@ def save_state(state: GameState):
     game_dir = GAME_STATES_DIR / state.game_id
     game_dir.mkdir(parents=True, exist_ok=True)
     state_file = game_dir / "gameState.md"
-    d = state.to_dict("P1")
+    d = state.to_dict("none")
     with open(state_file, "w") as f:
         yaml.dump(d, f, allow_unicode=True, default_flow_style=False)
 
@@ -132,8 +132,6 @@ def draw_phase(state: GameState):
     player.hand_cards.append(card)
     player.deck_count = len(player.deck_cards)
     state.battle_log.append(f"{state.active_player} draws a card")
-    if state.turn == 1 and state.active_player == state.first_player:
-        player.hand_cards.append(card)
 
 
 def resource_phase(state: GameState):
