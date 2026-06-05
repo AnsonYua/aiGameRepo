@@ -26,6 +26,7 @@ from skills_py import ai_player
 from skills_py.ai_player import _parse_ai_output, _public_safe_consideration, ai_decide
 from skills_py.game_engine import init_game, save_state
 from skills_py.game_state import BattleSlot, GameState
+from skills_py.gcg_display import render
 from skills_py.gcg_runtime import _handle_command
 
 
@@ -107,6 +108,26 @@ def test_ai_decide_uses_gcg_agent_and_reprompts_invalid_allowed() -> None:
         assert_true(call[3] == "gcg-ai-player", "AI adapter must use gcg-ai-player.md")
 
 
+def test_ai_decide_does_not_replace_active_game_pointer() -> None:
+    state = make_main_state("harness_ai_active_pointer")
+    ACTIVE_GAME_FILE.write_text("preserve_active_game", encoding="utf-8")
+    original_run = ai_player.subprocess.run
+
+    def fake_run(args: list[str], **kwargs: Any) -> FakeCompleted:
+        return FakeCompleted(stdout="CONSIDER: 依公開場面選擇讓過\nCOMMAND: pass\n")
+
+    ai_player.subprocess.run = fake_run
+    try:
+        ai_decide(state, "P1")
+    finally:
+        ai_player.subprocess.run = original_run
+
+    assert_true(
+        ACTIVE_GAME_FILE.read_text(encoding="utf-8").strip() == "preserve_active_game",
+        "AI display rendering must not replace .gcg_active_game",
+    )
+
+
 def test_consideration_sanitizer_blocks_hidden_info() -> None:
     state = make_main_state()
     text = "用 st01/ST01-005 和 GM 的手牌曲線建立優勢"
@@ -114,6 +135,73 @@ def test_consideration_sanitizer_blocks_hidden_info() -> None:
     assert_true("st01/ST01-005" not in sanitized, "sanitizer must remove hidden card id")
     assert_true("GM" not in sanitized, "sanitizer must remove hidden card name")
     assert_true("手牌" not in sanitized, "sanitizer must not write hand details to public replay")
+
+
+def test_display_lists_concrete_attack_legality() -> None:
+    state = make_main_state("harness_display_attack")
+    state.p1.hand_cards = []
+    state.p1.battle_area[0] = BattleSlot(
+        slot=0,
+        unit_id="st01/ST01-005",
+        ap=2,
+        hp=2,
+        damage=0,
+        status="active",
+        turns_on_field=0,
+    )
+    state.p1.battle_area[1] = BattleSlot(
+        slot=1,
+        unit_id="st01/ST01-009",
+        ap=3,
+        hp=2,
+        damage=0,
+        status="active",
+        turns_on_field=1,
+    )
+    state.p2.battle_area[2] = BattleSlot(
+        slot=2,
+        unit_id="st01/ST01-008",
+        ap=1,
+        hp=1,
+        damage=0,
+        status="rested",
+        keywords=["Blocker"],
+        turns_on_field=1,
+    )
+    save_state(state, set_active=False)
+    text = render(str(GAME_STATES_DIR / state.game_id / "gameState.md"), viewer="P1")
+    assert_true("欄位0 不能攻擊：剛部署的 Unit 本回合不能攻擊" in text, "display should explain summoning sickness")
+    assert_true("攻擊 1 — 攻擊對手防禦層✅" in text, "display should list legal base attack command")
+    assert_true("攻擊 1 unit 2 — 攻擊敵方欄位2✅" in text, "display should list legal unit attack command")
+
+
+def test_display_lists_concrete_block_legality() -> None:
+    state = make_main_state("harness_display_block")
+    state.phase = "battle"
+    state.step = "block"
+    state.active_player = "P1"
+    state.priority = "P2"
+    state.current_attacker = 0
+    state.p1.battle_area[0] = BattleSlot(
+        slot=0,
+        unit_id="st01/ST01-005",
+        ap=2,
+        hp=2,
+        status="active",
+        turns_on_field=1,
+    )
+    state.p2.battle_area[1] = BattleSlot(
+        slot=1,
+        unit_id="st01/ST01-009",
+        ap=3,
+        hp=2,
+        status="active",
+        keywords=["Blocker"],
+        turns_on_field=1,
+    )
+    save_state(state, set_active=False)
+    text = render(str(GAME_STATES_DIR / state.game_id / "gameState.md"), viewer="P2")
+    assert_true("阻擋 1 — 使用欄位1 阻擋✅" in text, "display should list legal block command")
 
 
 def test_runtime_attack_enemy_unit() -> None:
@@ -218,7 +306,10 @@ def run(live_llm: bool = False) -> None:
         cleanup_harness_state()
         test_ai_output_contract()
         test_ai_decide_uses_gcg_agent_and_reprompts_invalid_allowed()
+        test_ai_decide_does_not_replace_active_game_pointer()
         test_consideration_sanitizer_blocks_hidden_info()
+        test_display_lists_concrete_attack_legality()
+        test_display_lists_concrete_block_legality()
         test_runtime_attack_enemy_unit()
         test_runtime_block_command()
         test_replay_yaml_public_safe_consideration()

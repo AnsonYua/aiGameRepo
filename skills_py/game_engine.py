@@ -63,7 +63,7 @@ def init_game(game_id: str, p1_deck: str = "playerId_1", p2_deck: str = "playerI
     return state
 
 
-def save_state(state: GameState):
+def save_state(state: GameState, set_active: bool = True):
     import yaml
     game_dir = GAME_STATES_DIR / state.game_id
     game_dir.mkdir(parents=True, exist_ok=True)
@@ -72,8 +72,9 @@ def save_state(state: GameState):
     with open(state_file, "w") as f:
         yaml.dump(d, f, allow_unicode=True, default_flow_style=False)
 
-    with open(ACTIVE_GAME_FILE, "w") as f:
-        f.write(state.game_id)
+    if set_active:
+        with open(ACTIVE_GAME_FILE, "w") as f:
+            f.write(state.game_id)
 
 
 def load_state(game_id: str) -> Optional[GameState]:

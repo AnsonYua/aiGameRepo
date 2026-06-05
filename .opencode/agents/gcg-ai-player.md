@@ -14,6 +14,9 @@ note: runs as task(general) subagent; orchestrator controls context, not frontma
 `COMMAND` 必須是一條可交給 runtime 驗證的指令。
 若 prompt 內有 `legal_actions:`，`COMMAND` 的第一個字必須從該列表選。`legal_actions: keep, redraw` 時只能輸出 `keep` 或 `redraw`，不可輸出 `pass`。
 調度階段的 `CONSIDER` 不可描述手牌內容或手牌結構，只能寫「依調度階段的隱藏資訊評估」這類公開安全句。
+若顯示文字的「可行指令」或「攻擊合法性」列出帶有 `✅` 的具體指令，優先從這些具體指令中原樣選擇 `COMMAND`。不要根據泛用語法猜測 slot。
+若某欄位顯示「剛部署的 Unit 本回合不能攻擊」、`不能攻擊`、或沒有任何 `攻擊 <slot>...✅` 行，不可輸出該欄位的 `attack` 指令。
+阻擋時只可輸出顯示為 `阻擋 <slot> ...✅` 的 blocker；沒有合法阻擋者時輸出 `pass`。
 
 ```
 CONSIDER: <public-safe short consideration>
@@ -97,6 +100,7 @@ Priority: P1 (你)
 - `p1/p2.trash` → 對手已用過的牌
 - `battle_log` → 出牌記錄
 - `可行指令` 區塊的 ✅/❌ → 顯示層驗證結果，決策前應自行用 §7 規則再確認
+- `攻擊合法性` 區塊的 `攻擊 <slot>...✅` → 可直接使用的攻擊指令；沒有 ✅ 時不可猜 attack
 
 ---
 
@@ -197,6 +201,7 @@ Base 是外層 buffer（被破壞不敗北），盾牌是內層（0 盾 + 直擊
 > 5. 如果全空 + 盾 0 + 場面還是輸 → `concede`（CR-8.4）
 
 Main Phase 內可 play → attack → play → attack 循環。每次回傳一條指令。注意：同一 phase 內 deploy 的 Unit `turns_on_field=0`，不可攻擊（除非 `link=true`，CR-5.4）。
+實務上，攻擊前先看顯示的「攻擊合法性」：只有列為 `攻擊 <slot>...✅` 的 slot 可以攻擊。若剛部署單位旁邊顯示不能攻擊，改選部署、配對、使用 command 或 `pass`。
 
 ---
 

@@ -120,6 +120,26 @@ def _record_game_end_if_needed(state: GameState, events: list[dict], viewer: str
     _record_event(state, events, "game_end", state.winner, viewer, f"遊戲結束，勝者：{state.winner}{reason}")
 
 
+def _record_ai_failure(
+    state: GameState,
+    events: list[dict],
+    player_id: str,
+    viewer: str,
+    exc: RuntimeError,
+) -> None:
+    message = f"{player_id} AI 決策失敗：{exc}"
+    state.battle_log.append(message)
+    _record_event(
+        state,
+        events,
+        "ai_failure",
+        player_id,
+        viewer,
+        message,
+        result={"ok": False, "reason": str(exc)},
+    )
+
+
 def _format_battle_details(logs: list[str]) -> str:
     if not logs:
         return ""
@@ -130,6 +150,8 @@ def _ai_evaluation(decision: AIDecision) -> dict:
     data = {"chosen_command": decision.command, "candidates": []}
     if decision.consideration:
         data["consideration"] = decision.consideration
+    if decision.elapsed_seconds:
+        data["elapsed_seconds"] = round(decision.elapsed_seconds, 3)
     return data
 
 
@@ -249,7 +271,11 @@ def _mulligan(player_id: str, action: str, viewer: str, as_json: bool, game_id: 
             "P2 正在決定調度...",
             legal_actions=["keep", "redraw"],
         )
-        p2_decision = ai_decide(state, "P2", {"keep", "redraw"})
+        try:
+            p2_decision = ai_decide(state, "P2", {"keep", "redraw"})
+        except RuntimeError as exc:
+            _record_ai_failure(state, events, "P2", viewer, exc)
+            return _result(state, viewer, as_json, events)
         p2_cmd = p2_decision.command
         p2_action = p2_cmd.split(maxsplit=1)[0].lower()
         if p2_action == "redraw":
@@ -487,17 +513,7 @@ def _auto_resolve_player(
             decision = ai_decide(state, player_id)
             cmd = decision.command
         except RuntimeError as exc:
-            message = f"{player_id} AI 決策失敗：{exc}"
-            state.battle_log.append(message)
-            _record_event(
-                state,
-                events,
-                "ai_failure",
-                player_id,
-                viewer,
-                message,
-                result={"ok": False, "reason": str(exc)},
-            )
+            _record_ai_failure(state, events, player_id, viewer, exc)
             break
         _record_event(
             state,
@@ -613,7 +629,11 @@ def _auto(player_id: str, viewer: str, as_json: bool, game_id: Optional[str], ma
             f"{player_id} 正在決定調度...",
             legal_actions=["keep", "redraw"],
         )
-        decision = ai_decide(state, player_id, {"keep", "redraw"})
+        try:
+            decision = ai_decide(state, player_id, {"keep", "redraw"})
+        except RuntimeError as exc:
+            _record_ai_failure(state, events, player_id, viewer, exc)
+            return _result(state, viewer, as_json, events)
         cmd = decision.command
         action = cmd.split(maxsplit=1)[0].lower()
         if action == "redraw":
@@ -645,7 +665,11 @@ def _auto(player_id: str, viewer: str, as_json: bool, game_id: Optional[str], ma
                 "P2 正在決定調度...",
                 legal_actions=["keep", "redraw"],
             )
-            p2_decision = ai_decide(state, "P2", {"keep", "redraw"})
+            try:
+                p2_decision = ai_decide(state, "P2", {"keep", "redraw"})
+            except RuntimeError as exc:
+                _record_ai_failure(state, events, "P2", viewer, exc)
+                return _result(state, viewer, as_json, events)
             p2_cmd = p2_decision.command
             p2_action = p2_cmd.split(maxsplit=1)[0].lower()
             if p2_action == "redraw":

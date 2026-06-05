@@ -1,4 +1,6 @@
 import subprocess
+import os
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -17,6 +19,7 @@ class AIDecision:
     command: str
     consideration: str = ""
     raw_output: str = ""
+    elapsed_seconds: float = 0.0
 
 
 def _state_path(state: GameState) -> Path:
@@ -44,6 +47,15 @@ def _action_name(command: str) -> str:
     return command.split(maxsplit=1)[0].lower() if command.strip() else ""
 
 
+def _timeout_seconds() -> float:
+    raw = os.environ.get("GCG_AI_TIMEOUT_SECONDS", "60")
+    try:
+        timeout = float(raw)
+    except ValueError:
+        timeout = 60.0
+    return max(1.0, timeout)
+
+
 def _public_safe_consideration(state: GameState, player_id: str, text: str) -> str:
     if not text:
         return ""
@@ -61,7 +73,7 @@ def _public_safe_consideration(state: GameState, player_id: str, text: str) -> s
 
 
 def ai_decide(state: GameState, player_id: str, allowed: Optional[set[str]] = None) -> AIDecision:
-    save_state(state)
+    save_state(state, set_active=False)
     display_text = render(str(_state_path(state)), viewer=player_id)
     legal_hint = ", ".join(sorted(allowed)) if allowed else "依目前顯示的可行指令"
     base_prompt = "\n".join([
@@ -73,6 +85,7 @@ def ai_decide(state: GameState, player_id: str, allowed: Optional[set[str]] = No
     ])
 
     last_decision: Optional[AIDecision] = None
+    timeout_seconds = _timeout_seconds()
     for attempt in range(2):
         prompt = base_prompt
         if attempt and last_decision:
@@ -83,24 +96,27 @@ def ai_decide(state: GameState, player_id: str, allowed: Optional[set[str]] = No
                 f"請重新輸出，COMMAND 第一個字必須是：{legal_hint}",
             ])
         try:
+            started = time.monotonic()
             completed = subprocess.run(
                 ["opencode", "run", "--agent", "gcg-ai-player", prompt],
                 cwd=str(PROJECT_ROOT),
                 text=True,
                 capture_output=True,
-                timeout=60,
+                timeout=timeout_seconds,
                 check=False,
             )
+            elapsed_seconds = time.monotonic() - started
         except FileNotFoundError as exc:
             raise RuntimeError("找不到 opencode；AI 決策必須透過 .opencode/agents/gcg-ai-player.md。") from exc
         except subprocess.TimeoutExpired as exc:
-            raise RuntimeError("gcg-ai-player 決策逾時。") from exc
+            raise RuntimeError(f"gcg-ai-player 決策逾時（timeout={timeout_seconds:g}s）。") from exc
 
         if completed.returncode != 0:
             detail = completed.stderr.strip() or completed.stdout.strip() or f"exit code {completed.returncode}"
             raise RuntimeError(f"gcg-ai-player 執行失敗：{detail}")
 
         decision = _parse_ai_output(completed.stdout)
+        decision.elapsed_seconds = elapsed_seconds
         action = _action_name(decision.command)
         if allowed and action not in allowed:
             last_decision = decision

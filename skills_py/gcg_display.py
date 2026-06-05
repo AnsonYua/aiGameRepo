@@ -16,14 +16,14 @@ import yaml
 
 try:
     from .card_db import build_card_summary, get_card, get_card_keywords
-    from .game_engine import can_play_card
+    from .game_engine import can_attack, can_attack_unit, can_block, can_play_card
     from .game_state import BattleSlot, GameState, PlayerState
 except ImportError:
     PROJECT_ROOT = Path(__file__).parent.parent.absolute()
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(0, str(PROJECT_ROOT))
     from skills_py.card_db import build_card_summary, get_card, get_card_keywords
-    from skills_py.game_engine import can_play_card
+    from skills_py.game_engine import can_attack, can_attack_unit, can_block, can_play_card
     from skills_py.game_state import BattleSlot, GameState, PlayerState
 
 TEMPLATE_DIR = Path(__file__).parent
@@ -159,6 +159,74 @@ def _available_actions(state: GameState, viewer: str, battle_area: list[BattleSl
         else:
             tpl_key = "action_deploy"
         lines.append(_fmt(tpl_key, **d))
+    return lines
+
+
+def _combat_reason(reason: str) -> str:
+    reason_map = {
+        "can only attack in main phase": "只能在主要階段攻擊",
+        "invalid slot": "欄位不存在",
+        "no unit in that slot": "該欄位沒有 Unit",
+        "unit is rested": "該 Unit 已橫置",
+        "unit cannot attack this turn (summoning sickness)": "剛部署的 Unit 本回合不能攻擊",
+        "unit has 0 AP": "AP 為 0，不能攻擊",
+        "invalid target slot": "目標欄位不存在",
+        "no enemy unit in target slot": "目標欄位沒有敵方 Unit",
+        "enemy unit must be rested to attack": "只能攻擊已橫置的敵方 Unit",
+        "can only block during attack step": "只能在攻擊/阻擋窗口阻擋",
+        "unit is not a Blocker": "該 Unit 沒有 Blocker",
+    }
+    return reason_map.get(reason, reason)
+
+
+def _attack_action_lines(state: GameState, viewer: str) -> list[str]:
+    if state.phase != "main" or state.priority != viewer or state.active_player != viewer:
+        return ["  - 攻擊：目前不是你的攻擊時機"]
+
+    player = state.get_player(viewer)
+    opponent = state.get_opponent(viewer)
+    lines: list[str] = []
+    legal_count = 0
+    for slot in player.battle_area:
+        if slot.unit_id is None:
+            continue
+        ok, reason = can_attack(state, viewer, slot.slot)
+        if not ok:
+            lines.append(f"  - 欄位{slot.slot} 不能攻擊：{_combat_reason(reason)}")
+            continue
+        legal_count += 1
+        lines.append(f"  - 攻擊 {slot.slot} — 攻擊對手防禦層✅")
+        for target in opponent.battle_area:
+            if target.unit_id is None:
+                continue
+            target_ok, target_reason = can_attack_unit(state, viewer, slot.slot, target.slot)
+            if target_ok:
+                lines.append(f"  - 攻擊 {slot.slot} unit {target.slot} — 攻擊敵方欄位{target.slot}✅")
+            elif target.status == "rested":
+                lines.append(f"  - 欄位{slot.slot} 不能攻擊敵方欄位{target.slot}：{_combat_reason(target_reason)}")
+    if legal_count == 0:
+        lines.append("  - 攻擊：目前沒有合法攻擊者")
+    return lines
+
+
+def _block_action_lines(state: GameState, viewer: str) -> list[str]:
+    if state.phase != "battle" or state.step not in ("attack", "block") or state.priority != viewer:
+        return ["  - 阻擋：目前不是你的阻擋窗口"]
+
+    player = state.get_player(viewer)
+    lines: list[str] = []
+    legal_count = 0
+    for slot in player.battle_area:
+        if slot.unit_id is None:
+            continue
+        ok, reason = can_block(state, viewer, slot.slot)
+        if ok:
+            legal_count += 1
+            lines.append(f"  - 阻擋 {slot.slot} — 使用欄位{slot.slot} 阻擋✅")
+        else:
+            lines.append(f"  - 欄位{slot.slot} 不能阻擋：{_combat_reason(reason)}")
+    if legal_count == 0:
+        lines.append("  - 阻擋：目前沒有合法阻擋者")
     return lines
 
 
@@ -334,6 +402,7 @@ def _render_main_phase(state: GameState, viewer: str = "P1") -> str:
         common_block=_build_common_block(state, viewer),
         main_summary=_main_phase_summary(state, viewer, res),
         action_lines=action_block,
+        attack_lines="\n".join(_attack_action_lines(state, viewer)),
     )
 
 
@@ -401,7 +470,11 @@ def _render_battle_attack(state: GameState, viewer: str = "P1") -> str:
       - 讓過 — 跳過攻擊，進入結束階段
       - 投降
     """
-    return _fmt("battle_attack", common_block=_build_common_block(state, viewer))
+    return _fmt(
+        "battle_attack",
+        common_block=_build_common_block(state, viewer),
+        attack_lines="\n".join(_attack_action_lines(state, viewer)),
+    )
 
 
 def _render_battle_action(state: GameState, viewer: str = "P1") -> str:
@@ -414,7 +487,11 @@ def _render_battle_action(state: GameState, viewer: str = "P1") -> str:
       - 阻擋 <欄位>（若單位有 Blocker 關鍵字）
       - 讓過 — 不阻擋
     """
-    return _fmt("battle_action", common_block=_build_common_block(state, viewer))
+    return _fmt(
+        "battle_action",
+        common_block=_build_common_block(state, viewer),
+        block_lines="\n".join(_block_action_lines(state, viewer)),
+    )
 
 
 def _render_battle_end(state: GameState, viewer: str = "P1") -> str:

@@ -77,8 +77,8 @@ main_phase: |
   {main_summary}
   可行指令（依出牌合法性 ✅/❌ 計算）：
   {action_lines}
-  - 攻擊 <欄位> — 攻擊對手防禦層
-  - 攻擊 <欄位> unit <對手欄位> — 攻擊已橫置的敵方 Unit
+  攻擊合法性：
+  {attack_lines}
   - 讓過 — 進入結束階段
   - 投降
 
@@ -90,15 +90,14 @@ main_phase_waiting: |
 battle_attack: |
   {common_block}
   可行指令：
-  - 攻擊 <欄位> — 攻擊對手防禦層
-  - 攻擊 <欄位> unit <對手欄位> — 攻擊已橫置的敵方 Unit
+  {attack_lines}
   - 讓過 — 跳過攻擊，進入結束階段
   - 投降
 
 battle_action: |
   {common_block}
   可行指令：
-  - 阻擋 <欄位>（若單位有 Blocker 關鍵字）
+  {block_lines}
   - 讓過 — 不阻擋
 
 battle_end: |
