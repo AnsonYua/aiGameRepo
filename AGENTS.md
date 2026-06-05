@@ -93,6 +93,8 @@ python3 skills_py/gcg_runtime.py command --player P1 --cmd "<玩家原始指令>
 ## Gameplay Log / Replay 約定
 
 - AI-vs-AI simulation / replay review 的測試原則固定在 `GCG_TESTING_PRINCIPLES.md`；新增完整 AI-vs-AI harness 或 review 時必須遵守該文件。
+- AI-vs-AI replay harness 指令：`python3 tests/gcg_ai_vs_ai_replay_harness.py`；live LLM 模式：`python3 tests/gcg_ai_vs_ai_replay_harness.py --live-llm`。
+- AI-vs-AI harness 必須產生 `gameplay.yaml`、`replay.md`、`review.md`，review 欄位需符合 `GCG_TESTING_PRINCIPLES.md`。
 - Gameplay log / replay 寫入邏輯集中在 `skills_py/gameplay_log.py`；不要在 runtime 之外手寫另一套 replay 格式。
 - Runtime 每局必須維護 `game-states/<game_id>/gameplay.yaml` 作為 canonical structured gameplay log。
 - Runtime 每局必須維護 `game-states/<game_id>/replay.md` 作為玩家可讀 replay；此 Markdown 必須使用繁體中文。

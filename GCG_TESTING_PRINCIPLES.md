@@ -141,6 +141,10 @@ Review 時要提出下一步：
 ```bash
 python3 tests/gcg_direction_harness.py
 python3 tests/gcg_direction_harness.py --live-llm
+python3 tests/gcg_ai_vs_ai_replay_harness.py
+python3 tests/gcg_ai_vs_ai_replay_harness.py --live-llm
 ```
 
-這兩個 harness 只驗證方向與合約，不取代完整 AI-vs-AI replay review。未來新增 AI-vs-AI harness 時，必須符合本文件的 simulation 與 review contract。
+`gcg_direction_harness.py` 驗證方向與合約。`gcg_ai_vs_ai_replay_harness.py` 會產生 AI-vs-AI `gameplay.yaml`、`replay.md`、`review.md`，並依本文件欄位做 replay review。
+
+預設 AI-vs-AI harness 使用 fake opencode subprocess，但仍強制檢查所有 AI call 都走 `opencode run --agent gcg-ai-player` adapter path；`--live-llm` 才呼叫真實 `gcg-ai-player.md`。兩種模式都不得直接手改 state 推進對局。

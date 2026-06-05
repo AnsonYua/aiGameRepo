@@ -90,6 +90,15 @@ python3 tests/gcg_direction_harness.py --live-llm
 
 `--live-llm` 會實際呼叫 `opencode run --agent gcg-ai-player`，只檢查 `CONSIDER` / `COMMAND` 合約與 public-safe 輸出，不套用狀態。
 
+AI-vs-AI replay harness：
+
+```bash
+python3 tests/gcg_ai_vs_ai_replay_harness.py
+python3 tests/gcg_ai_vs_ai_replay_harness.py --live-llm
+```
+
+此 harness 會產生 `gameplay.yaml`、`replay.md`、`review.md`。預設模式 fake opencode subprocess 但仍強制所有 AI call 走 `gcg-ai-player` adapter path；`--live-llm` 才呼叫真實 agent。
+
 ## 清理規則
 
 不要提交產生型檔案：
