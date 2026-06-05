@@ -72,6 +72,8 @@ python3 skills_py/gcg_runtime.py auto --player P2 --viewer P1
 
 ## Regression Harness
 
+AI-vs-AI simulation / replay review 的測試原則見 `GCG_TESTING_PRINCIPLES.md`。
+
 修改 AI 決策、runtime combat、gameplay log 或 replay 後，至少跑：
 
 ```bash
