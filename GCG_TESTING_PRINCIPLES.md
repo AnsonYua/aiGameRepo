@@ -4,8 +4,9 @@
 
 ## 核心原則
 
-1. AI 決策必須走 `gcg-ai-player.md`
-   - P1 AI、P2 AI、AI-vs-AI 都必須透過 `skills_py/ai_player.py` 呼叫 `opencode run --agent gcg-ai-player`。
+1. AI 決策必須走 adapter boundary
+   - P1 AI、P2 AI、AI-vs-AI 都必須透過 `skills_py/ai_player.py` 與 `skills_py/ai_adapters.py`。
+   - 預設 provider 是 `opencode run --agent gcg-ai-player`；可用 `GCG_AI_PROVIDER=codex` 切到 `codex exec`，Claude Code provider 目前只保留 placeholder。
    - Python 不得新增策略 fallback、評分器或自動選牌邏輯。
    - Python 只負責 viewer display、解析 `CONSIDER` / `COMMAND`、合法性驗證、state mutation、gameplay log 與 replay。
 
@@ -35,7 +36,7 @@
 
 2. mulligan
    - P1 用 auto 或固定測試指令決定 keep/redraw
-   - P2 也必須透過 gcg-ai-player.md 決定 keep/redraw
+   - P2 也必須透過 AI adapter 決定 keep/redraw
 
 3. main loop
    - 若 priority 是 P1，呼叫 runtime auto --player P1 --game-id <game_id>
@@ -54,6 +55,8 @@ Harness 必須有上限：
 - `max_actions`：避免單一 priority loop 卡死。
 - `timeout_seconds`：避免 live LLM 無限等待。
 - 若達上限，結果是 `incomplete`，不能算 pass。
+- 上限只是 fail-fast 保護，不是解法。達到上限時必須 review `gameplay.yaml` / `replay.md` 並分類 root cause；不得只把上限調高。
+- 若 AI 指令都合法但沒有 game_over，優先視為 AI strategy quality bug 或 Display problem 來研究。只有 replay 證明 AI 持續正常推進防禦層且上限明顯太低時，才調高上限。
 
 ## Replay Review Criteria
 
@@ -89,6 +92,7 @@ Verdict:
 - 若有可阻擋情境，AI 有機會使用 `block <slot>` 或明確選擇 `pass`。
 - 若有敵方橫置 Unit 且 trade 有利，AI 有機會使用 `attack <slot> unit <enemy_slot>`。
 - 若 AI 長期只 `deploy` / `attack <slot>` / `pass`，review 必須標為策略面不足。
+- 若對局 incomplete，review 必須列出 passive-play signals、defense progress，並說明下一步要看 replay 哪些決策點，不可只寫「提高 max_steps」。
 
 ### 建議量化指標
 
@@ -147,4 +151,4 @@ python3 tests/gcg_ai_vs_ai_replay_harness.py --live-llm
 
 `gcg_direction_harness.py` 驗證方向與合約。`gcg_ai_vs_ai_replay_harness.py` 會產生 AI-vs-AI `gameplay.yaml`、`replay.md`、`review.md`，並依本文件欄位做 replay review。
 
-預設 AI-vs-AI harness 使用 fake opencode subprocess，但仍強制檢查所有 AI call 都走 `opencode run --agent gcg-ai-player` adapter path；`--live-llm` 才呼叫真實 `gcg-ai-player.md`。兩種模式都不得直接手改 state 推進對局。
+預設 AI-vs-AI harness 使用 fake AI adapter，但仍強制檢查所有 AI call 都走 `skills_py/ai_player.py` / `skills_py/ai_adapters.py` path；`--live-llm` 才呼叫真實 configured provider。兩種模式都不得直接手改 state 推進對局。

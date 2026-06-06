@@ -6,7 +6,7 @@ from typing import Any, Optional
 
 import yaml
 
-from .game_state import GameState, PlayerState
+from .game_state import BattleSlot, GameState, PlayerState
 
 
 PROJECT_ROOT = Path(__file__).parent.parent.absolute()
@@ -54,11 +54,28 @@ def _base_features(player: PlayerState) -> dict[str, Any]:
         "card_id": player.base.card_id,
         "ap": player.base.ap,
         "hp": max(player.base.hp - player.base.damage, 0),
+        "damage": player.base.damage,
         "alive": player.base.alive,
+        "status": player.base.status,
     }
 
 
-def _board_features(player: PlayerState) -> dict[str, int]:
+def _slot_public_features(slot: BattleSlot) -> dict[str, Any]:
+    return {
+        "slot": slot.slot,
+        "unit_id": slot.unit_id,
+        "pilot_id": slot.pilot_id,
+        "ap": slot.ap,
+        "hp": max(slot.hp - slot.damage, 0) if slot.unit_id else 0,
+        "damage": slot.damage,
+        "status": slot.status,
+        "keywords": list(slot.keywords),
+        "link": slot.link,
+        "turns_on_field": slot.turns_on_field,
+    }
+
+
+def _board_summary(player: PlayerState) -> dict[str, int]:
     units = [slot for slot in player.battle_area if slot.unit_id is not None]
     return {
         "units": len(units),
@@ -71,14 +88,22 @@ def _board_features(player: PlayerState) -> dict[str, int]:
 
 def public_features(state: GameState) -> dict[str, Any]:
     return {
+        "turn": state.turn,
+        "phase": state.phase,
+        "step": state.step,
         "active_player": state.active_player,
         "priority": state.priority,
+        "current_attacker": state.current_attacker,
+        "game_over": state.game_over,
+        "winner": state.winner,
         "p1": _player_public_features(state.p1),
         "p2": _player_public_features(state.p2),
     }
 
 
 def _player_public_features(player: PlayerState) -> dict[str, Any]:
+    board = _board_summary(player)
+    board["slots"] = [_slot_public_features(slot) for slot in player.battle_area]
     return {
         "hand_count": player.hand_count,
         "resources": {
@@ -86,9 +111,13 @@ def _player_public_features(player: PlayerState) -> dict[str, Any]:
             "rested": player.resources_rested,
             "ex": player.resources_ex,
         },
-        "board": _board_features(player),
+        "deck_count": player.deck_count,
+        "resource_deck_count": player.resource_deck_count,
         "shields": player.shields,
         "base": _base_features(player),
+        "board": board,
+        "trash": list(player.trash),
+        "removal": list(player.removal),
     }
 
 
@@ -194,6 +223,94 @@ def _winner_text(winner: Optional[str]) -> str:
     return winner if winner else "尚未結束"
 
 
+SNAPSHOT_EVENT_TYPES = {"decision_applied", "auto_progress", "game_end", "state_checkpoint"}
+
+
+def _none_text(value: Any, fallback: str = "無") -> str:
+    if value is None or value == "":
+        return fallback
+    return str(value)
+
+
+def _list_text(values: Any) -> str:
+    if not isinstance(values, list) or not values:
+        return "無"
+    return "、".join(str(value) for value in values)
+
+
+def _base_snapshot_line(player_id: str, player: dict[str, Any]) -> str:
+    base = player.get("base") if isinstance(player.get("base"), dict) else {}
+    alive = "存活" if base.get("alive", True) else "已摧毀"
+    status = _none_text(base.get("status"))
+    return (
+        f"{player_id} 基地：{_none_text(base.get('card_id'))} | "
+        f"AP|HP：{base.get('ap', 0)}|{base.get('hp', 0)} | "
+        f"damage：{base.get('damage', 0)} | {alive} | status：{status}"
+    )
+
+
+def _slot_snapshot_text(slot: dict[str, Any]) -> str:
+    slot_no = slot.get("slot", "?")
+    unit_id = slot.get("unit_id")
+    if not unit_id:
+        return f"欄位{slot_no} 空"
+    pilot = _none_text(slot.get("pilot_id"))
+    status = _none_text(slot.get("status"))
+    keywords = _list_text(slot.get("keywords"))
+    link = "是" if slot.get("link") else "否"
+    return (
+        f"欄位{slot_no} [{unit_id}] pilot：{pilot} | "
+        f"AP|HP：{slot.get('ap', 0)}|{slot.get('hp', 0)} | "
+        f"damage：{slot.get('damage', 0)} | status：{status} | "
+        f"keywords：{keywords} | link：{link} | 在場回合：{slot.get('turns_on_field', 0)}"
+    )
+
+
+def _player_snapshot_lines(player_id: str, features: dict[str, Any]) -> list[str]:
+    player = features.get(player_id.lower())
+    if not isinstance(player, dict):
+        return [f"{player_id}：公開狀態未記錄"]
+
+    resources = player.get("resources") if isinstance(player.get("resources"), dict) else {}
+    board = player.get("board") if isinstance(player.get("board"), dict) else {}
+    slots = board.get("slots") if isinstance(board.get("slots"), list) else []
+    lines = [
+        (
+            f"{player_id}：手牌 {player.get('hand_count', 0)}，牌庫 {player.get('deck_count', 0)}，"
+            f"資源牌庫 {player.get('resource_deck_count', 0)}，"
+            f"資源 active/rested/EX = {resources.get('active', 0)}/{resources.get('rested', 0)}/{resources.get('ex', 0)}，"
+            f"盾 {player.get('shields', 0)}"
+        ),
+        _base_snapshot_line(player_id, player),
+        f"{player_id} 場面：",
+        *(f"  {_slot_snapshot_text(slot)}" for slot in slots),
+        f"{player_id} trash：{_list_text(player.get('trash'))}",
+        f"{player_id} removal：{_list_text(player.get('removal'))}",
+    ]
+    return lines
+
+
+def _snapshot_lines(event: dict[str, Any]) -> list[str]:
+    if event.get("event_type") not in SNAPSHOT_EVENT_TYPES:
+        return []
+    features = event.get("features")
+    if not isinstance(features, dict):
+        return []
+
+    turn = features.get("turn", event.get("turn", "?"))
+    phase = _phase_text(features.get("phase", event.get("phase", "")), features.get("step", event.get("step")))
+    lines = [
+        "    公開狀態快照：",
+        (
+            f"    目前：active={_none_text(features.get('active_player'))}，"
+            f"priority={_none_text(features.get('priority'))}，回合 {turn} / {phase}"
+        ),
+    ]
+    lines.extend(f"    {line}" for line in _player_snapshot_lines("P1", features))
+    lines.extend(f"    {line}" for line in _player_snapshot_lines("P2", features))
+    return lines
+
+
 def write_replay(state: GameState, data: Optional[dict[str, Any]] = None) -> None:
     data = data or _load_log(state)
     path = replay_path(state.game_id)
@@ -215,6 +332,7 @@ def write_replay(state: GameState, data: Optional[dict[str, Any]] = None) -> Non
         turn = event.get("turn", "?")
         phase = _phase_text(event.get("phase", ""), event.get("step"))
         lines.append(f"{event.get('seq', 0):03d}. 回合 {turn} / {phase} - {event.get('message', '')}")
+        lines.extend(_snapshot_lines(event))
 
     decision_events = [
         event for event in events

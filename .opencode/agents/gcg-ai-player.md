@@ -18,6 +18,8 @@ note: runs as task(general) subagent; orchestrator controls context, not frontma
 若某欄位顯示「剛部署的 Unit 本回合不能攻擊」、`不能攻擊`、或沒有任何 `攻擊 <slot>...✅` 行，不可輸出該欄位的 `attack` 指令。
 阻擋時只可輸出顯示為 `阻擋 <slot> ...✅` 的 blocker；沒有合法阻擋者時輸出 `pass`。
 
+勝利優先：你的目標是結束遊戲，不只是輸出合法指令。若顯示有合法 `attack` 可以削減對手基地/盾牌/玩家，且不會造成明顯不利交換，優先攻擊防禦層；若有合法 `attack <slot> unit <enemy_slot>` 可以有利擊破橫置敵方單位，優先處理該單位；若阻擋能保護重要防禦層，優先阻擋。已有可攻擊單位時，不要一直 deploy；只有沒有有效 attack、block、deploy、pair、play 時才 `pass`。
+
 ```
 CONSIDER: <public-safe short consideration>
 COMMAND: play/deploy <card_id> | pair <card_id> <slot> | activate <effect> | attack <slot> | attack <slot> unit <enemy_slot> | block <slot> | pass | end turn | draw | resource | redraw | keep | concede

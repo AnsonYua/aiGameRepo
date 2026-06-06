@@ -82,9 +82,12 @@ python3 skills_py/gcg_runtime.py command --player P1 --cmd "<玩家原始指令>
 ## Debug / Fix 原則
 
 - 不要把「增加 retry」當成 AI、runtime、harness 問題的預設修法。Retry 只能處理已確認的暫時性外部錯誤；若沒有量測與 root cause，不要用 retry 掩蓋問題。
-- 遇到 live LLM / `gcg-ai-player` 很慢、逾時或重複失敗時，先量測單次最小 prompt，例如只含 `player_id`、`first_player`、`legal_actions: keep, redraw` 與調度顯示的 `opencode run --agent gcg-ai-player`。若最小 prompt 仍需十幾秒，root cause 是 opencode 啟動 / model latency，不是 gameplay replay 或 prompt 太長。
+- AI 決策 provider 必須走 `skills_py/ai_player.py` / `skills_py/ai_adapters.py`。預設 `GCG_AI_PROVIDER=opencode` 會呼叫 `opencode run --agent gcg-ai-player`；`GCG_AI_PROVIDER=codex` 會呼叫 `codex exec`；`GCG_AI_PROVIDER=claude` 目前只保留 placeholder。
+- 執行 `ai-probe` 或 live harness 前必須先在 repo root：`cd /Users/hello/Desktop/cardAI`。已知可用版本：`@openai/codex@0.137.0`，`GCG_AI_PROVIDER=codex python3 skills_py/gcg_runtime.py ai-probe --provider codex` 可回 `CONSIDER: probe` / `COMMAND: pass`。
+- 遇到 live LLM 很慢、逾時或重複失敗時，先量測單次最小 prompt，例如只含 `player_id`、`first_player`、`legal_actions: keep, redraw` 與調度顯示的 adapter probe：`python3 skills_py/gcg_runtime.py ai-probe --provider opencode` 或 `python3 skills_py/gcg_runtime.py ai-probe --provider codex`。若最小 prompt 仍需十幾秒，root cause 通常是 provider CLI 啟動 / model latency，不是 gameplay replay 或 prompt 太長。
 - 修 timeout / slow harness 時，優先做 fail-fast、latency recording、review artifact 與明確錯誤分類；不要讓 harness 長時間卡住，也不要讓 timeout 後繼續污染同一局 replay。
-- Review 要區分 `AI prompt problem`、`Display problem`、`Runtime problem`、`Harness problem`、`opencode/model latency problem`。例如 illegal `attack` 通常先看 display 是否列出具體合法攻擊；live LLM 慢則先看單次 opencode latency。
+- AI-vs-AI 達到 harness 上限時，不可把「調高 max_turns/max_steps/max_actions」當成預設修法。必須先 review `gameplay.yaml` / `replay.md`：若 display 有具體 ✅ attack/block 指令但 AI 選 pass/deploy，歸類為 AI player prompt problem；若 display 沒有列出具體合法指令，歸類為 Display problem；若合法指令被 runtime 拒絕，歸類為 Runtime problem。
+- Review 要區分 `AI prompt problem`、`Display problem`、`Runtime problem`、`Harness problem`、`provider CLI/model latency problem`。例如 illegal `attack` 通常先看 display 是否列出具體合法攻擊；live LLM 慢則先看單次 provider probe latency。
 - 若要調整 live LLM 速度，先考慮模型/agent mode/attach server/timeout 設定；不要在 Python 裡新增策略 fallback，也不要把多次 retry 當成「AI 變聰明」。
 - `GCG_AI_TIMEOUT_SECONDS` 與 harness 的 `--ai-timeout-seconds` 是診斷與 fail-fast 工具。縮短 timeout 的目的是快速產生清楚的 FAIL review，不是讓測試悄悄通過。
 
@@ -102,8 +105,9 @@ python3 skills_py/gcg_runtime.py command --player P1 --cmd "<玩家原始指令>
 ## Gameplay Log / Replay 約定
 
 - AI-vs-AI simulation / replay review 的測試原則固定在 `GCG_TESTING_PRINCIPLES.md`；新增完整 AI-vs-AI harness 或 review 時必須遵守該文件。
-- AI-vs-AI replay harness 指令：`python3 tests/gcg_ai_vs_ai_replay_harness.py`；live LLM 模式：`python3 tests/gcg_ai_vs_ai_replay_harness.py --live-llm`。
+- AI-vs-AI replay harness 指令：`python3 tests/gcg_ai_vs_ai_replay_harness.py`；live LLM 模式：`python3 tests/gcg_ai_vs_ai_replay_harness.py --live-llm`。切換 provider 用環境變數，例如 `GCG_AI_PROVIDER=codex python3 tests/gcg_ai_vs_ai_replay_harness.py --live-llm`。
 - AI-vs-AI harness 必須產生 `gameplay.yaml`、`replay.md`、`review.md`，review 欄位需符合 `GCG_TESTING_PRINCIPLES.md`。
+- AI-vs-AI `INCOMPLETE` 是 bug/quality signal，不是正常 pass。下一步一定是回看 replay 並分類 root cause；只有 review 證明 AI 持續正常推進防禦層且上限明顯太低時，才調高上限。
 - Gameplay log / replay 寫入邏輯集中在 `skills_py/gameplay_log.py`；不要在 runtime 之外手寫另一套 replay 格式。
 - Runtime 每局必須維護 `game-states/<game_id>/gameplay.yaml` 作為 canonical structured gameplay log。
 - Runtime 每局必須維護 `game-states/<game_id>/replay.md` 作為玩家可讀 replay；此 Markdown 必須使用繁體中文。
@@ -122,7 +126,7 @@ python3 skills_py/gcg_runtime.py command --player P1 --cmd "<玩家原始指令>
 - runtime / engine 行為變更
 - display / viewer 輸出變更
 - opencode agent prompt 變更
-- Codex / opencode 相容性修正
+- AI provider adapter / Codex / opencode / Claude Code 相容性修正
 - 測試流程或驗證結果
 - 刪除檔案、停用 legacy 入口、更新架構文件
 
@@ -151,11 +155,11 @@ Next:
 ## 範例
 
 ```text
-Section: opencode-agent
-Scope: .opencode/agents/gcg-ai-player.md
-Changed: AI Player 直接輸出 CONSIDER / COMMAND，不再寫 /tmp/gcg_ai_output.txt；runtime 只套用 COMMAND，replay 記錄 public-safe CONSIDER。
-Verification: opencode run --agent gcg-ai-player "<完整 viewer display>" 成功回 CONSIDER / COMMAND。
-Constraints: AI Player 只能讀 viewer display text，不讀 gameState.md。
+Section: ai-provider-adapter
+Scope: skills_py/ai_player.py, skills_py/ai_adapters.py, .opencode/agents/gcg-ai-player.md
+Changed: AI Player 必須輸出 CONSIDER / COMMAND；runtime 只套用 COMMAND，replay 記錄 public-safe CONSIDER。provider 可用 GCG_AI_PROVIDER 在 opencode / codex / claude placeholder 間切換。
+Verification: 在 `/Users/hello/Desktop/cardAI` 執行 `python3 skills_py/gcg_runtime.py ai-probe --provider opencode` 或 `GCG_AI_PROVIDER=codex python3 skills_py/gcg_runtime.py ai-probe --provider codex` 成功回 CONSIDER / COMMAND。
+Constraints: AI Player 只能讀 viewer display text，不讀 gameState.md；Python adapter 不新增策略 fallback。
 Next: 若 AI command 要套用 state，交給 skills_py/gcg_runtime.py command --player P2 --cmd "<command>"。
 ```
 

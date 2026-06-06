@@ -1,10 +1,9 @@
-import subprocess
 import os
-import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from . import ai_adapters
 from .card_db import get_card_name
 from .game_engine import save_state
 from .game_state import GameState
@@ -20,6 +19,7 @@ class AIDecision:
     consideration: str = ""
     raw_output: str = ""
     elapsed_seconds: float = 0.0
+    provider: str = ""
 
 
 def _state_path(state: GameState) -> Path:
@@ -39,7 +39,7 @@ def _parse_ai_output(output: str) -> AIDecision:
     if not command and lines:
         command = lines[-1]
     if not command:
-        raise RuntimeError("gcg-ai-player 沒有回傳指令。")
+        raise RuntimeError("AI provider 沒有回傳指令。")
     return AIDecision(command=command, consideration=consideration, raw_output=output)
 
 
@@ -86,6 +86,7 @@ def ai_decide(state: GameState, player_id: str, allowed: Optional[set[str]] = No
 
     last_decision: Optional[AIDecision] = None
     timeout_seconds = _timeout_seconds()
+    adapter = ai_adapters.get_ai_adapter()
     for attempt in range(2):
         prompt = base_prompt
         if attempt and last_decision:
@@ -96,34 +97,26 @@ def ai_decide(state: GameState, player_id: str, allowed: Optional[set[str]] = No
                 f"請重新輸出，COMMAND 第一個字必須是：{legal_hint}",
             ])
         try:
-            started = time.monotonic()
-            completed = subprocess.run(
-                ["opencode", "run", "--agent", "gcg-ai-player", prompt],
-                cwd=str(PROJECT_ROOT),
-                text=True,
-                capture_output=True,
-                timeout=timeout_seconds,
-                check=False,
-            )
-            elapsed_seconds = time.monotonic() - started
+            completed = adapter.run(prompt, timeout_seconds)
         except FileNotFoundError as exc:
-            raise RuntimeError("找不到 opencode；AI 決策必須透過 .opencode/agents/gcg-ai-player.md。") from exc
-        except subprocess.TimeoutExpired as exc:
-            raise RuntimeError(f"gcg-ai-player 決策逾時（timeout={timeout_seconds:g}s）。") from exc
+            raise RuntimeError(f"找不到 AI provider CLI：{adapter.provider}") from exc
+        except ai_adapters.subprocess.TimeoutExpired as exc:
+            raise RuntimeError(f"{adapter.provider} AI 決策逾時（timeout={timeout_seconds:g}s）。") from exc
 
         if completed.returncode != 0:
             detail = completed.stderr.strip() or completed.stdout.strip() or f"exit code {completed.returncode}"
-            raise RuntimeError(f"gcg-ai-player 執行失敗：{detail}")
+            raise RuntimeError(f"{completed.provider or adapter.provider} AI provider 執行失敗：{detail}")
 
         decision = _parse_ai_output(completed.stdout)
-        decision.elapsed_seconds = elapsed_seconds
+        decision.elapsed_seconds = completed.elapsed_seconds
+        decision.provider = completed.provider or adapter.provider
         action = _action_name(decision.command)
         if allowed and action not in allowed:
             last_decision = decision
             continue
         decision.consideration = _public_safe_consideration(state, player_id, decision.consideration)
         return decision
-    raise RuntimeError(f"gcg-ai-player 回傳不允許的指令：{last_decision.command if last_decision else ''}；允許：{legal_hint}")
+    raise RuntimeError(f"{adapter.provider} AI provider 回傳不允許的指令：{last_decision.command if last_decision else ''}；允許：{legal_hint}")
 
 
 def ai_decide_command(state: GameState, player_id: str, allowed: Optional[set[str]] = None) -> str:

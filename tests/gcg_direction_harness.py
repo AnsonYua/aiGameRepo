@@ -12,9 +12,8 @@ from __future__ import annotations
 
 import shutil
 import sys
-from dataclasses import dataclass
+import os
 from pathlib import Path
-from typing import Any
 
 import yaml
 
@@ -22,7 +21,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from skills_py import ai_player
+from skills_py import ai_adapters, ai_player
+from skills_py.ai_adapters import AIAdapterResult
 from skills_py.ai_player import _parse_ai_output, _public_safe_consideration, ai_decide
 from skills_py.game_engine import init_game, save_state
 from skills_py.game_state import BattleSlot, GameState
@@ -34,11 +34,33 @@ ACTIVE_GAME_FILE = PROJECT_ROOT / ".gcg_active_game"
 GAME_STATES_DIR = PROJECT_ROOT / "game-states"
 
 
-@dataclass
+class FakeAdapter:
+    provider = "fake"
+
+    def __init__(self, outputs: list[str]) -> None:
+        self.outputs = outputs
+        self.prompts: list[str] = []
+
+    def run(self, prompt: str, timeout_seconds: float) -> AIAdapterResult:
+        self.prompts.append(prompt)
+        return AIAdapterResult(
+            stdout=self.outputs[len(self.prompts) - 1],
+            returncode=0,
+            elapsed_seconds=0.01,
+            provider=self.provider,
+            argv=["fake-ai", "<prompt>"],
+        )
+
+
 class FakeCompleted:
     stdout: str
-    stderr: str = ""
-    returncode: int = 0
+    stderr: str
+    returncode: int
+
+    def __init__(self, stdout: str, stderr: str = "", returncode: int = 0) -> None:
+        self.stdout = stdout
+        self.stderr = stderr
+        self.returncode = returncode
 
 
 def assert_true(condition: bool, message: str) -> None:
@@ -84,43 +106,82 @@ def test_ai_output_contract() -> None:
 
 def test_ai_decide_uses_gcg_agent_and_reprompts_invalid_allowed() -> None:
     state = make_main_state()
-    calls: list[list[str]] = []
     outputs = [
         "CONSIDER: 無法安全決策\nCOMMAND: pass\n",
         "CONSIDER: 依公開場面選擇保留\nCOMMAND: keep\n",
     ]
-    original_run = ai_player.subprocess.run
+    adapter = FakeAdapter(outputs)
+    original_get_adapter = ai_player.ai_adapters.get_ai_adapter
 
-    def fake_run(args: list[str], **kwargs: Any) -> FakeCompleted:
-        calls.append(args)
-        return FakeCompleted(stdout=outputs[len(calls) - 1])
+    def fake_get_adapter(provider: str | None = None) -> FakeAdapter:
+        return adapter
 
-    ai_player.subprocess.run = fake_run
+    ai_player.ai_adapters.get_ai_adapter = fake_get_adapter
     try:
         decision = ai_decide(state, "P1", {"keep", "redraw"})
     finally:
-        ai_player.subprocess.run = original_run
+        ai_player.ai_adapters.get_ai_adapter = original_get_adapter
 
     assert_true(decision.command == "keep", "AI adapter should reprompt invalid legal action")
-    assert_true(len(calls) == 2, "AI adapter should retry once through gcg-ai-player")
-    for call in calls:
-        assert_true(call[:3] == ["opencode", "run", "--agent"], "AI adapter must call opencode agent")
-        assert_true(call[3] == "gcg-ai-player", "AI adapter must use gcg-ai-player.md")
+    assert_true(decision.provider == "fake", "AI decision should record adapter provider")
+    assert_true(len(adapter.prompts) == 2, "AI adapter should retry once through adapter path")
+    assert_true("上一個 COMMAND 不合法：pass" in adapter.prompts[1], "retry prompt should explain invalid command")
+
+
+def test_codex_adapter_uses_exec_stdin_and_contract_prefix() -> None:
+    original_run = ai_adapters.subprocess.run
+    original_provider = os.environ.get("GCG_AI_PROVIDER")
+    original_argv = os.environ.get("GCG_AI_CODEX_ARGV")
+    original_prompt_mode = os.environ.get("GCG_AI_CODEX_PROMPT_MODE")
+    calls: list[dict] = []
+
+    def fake_run(args: list[str], **kwargs) -> FakeCompleted:
+        calls.append({"args": args, "kwargs": kwargs})
+        return FakeCompleted(stdout="CONSIDER: probe\nCOMMAND: pass\n")
+
+    ai_adapters.subprocess.run = fake_run
+    os.environ["GCG_AI_PROVIDER"] = "codex"
+    os.environ.pop("GCG_AI_CODEX_ARGV", None)
+    os.environ.pop("GCG_AI_CODEX_PROMPT_MODE", None)
+    try:
+        adapter = ai_adapters.get_ai_adapter()
+        result = adapter.run("player_id: P1\nlegal_actions: pass", 10)
+    finally:
+        ai_adapters.subprocess.run = original_run
+        if original_provider is None:
+            os.environ.pop("GCG_AI_PROVIDER", None)
+        else:
+            os.environ["GCG_AI_PROVIDER"] = original_provider
+        if original_argv is None:
+            os.environ.pop("GCG_AI_CODEX_ARGV", None)
+        else:
+            os.environ["GCG_AI_CODEX_ARGV"] = original_argv
+        if original_prompt_mode is None:
+            os.environ.pop("GCG_AI_CODEX_PROMPT_MODE", None)
+        else:
+            os.environ["GCG_AI_CODEX_PROMPT_MODE"] = original_prompt_mode
+
+    assert_true(result.provider == "codex", "codex adapter should report provider")
+    assert_true(calls[0]["args"][:2] == ["codex", "exec"], "codex adapter should use codex exec")
+    assert_true(calls[0]["args"][-1] == "-", "codex adapter should send prompt through stdin by default")
+    assert_true("--output-last-message" in calls[0]["args"], "codex adapter should capture final message")
+    assert_true("Return exactly two non-empty lines" in calls[0]["kwargs"]["input"], "codex prompt should include GCG output contract")
 
 
 def test_ai_decide_does_not_replace_active_game_pointer() -> None:
     state = make_main_state("harness_ai_active_pointer")
     ACTIVE_GAME_FILE.write_text("preserve_active_game", encoding="utf-8")
-    original_run = ai_player.subprocess.run
+    adapter = FakeAdapter(["CONSIDER: 依公開場面選擇讓過\nCOMMAND: pass\n"])
+    original_get_adapter = ai_player.ai_adapters.get_ai_adapter
 
-    def fake_run(args: list[str], **kwargs: Any) -> FakeCompleted:
-        return FakeCompleted(stdout="CONSIDER: 依公開場面選擇讓過\nCOMMAND: pass\n")
+    def fake_get_adapter(provider: str | None = None) -> FakeAdapter:
+        return adapter
 
-    ai_player.subprocess.run = fake_run
+    ai_player.ai_adapters.get_ai_adapter = fake_get_adapter
     try:
         ai_decide(state, "P1")
     finally:
-        ai_player.subprocess.run = original_run
+        ai_player.ai_adapters.get_ai_adapter = original_get_adapter
 
     assert_true(
         ACTIVE_GAME_FILE.read_text(encoding="utf-8").strip() == "preserve_active_game",
@@ -264,16 +325,30 @@ def test_runtime_block_command() -> None:
 
 def test_replay_yaml_public_safe_consideration() -> None:
     state = make_main_state("harness_replay")
+    state.p1.battle_area[0] = BattleSlot(
+        slot=0,
+        unit_id="st01/ST01-009",
+        pilot_id=None,
+        ap=3,
+        hp=2,
+        damage=1,
+        status="rested",
+        keywords=["Blocker"],
+        turns_on_field=1,
+    )
+    state.p1.trash = ["st01/ST01-001"]
+    state.p2.removal = ["st01/ST01-002"]
     save_state(state)
     from skills_py.gameplay_log import append_event, gameplay_log_path, replay_path
 
     append_event(
         state,
-        "decision_received",
+        "decision_applied",
         "P1",
         "P1",
-        "P1 回傳指令：pass",
+        "P1 執行：pass",
         command="pass",
+        result={"ok": True, "reason": ""},
         ai_evaluation={
             "chosen_command": "pass",
             "candidates": [],
@@ -282,9 +357,19 @@ def test_replay_yaml_public_safe_consideration() -> None:
     )
     loaded = yaml.safe_load(gameplay_log_path(state.game_id).read_text(encoding="utf-8"))
     assert_true(loaded["events"][0]["ai_evaluation"]["consideration"], "YAML should store consideration")
+    assert_true("hand_cards" not in loaded["events"][0]["features"]["p1"], "YAML features must not store hand cards")
+    assert_true("deck_cards" not in loaded["events"][0]["features"]["p1"], "YAML features must not store deck cards")
+    assert_true("shield_cards" not in loaded["events"][0]["features"]["p1"], "YAML features must not store shield cards")
     replay = replay_path(state.game_id).read_text(encoding="utf-8")
     assert_true("- 考量：" in replay, "replay should render consideration")
-    assert_true("st01/" not in replay, "replay consideration should not expose hidden card ids")
+    assert_true("公開狀態快照：" in replay, "replay should render public state snapshot")
+    assert_true("P1 場面：\n      欄位0 [st01/ST01-009]" in replay, "replay should render public slot details")
+    assert_true("P1 trash：st01/ST01-001" in replay, "replay should render public trash")
+    assert_true("P2 removal：st01/ST01-002" in replay, "replay should render public removal")
+    assert_true("hand_cards" not in replay, "replay must not expose hidden hand key")
+    assert_true("deck_cards" not in replay, "replay must not expose hidden deck key")
+    assert_true("shield_cards" not in replay, "replay must not expose hidden shield key")
+    assert_true("gameState.md" not in replay, "replay must not dump raw state path")
 
 
 def test_live_llm_contract() -> None:
@@ -306,6 +391,7 @@ def run(live_llm: bool = False) -> None:
         cleanup_harness_state()
         test_ai_output_contract()
         test_ai_decide_uses_gcg_agent_and_reprompts_invalid_allowed()
+        test_codex_adapter_uses_exec_stdin_and_contract_prefix()
         test_ai_decide_does_not_replace_active_game_pointer()
         test_consideration_sanitizer_blocks_hidden_info()
         test_display_lists_concrete_attack_legality()

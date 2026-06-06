@@ -97,7 +97,7 @@ python3 tests/gcg_ai_vs_ai_replay_harness.py
 python3 tests/gcg_ai_vs_ai_replay_harness.py --live-llm
 ```
 
-此 harness 會產生 `gameplay.yaml`、`replay.md`、`review.md`。預設模式 fake opencode subprocess 但仍強制所有 AI call 走 `gcg-ai-player` adapter path；`--live-llm` 才呼叫真實 agent。
+此 harness 會產生 `gameplay.yaml`、`replay.md`、`review.md`。預設模式 fake AI adapter 但仍強制所有 AI call 走 `skills_py/ai_player.py` / `skills_py/ai_adapters.py` path；`--live-llm` 才呼叫 configured live provider。
 
 ## 清理規則
 

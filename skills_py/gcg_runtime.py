@@ -9,6 +9,7 @@ used by chat adapters to mutate state and return full viewer-specific display.
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -22,7 +23,8 @@ if str(PROJECT_ROOT) not in sys.path:
 if str(PROJECT_ROOT / "skills_py") not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT / "skills_py"))
 
-from skills_py.ai_player import AIDecision, ai_decide
+from skills_py.ai_adapters import probe_provider
+from skills_py.ai_player import AIDecision, _parse_ai_output, ai_decide
 from skills_py.game_engine import (
     can_block,
     can_attack_unit,
@@ -148,11 +150,72 @@ def _format_battle_details(logs: list[str]) -> str:
 
 def _ai_evaluation(decision: AIDecision) -> dict:
     data = {"chosen_command": decision.command, "candidates": []}
+    if decision.provider:
+        data["provider"] = decision.provider
     if decision.consideration:
         data["consideration"] = decision.consideration
     if decision.elapsed_seconds:
         data["elapsed_seconds"] = round(decision.elapsed_seconds, 3)
     return data
+
+
+def _ai_probe(provider: Optional[str], as_json: bool) -> str:
+    try:
+        result = probe_provider(provider)
+    except Exception as exc:
+        selected = provider or os.environ.get("GCG_AI_PROVIDER", "opencode")
+        data = {
+            "ok": False,
+            "provider": selected,
+            "returncode": None,
+            "elapsed_seconds": 0,
+            "argv": [],
+            "stdout": "",
+            "stderr": str(exc),
+            "parse_error": "",
+        }
+        if as_json:
+            return json.dumps(data, ensure_ascii=False, indent=2)
+        return "\n".join([
+            "AI provider probe FAIL",
+            f"provider: {selected}",
+            f"stderr: {exc}",
+        ])
+    parsed = None
+    parse_error = ""
+    if result.returncode == 0:
+        try:
+            parsed = _parse_ai_output(result.stdout)
+        except RuntimeError as exc:
+            parse_error = str(exc)
+    ok = result.returncode == 0 and parsed is not None and parsed.command == "pass"
+    data = {
+        "ok": ok,
+        "provider": result.provider,
+        "returncode": result.returncode,
+        "elapsed_seconds": round(result.elapsed_seconds, 3),
+        "argv": result.argv,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+        "parse_error": parse_error,
+    }
+    if as_json:
+        return json.dumps(data, ensure_ascii=False, indent=2)
+    status = "PASS" if ok else "FAIL"
+    lines = [
+        f"AI provider probe {status}",
+        f"provider: {result.provider}",
+        f"returncode: {result.returncode}",
+        f"elapsed_seconds: {result.elapsed_seconds:.3f}",
+    ]
+    if result.stderr.strip():
+        lines.append(f"stderr: {result.stderr.strip()}")
+    if result.stdout.strip():
+        lines.append("stdout:")
+        lines.append(result.stdout.strip())
+    if parse_error:
+        lines.append(f"parse_error: {parse_error}")
+    return "\n".join(lines)
 
 
 def _result(
@@ -295,7 +358,12 @@ def _mulligan(player_id: str, action: str, viewer: str, as_json: bool, game_id: 
             command=p2_action,
             result={"ok": True, "reason": ""},
             legal_actions=["keep", "redraw"],
-            ai_evaluation=_ai_evaluation(AIDecision(command=p2_action, consideration=p2_decision.consideration)),
+            ai_evaluation=_ai_evaluation(AIDecision(
+                command=p2_action,
+                consideration=p2_decision.consideration,
+                elapsed_seconds=p2_decision.elapsed_seconds,
+                provider=p2_decision.provider,
+            )),
         )
         _advance_to_main_after_mulligan(state)
         _record_event(state, events, "auto_progress", None, viewer, "調度完成，建立盾牌並進入先手主要階段")
@@ -653,7 +721,12 @@ def _auto(player_id: str, viewer: str, as_json: bool, game_id: Optional[str], ma
             command=action,
             result={"ok": True, "reason": ""},
             legal_actions=["keep", "redraw"],
-            ai_evaluation=_ai_evaluation(AIDecision(command=action, consideration=decision.consideration)),
+            ai_evaluation=_ai_evaluation(AIDecision(
+                command=action,
+                consideration=decision.consideration,
+                elapsed_seconds=decision.elapsed_seconds,
+                provider=decision.provider,
+            )),
         )
         if player_id == "P1":
             _record_event(
@@ -689,7 +762,12 @@ def _auto(player_id: str, viewer: str, as_json: bool, game_id: Optional[str], ma
                 command=p2_action,
                 result={"ok": True, "reason": ""},
                 legal_actions=["keep", "redraw"],
-                ai_evaluation=_ai_evaluation(AIDecision(command=p2_action, consideration=p2_decision.consideration)),
+                ai_evaluation=_ai_evaluation(AIDecision(
+                    command=p2_action,
+                    consideration=p2_decision.consideration,
+                    elapsed_seconds=p2_decision.elapsed_seconds,
+                    provider=p2_decision.provider,
+                )),
             )
         _advance_to_main_after_mulligan(state)
         _record_event(state, events, "auto_progress", None, viewer, "調度完成，建立盾牌並進入先手主要階段")
@@ -734,6 +812,10 @@ def main() -> None:
     auto.add_argument("--game-id", help="內部測試/adapter 用：固定讀取指定 game_id")
     auto.add_argument("--max-actions", type=int, default=20)
 
+    ai_probe = sub.add_parser("ai-probe")
+    ai_probe.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
+    ai_probe.add_argument("--provider", choices=("opencode", "codex", "claude"), help="測試指定 AI provider")
+
     args = parser.parse_args()
 
     try:
@@ -747,6 +829,8 @@ def main() -> None:
             output = _command(args.player, args.cmd, args.viewer, args.json, args.game_id)
         elif args.command_name == "auto":
             output = _auto(args.player, args.viewer, args.json, args.game_id, args.max_actions)
+        elif args.command_name == "ai-probe":
+            output = _ai_probe(args.provider, args.json)
         else:
             raise RuntimeError("未知 runtime 指令")
     except Exception as exc:
