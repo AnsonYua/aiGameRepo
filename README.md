@@ -1,25 +1,44 @@
 # GCG Card AI
 
-這個專案是鋼彈卡牌遊戲的 chat-first 遊戲實驗。玩家入口是 chat；Python CLI/runtime 是 Codex 與 opencode 背後共用的內部引擎介面，不是玩家主要 UI。
+這個專案是鋼彈卡牌遊戲的 chat-first 遊戲實驗。玩家入口是 chat；Python runtime 是唯一遊戲狀態邊界；AI 決策主路徑是本機長駐 `agent-server`，背後連到 `codex app-server --stdio`。
 
 ## 主要流程
 
 ```text
 玩家 chat
-  -> Codex / opencode adapter
   -> skills_py/gcg_runtime.py
+  -> skills_py/game_engine.py
   -> game-states/<game_id>/gameState.md
   -> skills_py/gcg_display.py --viewer P1|P2
   -> chat 回覆完整可見狀態
 ```
 
-玩家或 AI 決策前都必須收到該玩家視角的完整可見狀態。玩家與 AI Player 不直接讀 `gameState.md`。
+AI 決策流程：
 
-設計邊界詳見 `GCG_ARCHITECTURE.md`：Python 是狀態安全層、基礎規則層、唯一寫入者；LLM 是語意解析層、效果解釋層、策略層。所有 LLM 產生的 proposed command / proposed state_diff 都必須回到 runtime，由 Python 驗證與套用。
+```text
+skills_py/gcg_runtime.py auto / P2 auto
+  -> skills_py/ai_player.py
+  -> skills_py/ai_adapters.py
+  -> local agent-server HTTP API
+  -> one long-lived codex app-server process
+  -> per-game Codex room thread
+```
 
-## 玩家體驗
+每一局初始化 4 個獨立 Codex rooms：
 
-玩家在 chat 輸入自然指令：
+```text
+game_id
+  ├─ gcg-orchestrator
+  ├─ gcg-judge
+  ├─ gcg-ai-player:P1
+  └─ gcg-ai-player:P2
+```
+
+玩家與 AI Player 都不直接讀 `gameState.md`。任一決策前，runtime 會產生該玩家視角的完整可見狀態。
+
+## 玩家指令
+
+玩家在 chat 輸入：
 
 ```text
 start game
@@ -31,15 +50,13 @@ pass
 concede
 ```
 
-adapter 將這些指令轉成 runtime CLI 呼叫，再把 runtime 回傳的完整顯示文字原封不動回覆給玩家。
+chat agent 必須直接呼叫 runtime，並把 stdout 原封不動回覆。
 
 ## Runtime 介面
 
-`skills_py/gcg_runtime.py` 是 opencode / Codex 共享的穩定邊界：
-
 ```bash
 python3 skills_py/gcg_runtime.py start --viewer P1
-python3 skills_py/gcg_runtime.py start --viewer P1 --first-player P1  # 測試用固定先手
+python3 skills_py/gcg_runtime.py start --viewer P1 --first-player P1
 python3 skills_py/gcg_runtime.py status --viewer P1
 python3 skills_py/gcg_runtime.py status --viewer P2
 python3 skills_py/gcg_runtime.py mulligan --player P1 --action keep --viewer P1
@@ -47,57 +64,73 @@ python3 skills_py/gcg_runtime.py command --player P1 --cmd "pass" --viewer P1
 python3 skills_py/gcg_runtime.py auto --player P2 --viewer P1
 ```
 
-所有會改變遊戲狀態的操作都應經過 runtime 或 `game_engine.py`，不要讓 chat agent 手動編輯 YAML。
+所有會改變遊戲狀態的操作都必須經過 runtime 或 `skills_py/game_engine.py`，不要讓 chat agent 手動編輯 YAML。
 
-單一 chat 流程可直接使用 `.gcg_active_game`。若 Codex subagent、opencode CLI 或自動測試需要並行驗證，先用 `start --json` 取得 `game_id`，後續命令加上 `--game-id <game_id>`，避免不同測試互相覆寫目前遊戲。
+單一 chat 流程可使用 `.gcg_active_game`。並行測試需先用 `start --json` 取得 `game_id`，後續命令加 `--game-id <game_id>`。
+
+## Agent Server
+
+啟動長駐 Codex app-server wrapper：
+
+```bash
+python3 skills_py/gcg_agent_server.py --host 127.0.0.1 --port 8890
+```
+
+用主 provider 跑 probe：
+
+```bash
+GCG_AI_PROVIDER=agent-server python3 skills_py/gcg_runtime.py ai-probe --provider agent-server
+```
+
+直接測 app-server protocol：
+
+```bash
+python3 skills_py/gcg_agent_server.py --probe --timeout-seconds 60
+```
+
+Agent server API：
+
+```text
+GET  /health
+GET  /metrics
+POST /init-game
+POST /append
+POST /decide
+```
+
+`start game` 在 `GCG_AI_PROVIDER=agent-server` 時會呼叫 `/init-game` 建 4 rooms。AI 決策走 `/decide`。成功公開動作會用 `/append` 注入 `gcg-orchestrator` room。
 
 ## 視角與隱私
 
 - `--viewer P1`：顯示 P1 手牌完整內容，P2 手牌只顯示張數。
 - `--viewer P2`：顯示 P2 手牌完整內容，P1 手牌只顯示張數。
-- 戰鬥區是公開區域，雙方場上卡牌都顯示卡名、AP/HP、狀態與關鍵字。
+- 戰鬥區是公開區域。
 - 盾牌與牌庫內容是非公開資訊，只顯示數量。
+- replay / gameplay YAML 不得包含 hidden hand/deck/shield card ids。
 
-## Opencode / Codex 相容策略
+## Harness
 
-- Codex：直接呼叫 `gcg_runtime.py`，不依賴 opencode `@` 或 `task` spawn。
-- opencode：保留 `.opencode/agents/*.md` 作為 chat adapter / AI prompt / 規則參考；狀態變更仍回到同一個 runtime。
-- `gcg-ai-player` 是唯一 AI 策略來源。`skills_py/ai_player.py` 只呼叫 agent、解析 `CONSIDER` / `COMMAND`，不寫 Python 策略 fallback。
-- `gcg-ai-player` 只應讀完整 display text，回 public-safe 考量與單一 command，不直接改 state。
-- `gcg-judge` / `.opencode/skills/gcg/*.md` 可作為複雜效果語意 reviewer，產生 proposed state_diff；最終 apply 仍必須由 Python validator/runtime 負責。
-
-## 目前保留的 legacy/debug 入口
-
-`gcg_simulation.py` 暫時保留作為 debug/legacy CLI。正式相容路徑以 chat adapter 呼叫 `skills_py/gcg_runtime.py` 為準。
-
-## Regression Harness
-
-AI-vs-AI simulation / replay review 的測試原則見 `GCG_TESTING_PRINCIPLES.md`。
-
-修改 AI 決策、runtime combat、gameplay log 或 replay 後，至少跑：
+修改 runtime、AI adapter、agent server、display、replay 後至少跑：
 
 ```bash
 python3 tests/gcg_direction_harness.py
 ```
 
-這個 harness 不呼叫 live opencode；它用 fake subprocess 驗證 `skills_py/ai_player.py` 只會透過 `gcg-ai-player.md` adapter 決策，並檢查 public-safe consideration、`attack <slot> unit <enemy_slot>`、`block <slot>`、YAML/replay 記錄。
-
-若要額外驗證 live LLM / opencode agent 合約：
+Live provider 測試：
 
 ```bash
-python3 tests/gcg_direction_harness.py --live-llm
+python3 skills_py/gcg_agent_server.py --host 127.0.0.1 --port 8890
+GCG_AI_PROVIDER=agent-server python3 tests/gcg_direction_harness.py --live-llm
 ```
-
-`--live-llm` 會實際呼叫 `opencode run --agent gcg-ai-player`，只檢查 `CONSIDER` / `COMMAND` 合約與 public-safe 輸出，不套用狀態。
 
 AI-vs-AI replay harness：
 
 ```bash
 python3 tests/gcg_ai_vs_ai_replay_harness.py
-python3 tests/gcg_ai_vs_ai_replay_harness.py --live-llm
+GCG_AI_PROVIDER=agent-server python3 tests/gcg_ai_vs_ai_replay_harness.py --live-llm --ai-timeout-seconds 60
 ```
 
-此 harness 會產生 `gameplay.yaml`、`replay.md`、`review.md`。預設模式 fake AI adapter 但仍強制所有 AI call 走 `skills_py/ai_player.py` / `skills_py/ai_adapters.py` path；`--live-llm` 才呼叫 configured live provider。
+AI-vs-AI 會產生 `gameplay.yaml`、`replay.md`、`review.md`。`INCOMPLETE` 是 quality signal，必須讀 replay/review 分類 root cause，不可只調高上限。
 
 ## 清理規則
 
@@ -106,3 +139,5 @@ python3 tests/gcg_ai_vs_ai_replay_harness.py --live-llm
 - `.DS_Store`
 - `__pycache__/`
 - `*.pyc`
+- `.opencode/node_modules/`
+- 臨時 probe game state

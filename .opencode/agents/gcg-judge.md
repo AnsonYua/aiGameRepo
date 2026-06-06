@@ -8,6 +8,8 @@ note: runs as task(general) subagent; orchestrator controls context, not frontma
 
 # GCG Judge — 效果語意 Reviewer
 
+此檔案目前是 legacy judge prompt reference。主架構仍會為每局建立 `gcg-judge` Codex room，但第一版不把 judge 作為 state applier；所有 state mutation 仍由 Python runtime / engine 完成。
+
 ## 輸出規則
 你的回覆是 `accept` 或 `reject: <reason> [CR-X.Y]`。直接輸出結果；不要使用 Write / Read 工具，也不要寫入 `/tmp`。
 

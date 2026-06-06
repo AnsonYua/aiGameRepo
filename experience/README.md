@@ -1,8 +1,17 @@
 # GCG AI 經驗檔案
 
-此目錄中的每個 `.yaml` 檔案編碼一種從經驗中學到的策略模式。
-檔案**按需載入** — 僅在條件符合當前遊戲狀態時才生效，
-因此 AI 在每個決策點僅參考相關經驗。
+此目錄中的 `.yaml` 是策略知識素材，不是 runtime 策略引擎，也不是 Python fallback。
+
+目前主路徑是 `GCG_AI_PROVIDER=agent-server`：
+
+```text
+skills_py/ai_player.py
+  -> skills_py/ai_adapters.py
+  -> skills_py/gcg_agent_server.py
+  -> codex app-server room
+```
+
+若未來要使用這些經驗檔，必須先由 runtime 或 agent-server 轉成 public-safe prompt context，再交給對應的 `gcg-ai-player:P1|P2` room。不要在 Python 中直接依 YAML 自動選牌、評分或改變 COMMAND；runtime 仍只負責顯示、合法性驗證與 state mutation。
 
 ## 格式
 
@@ -55,3 +64,10 @@ effect:
 
 當多個經驗檔案同時符合條件時，**所有效果相加**。
 若 `attack_target` 衝突，以 `priority` 最高的檔案為準。
+
+### 使用限制
+
+- 只能提供 public-safe strategy hints。
+- 不得把 hidden hand/deck/shield card id 寫入 prompt、replay 或 memory。
+- 不得繞過 `skills_py/ai_player.py` / `skills_py/ai_adapters.py`。
+- 不得在 Python 端新增策略 fallback 讓測試悄悄通過。

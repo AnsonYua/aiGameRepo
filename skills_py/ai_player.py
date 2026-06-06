@@ -77,6 +77,7 @@ def ai_decide(state: GameState, player_id: str, allowed: Optional[set[str]] = No
     display_text = render(str(_state_path(state)), viewer=player_id)
     legal_hint = ", ".join(sorted(allowed)) if allowed else "依目前顯示的可行指令"
     base_prompt = "\n".join([
+        f"game_id: {state.game_id}",
         f"player_id: {player_id}",
         f"first_player: {state.first_player}",
         f"legal_actions: {legal_hint}",
@@ -87,6 +88,9 @@ def ai_decide(state: GameState, player_id: str, allowed: Optional[set[str]] = No
     last_decision: Optional[AIDecision] = None
     timeout_seconds = _timeout_seconds()
     adapter = ai_adapters.get_ai_adapter()
+    # One contract-repair reprompt is allowed when the provider returns an
+    # action outside the runtime-provided allowed set. This is not a strategy
+    # fallback; runtime legality still decides whether COMMAND applies.
     for attempt in range(2):
         prompt = base_prompt
         if attempt and last_decision:
@@ -98,9 +102,7 @@ def ai_decide(state: GameState, player_id: str, allowed: Optional[set[str]] = No
             ])
         try:
             completed = adapter.run(prompt, timeout_seconds)
-        except FileNotFoundError as exc:
-            raise RuntimeError(f"找不到 AI provider CLI：{adapter.provider}") from exc
-        except ai_adapters.subprocess.TimeoutExpired as exc:
+        except TimeoutError as exc:
             raise RuntimeError(f"{adapter.provider} AI 決策逾時（timeout={timeout_seconds:g}s）。") from exc
 
         if completed.returncode != 0:

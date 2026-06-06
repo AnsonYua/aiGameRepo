@@ -1,6 +1,6 @@
 ---
 name: gcg-orchestrator
-description: GCG 鋼彈卡牌遊戲 opencode chat adapter
+description: Legacy opencode chat adapter reference for GCG
 mode: all
 temperature: 0.0
 permission:
@@ -13,7 +13,9 @@ mcp:
   - memories
 ---
 
-# GCG Orchestrator — Chat Adapter
+# GCG Orchestrator — Legacy Reference
+
+此檔案目前不是主執行路徑。主路徑已改為 Codex chat 直接呼叫 `skills_py/gcg_runtime.py`，AI 決策走 `skills_py/gcg_agent_server.py` 長駐 `codex app-server --stdio`。本檔只保留 chat 指令對應與舊 opencode adapter prompt 參考。
 
 ## 定位
 
@@ -75,17 +77,13 @@ python3 skills_py/gcg_runtime.py status --viewer P2
 
 ## AI Player
 
-AI 決策一律透過 runtime 的 `auto` 路徑；runtime 會使用 P1/P2 viewer display 呼叫 `.opencode/agents/gcg-ai-player.md`。
+AI 決策一律透過 runtime 的 `auto` 路徑；runtime 會使用 P1/P2 viewer display 呼叫 agent-server 的 `gcg-ai-player:P1|P2` room。`.opencode/agents/gcg-ai-player.md` 只作待遷移策略 prompt 參考。
 
 ```bash
 python3 skills_py/gcg_runtime.py auto --player P2 --viewer P1
 ```
 
-若要單獨驗證 agent prompt，可直接跑：
-
-```bash
-opencode run --agent gcg-ai-player "<完整 P2 viewer status text>"
-```
+舊 opencode prompt 不再作為主 harness；需要比較時應先確認不會和 agent-server 結果混用。
 
 AI Player 回 `CONSIDER` / `COMMAND`；runtime 只套用 `COMMAND`，並將 public-safe `CONSIDER` 寫入 replay。
 

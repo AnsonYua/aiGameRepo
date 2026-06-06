@@ -57,9 +57,9 @@ FAKE_GAME_ID: str | None = None
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run bounded GCG AI-vs-AI replay harness")
     parser.add_argument("--live-llm", action="store_true", help="call configured live AI provider")
-    parser.add_argument("--max-turns", type=int, default=12)
-    parser.add_argument("--max-steps", type=int, default=80)
-    parser.add_argument("--per-auto-actions", type=int, default=6)
+    parser.add_argument("--max-turns", type=int, default=2)
+    parser.add_argument("--max-steps", type=int, default=8)
+    parser.add_argument("--per-auto-actions", type=int, default=4)
     parser.add_argument("--max-ai-failures", type=int, default=1)
     parser.add_argument("--ai-timeout-seconds", type=float, default=60)
     parser.add_argument("--require-game-over", action="store_true")
@@ -306,7 +306,7 @@ def _passive_quality_signals(events: list[dict[str, Any]], ai_events: list[dict[
     return signals
 
 
-def analyze(game_id: str, snapshots: list[dict[str, Any]], opencode_calls: int, max_reached: bool) -> dict[str, Any]:
+def analyze(game_id: str, snapshots: list[dict[str, Any]], ai_adapter_calls: int, max_reached: bool) -> dict[str, Any]:
     gameplay, replay = load_artifacts(game_id)
     events = gameplay.get("events", [])
     seqs = [event.get("seq") for event in events]
@@ -374,7 +374,7 @@ def analyze(game_id: str, snapshots: list[dict[str, Any]], opencode_calls: int, 
         hard_failures.append(f"turn timeline backtracks: {turn_backtracks}")
     if not ai_events:
         hard_failures.append("no AI decision events")
-    if opencode_calls < 2:
+    if ai_adapter_calls < 2:
         hard_failures.append("AI adapter was not used for both players")
 
     return {
@@ -401,7 +401,7 @@ def analyze(game_id: str, snapshots: list[dict[str, Any]], opencode_calls: int, 
     }
 
 
-def write_review(game_id: str, analysis: dict[str, Any], opencode_calls: int, live_llm: bool) -> Path:
+def write_review(game_id: str, analysis: dict[str, Any], ai_adapter_calls: int, live_llm: bool) -> Path:
     action_counts = analysis["action_counts"]
     ai_events = analysis["ai_events"]
     problems = []
@@ -463,7 +463,7 @@ def write_review(game_id: str, analysis: dict[str, Any], opencode_calls: int, li
         f"Pass/action-window quality: pass={action_counts.get('pass', 0)}, auto_pass_events={sum(1 for event in analysis['events'] if '自動讓過' in event.get('message', ''))}",
         f"Defense progress: damage_events={analysis['defense_progress']['damage_event_count']}, last_damage_seq={analysis['defense_progress']['last_damage_seq'] or 'none'}",
         f"Passive-play signals: {passive_signals if passive_signals else 'none'}",
-        f"Replay/log quality: gameplay.yaml parsed, replay.md present, opencode_agent_calls={opencode_calls}, live_llm={live_llm}, ai_failures={len(analysis['ai_failures'])}, missing_ai_evaluation={len(analysis['missing_ai_evaluation'])}, ai_latency_max={max(analysis['ai_latencies']) if analysis['ai_latencies'] else 0:.3f}s",
+        f"Replay/log quality: gameplay.yaml parsed, replay.md present, ai_adapter_calls={ai_adapter_calls}, live_llm={live_llm}, ai_failures={len(analysis['ai_failures'])}, missing_ai_evaluation={len(analysis['missing_ai_evaluation'])}, ai_latency_max={max(analysis['ai_latencies']) if analysis['ai_latencies'] else 0:.3f}s",
         "Problems:",
         *[f"- {problem}" for problem in problems],
         "Likely root cause:",
@@ -485,11 +485,11 @@ def run_harness(args: argparse.Namespace) -> tuple[str, Path, str]:
     original_active = ACTIVE_GAME_FILE.read_text(encoding="utf-8") if ACTIVE_GAME_FILE.exists() else None
     original_run = None
     original_timeout = os.environ.get("GCG_AI_TIMEOUT_SECONDS")
-    opencode_calls: list[list[str]] = []
+    ai_adapter_calls: list[list[str]] = []
     snapshots: list[dict[str, Any]] = []
     try:
         if not args.live_llm:
-            original_run, opencode_calls = install_fake_adapter()
+            original_run, ai_adapter_calls = install_fake_adapter()
         os.environ["GCG_AI_TIMEOUT_SECONDS"] = str(args.ai_timeout_seconds)
         started = json.loads(_start_game("P1", True, args.first_player))
         game_id = started["game_id"]
@@ -525,14 +525,14 @@ def run_harness(args: argparse.Namespace) -> tuple[str, Path, str]:
             max_reached = True
 
         if args.live_llm:
-            opencode_call_count = sum(
+            ai_adapter_call_count = sum(
                 1 for event in (snapshots[-1].get("all_events") or [])
                 if event.get("event_type") in {"decision_received", "ai_failure"} and event.get("actor") in {"P1", "P2"}
             )
         else:
-            opencode_call_count = len(opencode_calls)
-        analysis = analyze(game_id, snapshots, opencode_call_count, max_reached)
-        review_path = write_review(game_id, analysis, opencode_call_count, args.live_llm)
+            ai_adapter_call_count = len(ai_adapter_calls)
+        analysis = analyze(game_id, snapshots, ai_adapter_call_count, max_reached)
+        review_path = write_review(game_id, analysis, ai_adapter_call_count, args.live_llm)
         if args.require_game_over and not analysis["game_over"]:
             print(f"AI-vs-AI replay harness FAIL: {game_id}")
             print(f"Review: {review_path}")

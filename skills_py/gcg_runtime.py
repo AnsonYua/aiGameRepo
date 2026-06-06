@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Chat adapter runtime for Codex and opencode.
+Chat adapter runtime for GCG chat and Codex app-server backed AI rooms.
 
 Players should interact through chat. This CLI is the stable internal boundary
 used by chat adapters to mutate state and return full viewer-specific display.
@@ -23,7 +23,7 @@ if str(PROJECT_ROOT) not in sys.path:
 if str(PROJECT_ROOT / "skills_py") not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT / "skills_py"))
 
-from skills_py.ai_adapters import probe_provider
+from skills_py.ai_adapters import agent_server_append, agent_server_enabled, agent_server_init_game, probe_provider
 from skills_py.ai_player import AIDecision, _parse_ai_output, ai_decide
 from skills_py.game_engine import (
     can_block,
@@ -159,11 +159,56 @@ def _ai_evaluation(decision: AIDecision) -> dict:
     return data
 
 
+def _try_init_agent_rooms(state: GameState, events: list[dict], viewer: str) -> None:
+    if not agent_server_enabled():
+        return
+    try:
+        result = agent_server_init_game(state.game_id, timeout_seconds=float(os.environ.get("GCG_AGENT_INIT_TIMEOUT_SECONDS", "30")))
+    except Exception as exc:
+        _record_event(
+            state,
+            events,
+            "agent_server_warning",
+            None,
+            viewer,
+            f"Agent server 初始化失敗：{exc}",
+            result={"ok": False, "reason": str(exc)},
+        )
+        return
+    threads = result.get("threads") or {}
+    _record_event(
+        state,
+        events,
+        "agent_server_init",
+        None,
+        viewer,
+        f"Agent server 已初始化 {len(threads)} 個 Codex 聊天室",
+        result={"ok": True, "reason": ""},
+    )
+
+
+def _try_append_orchestrator(state: GameState, events: list[dict], viewer: str, message: str) -> None:
+    if not agent_server_enabled():
+        return
+    try:
+        agent_server_append(state.game_id, "gcg-orchestrator", message, timeout_seconds=10.0)
+    except Exception as exc:
+        _record_event(
+            state,
+            events,
+            "agent_server_warning",
+            None,
+            viewer,
+            f"Agent server append 失敗：{exc}",
+            result={"ok": False, "reason": str(exc)},
+        )
+
+
 def _ai_probe(provider: Optional[str], as_json: bool) -> str:
     try:
         result = probe_provider(provider)
     except Exception as exc:
-        selected = provider or os.environ.get("GCG_AI_PROVIDER", "opencode")
+        selected = provider or os.environ.get("GCG_AI_PROVIDER", "agent-server")
         data = {
             "ok": False,
             "provider": selected,
@@ -281,6 +326,7 @@ def _start_game(viewer: str, as_json: bool, first_player: Optional[str]) -> str:
         viewer,
         f"遊戲開始，{state.first_player} 為先手",
     )
+    _try_init_agent_rooms(state, events, viewer)
     return _result(state, viewer, as_json, events)
 
 
@@ -323,6 +369,7 @@ def _mulligan(player_id: str, action: str, viewer: str, as_json: bool, game_id: 
         result={"ok": True, "reason": ""},
         legal_actions=["keep", "redraw"],
     )
+    _try_append_orchestrator(state, events, viewer, f"{player_id} 調度：{action}")
 
     if player_id == "P1":
         _record_event(
@@ -365,6 +412,7 @@ def _mulligan(player_id: str, action: str, viewer: str, as_json: bool, game_id: 
                 provider=p2_decision.provider,
             )),
         )
+        _try_append_orchestrator(state, events, viewer, f"P2 調度：{p2_action}")
         _advance_to_main_after_mulligan(state)
         _record_event(state, events, "auto_progress", None, viewer, "調度完成，建立盾牌並進入先手主要階段")
     elif player_id == "P2":
@@ -621,6 +669,7 @@ def _auto_resolve_player(
             command=cmd,
             result={"ok": True, "reason": ""},
         )
+        _try_append_orchestrator(state, events, viewer, f"{player_id} 執行：{cmd}{details}")
         determine_winner(state)
         _record_game_end_if_needed(state, events, viewer)
         if state.game_over:
@@ -675,6 +724,8 @@ def _command(player_id: str, cmd: str, viewer: str, as_json: bool, game_id: Opti
             command=sub_cmd,
             result={"ok": ok, "reason": reason},
         )
+        if ok:
+            _try_append_orchestrator(state, events, viewer, f"{player_id} 執行：{sub_cmd}{details}")
         if not ok:
             break
     determine_winner(state)
@@ -728,6 +779,7 @@ def _auto(player_id: str, viewer: str, as_json: bool, game_id: Optional[str], ma
                 provider=decision.provider,
             )),
         )
+        _try_append_orchestrator(state, events, viewer, f"{player_id} 調度：{action}")
         if player_id == "P1":
             _record_event(
                 state,
@@ -769,6 +821,7 @@ def _auto(player_id: str, viewer: str, as_json: bool, game_id: Optional[str], ma
                     provider=p2_decision.provider,
                 )),
             )
+            _try_append_orchestrator(state, events, viewer, f"P2 調度：{p2_action}")
         _advance_to_main_after_mulligan(state)
         _record_event(state, events, "auto_progress", None, viewer, "調度完成，建立盾牌並進入先手主要階段")
     _auto_resolve_player(player_id, state, max_actions, viewer, events)
@@ -814,7 +867,7 @@ def main() -> None:
 
     ai_probe = sub.add_parser("ai-probe")
     ai_probe.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
-    ai_probe.add_argument("--provider", choices=("opencode", "codex", "claude"), help="測試指定 AI provider")
+    ai_probe.add_argument("--provider", choices=("agent-server",), help="測試指定 AI provider")
 
     args = parser.parse_args()
 

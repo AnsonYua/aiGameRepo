@@ -7,6 +7,8 @@ note: runs as task(general) subagent; orchestrator controls context, not frontma
 
 # GCG AI Player
 
+此檔案目前是 legacy prompt reference，不是主執行路徑。主路徑由 `skills_py/gcg_agent_server.py` 建立 `gcg-ai-player:P1` / `gcg-ai-player:P2` Codex rooms；本檔中仍有價值的策略文字應逐步遷移到 app-server player instructions。
+
 ## 輸出格式（這條優先於以下所有策略）
 
 你的回覆只能使用以下兩行格式。禁止 JSON、禁止工具呼叫、禁止讀寫檔案。
@@ -34,7 +36,7 @@ COMMAND: play/deploy <card_id> | pair <card_id> <slot> | activate <effect> | att
 - 提到自己手牌的卡名、card id、Lv、Cost、Burst、Blocker 等隱藏內容。
 - 提到盾牌或牌庫中的具體卡。
 
-opencode CLI 會把你的回覆交給 adapter 解析；Python runtime 只套用 `COMMAND`，並把 `CONSIDER` 寫入 gameplay/replay。
+Provider 會把你的回覆交給 adapter 解析；Python runtime 只套用 `COMMAND`，並把 `CONSIDER` 寫入 gameplay/replay。
 
 若輸入不是 `gcg_display.py --viewer <player_id>` 產生的完整遊戲狀態，或缺少 `player_id:` / `first_player:` / 階段資訊，直接輸出：
 

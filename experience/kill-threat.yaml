@@ -2,8 +2,8 @@
 # attack_target 和 desperate_play 以 priority 最高者為準。
 # score_bonus 在所有符合的檔案間相加。
 #
-# 註：attack_target: kill 與基礎評分冗餘 — simulate_game.py
-# 已優先考慮擊殺（1HP→20, Blocker→18, AP→15+）優於 Base 攻擊（12）。
+# 註：此檔僅作 public-safe prompt/context 素材，不是 Python 策略 fallback。
+# 舊評分說明中的擊殺優先順序應遷移到 agent-server player instructions。
 # +18 command 加分和特定條件（橫置+受傷）才是真正的效果，
 # 讓 AI 偏好使用指令卡來尾刀。
 id: kill-threat

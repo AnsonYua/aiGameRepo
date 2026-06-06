@@ -3,9 +3,8 @@
 Regression harness for the GCG AI/runtime boundary.
 
 This intentionally uses only stdlib assertions so it can run in any local
-checkout without installing pytest. It does not call live opencode; the AI
-adapter subprocess is faked to prove Python stays an adapter, not a strategy
-engine.
+checkout without installing pytest. Default tests do not call a live LLM; they
+fake the adapter boundary and the Codex app-server protocol.
 """
 
 from __future__ import annotations
@@ -13,6 +12,8 @@ from __future__ import annotations
 import shutil
 import sys
 import os
+import json
+import argparse
 from pathlib import Path
 
 import yaml
@@ -23,6 +24,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from skills_py import ai_adapters, ai_player
 from skills_py.ai_adapters import AIAdapterResult
+from skills_py.gcg_agent_server import GAME_ROLES, JUDGE_ROLE, ORCHESTRATOR_ROLE, CodexAppServerBackend
 from skills_py.ai_player import _parse_ai_output, _public_safe_consideration, ai_decide
 from skills_py.game_engine import init_game, save_state
 from skills_py.game_state import BattleSlot, GameState
@@ -52,15 +54,71 @@ class FakeAdapter:
         )
 
 
-class FakeCompleted:
-    stdout: str
-    stderr: str
-    returncode: int
+class FakeHttpResponse:
+    def __init__(self, payload: dict) -> None:
+        self.payload = payload
 
-    def __init__(self, stdout: str, stderr: str = "", returncode: int = 0) -> None:
-        self.stdout = stdout
-        self.stderr = stderr
-        self.returncode = returncode
+    def __enter__(self) -> "FakeHttpResponse":
+        return self
+
+    def __exit__(self, *args) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return json.dumps(self.payload).encode("utf-8")
+
+
+class FakeCodexClient:
+    def __init__(self) -> None:
+        self.thread_counter = 0
+        self.turn_counter = 0
+        self.thread_requests: list[dict] = []
+        self.inject_requests: list[dict] = []
+        self.turn_requests: list[dict] = []
+        self.notifications: list[dict] = []
+
+    def start(self) -> None:
+        return None
+
+    def request(self, method: str, params: dict, timeout_seconds: float) -> dict:
+        if method == "thread/start":
+            self.thread_counter += 1
+            self.thread_requests.append(params)
+            return {"thread": {"id": f"thread-{self.thread_counter}"}}
+        if method == "thread/inject_items":
+            self.inject_requests.append(params)
+            return {}
+        if method == "turn/start":
+            self.turn_counter += 1
+            self.turn_requests.append(params)
+            turn_id = f"turn-{self.turn_counter}"
+            thread_id = params["threadId"]
+            self.notifications.append(
+                {
+                    "method": "item/completed",
+                    "params": {
+                        "threadId": thread_id,
+                        "turnId": turn_id,
+                        "item": {"type": "agentMessage", "text": "CONSIDER: fake\nCOMMAND: pass"},
+                    },
+                }
+            )
+            self.notifications.append(
+                {
+                    "method": "turn/completed",
+                    "params": {"threadId": thread_id, "turnId": turn_id, "turn": {"status": "completed"}},
+                }
+            )
+            return {"turn": {"id": turn_id}}
+        raise AssertionError(f"unexpected fake codex request: {method}")
+
+    def next_notification(self, timeout_seconds: float) -> dict:
+        if not self.notifications:
+            raise AssertionError("expected fake notification")
+        return self.notifications.pop(0)
+
+    def close(self) -> None:
+        return None
 
 
 def assert_true(condition: bool, message: str) -> None:
@@ -128,44 +186,152 @@ def test_ai_decide_uses_gcg_agent_and_reprompts_invalid_allowed() -> None:
     assert_true("上一個 COMMAND 不合法：pass" in adapter.prompts[1], "retry prompt should explain invalid command")
 
 
-def test_codex_adapter_uses_exec_stdin_and_contract_prefix() -> None:
-    original_run = ai_adapters.subprocess.run
-    original_provider = os.environ.get("GCG_AI_PROVIDER")
-    original_argv = os.environ.get("GCG_AI_CODEX_ARGV")
-    original_prompt_mode = os.environ.get("GCG_AI_CODEX_PROMPT_MODE")
+def test_agent_server_adapter_posts_decide_request() -> None:
+    original_urlopen = ai_adapters.urllib.request.urlopen
+    original_url = os.environ.get("GCG_AGENT_SERVER_URL")
     calls: list[dict] = []
 
-    def fake_run(args: list[str], **kwargs) -> FakeCompleted:
-        calls.append({"args": args, "kwargs": kwargs})
-        return FakeCompleted(stdout="CONSIDER: probe\nCOMMAND: pass\n")
+    def fake_urlopen(request, timeout: float) -> FakeHttpResponse:
+        calls.append({"request": request, "timeout": timeout})
+        return FakeHttpResponse(
+            {
+                "provider": "agent-server/codex-app-server",
+                "stdout": "CONSIDER: probe\nCOMMAND: pass\n",
+                "stderr": "",
+                "returncode": 0,
+                "elapsed_seconds": 1.25,
+            }
+        )
 
-    ai_adapters.subprocess.run = fake_run
-    os.environ["GCG_AI_PROVIDER"] = "codex"
-    os.environ.pop("GCG_AI_CODEX_ARGV", None)
-    os.environ.pop("GCG_AI_CODEX_PROMPT_MODE", None)
+    ai_adapters.urllib.request.urlopen = fake_urlopen
+    os.environ["GCG_AGENT_SERVER_URL"] = "http://127.0.0.1:8765"
     try:
-        adapter = ai_adapters.get_ai_adapter()
-        result = adapter.run("player_id: P1\nlegal_actions: pass", 10)
+        adapter = ai_adapters.get_ai_adapter("agent-server")
+        result = adapter.run("game_id: harness_agent\nplayer_id: P1\nlegal_actions: pass", 10)
     finally:
-        ai_adapters.subprocess.run = original_run
-        if original_provider is None:
-            os.environ.pop("GCG_AI_PROVIDER", None)
+        ai_adapters.urllib.request.urlopen = original_urlopen
+        if original_url is None:
+            os.environ.pop("GCG_AGENT_SERVER_URL", None)
         else:
-            os.environ["GCG_AI_PROVIDER"] = original_provider
-        if original_argv is None:
-            os.environ.pop("GCG_AI_CODEX_ARGV", None)
-        else:
-            os.environ["GCG_AI_CODEX_ARGV"] = original_argv
-        if original_prompt_mode is None:
-            os.environ.pop("GCG_AI_CODEX_PROMPT_MODE", None)
-        else:
-            os.environ["GCG_AI_CODEX_PROMPT_MODE"] = original_prompt_mode
+            os.environ["GCG_AGENT_SERVER_URL"] = original_url
 
-    assert_true(result.provider == "codex", "codex adapter should report provider")
-    assert_true(calls[0]["args"][:2] == ["codex", "exec"], "codex adapter should use codex exec")
-    assert_true(calls[0]["args"][-1] == "-", "codex adapter should send prompt through stdin by default")
-    assert_true("--output-last-message" in calls[0]["args"], "codex adapter should capture final message")
-    assert_true("Return exactly two non-empty lines" in calls[0]["kwargs"]["input"], "codex prompt should include GCG output contract")
+    body = json.loads(calls[0]["request"].data.decode("utf-8"))
+    assert_true(result.provider == "agent-server/codex-app-server", "agent-server adapter should preserve backend provider")
+    assert_true(result.stdout.strip().endswith("COMMAND: pass"), "agent-server adapter should return stdout")
+    assert_true(body["game_id"] == "harness_agent", "agent-server request should include game_id from prompt")
+    assert_true(body["player_id"] == "P1", "agent-server request should include player_id from prompt")
+    assert_true(body["timeout_seconds"] == 10, "agent-server request should include timeout")
+
+
+def test_agent_server_init_and_append_helpers() -> None:
+    original_urlopen = ai_adapters.urllib.request.urlopen
+    original_url = os.environ.get("GCG_AGENT_SERVER_URL")
+    calls: list[dict] = []
+
+    def fake_urlopen(request, timeout: float) -> FakeHttpResponse:
+        calls.append({"request": request, "timeout": timeout})
+        return FakeHttpResponse(
+            {
+                "provider": "agent-server/codex-app-server",
+                "stdout": "",
+                "stderr": "",
+                "returncode": 0,
+                "elapsed_seconds": 0.01,
+                "threads": {},
+            }
+        )
+
+    ai_adapters.urllib.request.urlopen = fake_urlopen
+    os.environ["GCG_AGENT_SERVER_URL"] = "http://127.0.0.1:8765"
+    try:
+        ai_adapters.agent_server_init_game("harness_http", 10)
+        ai_adapters.agent_server_append("harness_http", ORCHESTRATOR_ROLE, "P1 執行：pass", 10)
+    finally:
+        ai_adapters.urllib.request.urlopen = original_urlopen
+        if original_url is None:
+            os.environ.pop("GCG_AGENT_SERVER_URL", None)
+        else:
+            os.environ["GCG_AGENT_SERVER_URL"] = original_url
+
+    init_body = json.loads(calls[0]["request"].data.decode("utf-8"))
+    append_body = json.loads(calls[1]["request"].data.decode("utf-8"))
+    assert_true(calls[0]["request"].full_url.endswith("/init-game"), "init helper should POST /init-game")
+    assert_true(init_body["game_id"] == "harness_http", "init helper should include game_id")
+    assert_true(calls[1]["request"].full_url.endswith("/append"), "append helper should POST /append")
+    assert_true(append_body["role"] == ORCHESTRATOR_ROLE, "append helper should include role")
+
+
+def test_codex_app_server_backend_separates_player_threads() -> None:
+    fake_client = FakeCodexClient()
+    backend = CodexAppServerBackend(client=fake_client)
+    p1_thread = backend._thread_id("harness_game", "P1", 10)
+    p2_thread = backend._thread_id("harness_game", "P2", 10)
+    p1_thread_again = backend._thread_id("harness_game", "P1", 10)
+
+    assert_true(p1_thread == "thread-1", "P1 should get the first thread")
+    assert_true(p2_thread == "thread-2", "P2 should get a separate thread")
+    assert_true(p1_thread_again == p1_thread, "P1 should reuse its own thread")
+    assert_true(len(fake_client.thread_requests) == 2, "backend should create only one thread per game/player")
+
+
+def test_codex_app_server_backend_initializes_four_game_rooms() -> None:
+    fake_client = FakeCodexClient()
+    backend = CodexAppServerBackend(client=fake_client)
+    result = backend.init_game("harness_agent_rooms", 10)
+    threads = result["threads"]
+
+    assert_true(result["returncode"] == 0, f"init_game should succeed: {result}")
+    assert_true(set(threads) == set(GAME_ROLES), "init_game should create the four canonical GCG rooms")
+    assert_true(len(set(threads.values())) == 4, "each GCG room should have its own Codex thread")
+    assert_true(len(fake_client.thread_requests) == 4, "backend should call thread/start exactly four times")
+    session_dir = GAME_STATES_DIR / "harness_agent_rooms" / "ai_sessions"
+    for role in GAME_ROLES:
+        path = session_dir / f"{role.replace(':', '_')}.json"
+        assert_true(path.exists(), f"session metadata should be written for {role}")
+
+
+def test_codex_app_server_backend_appends_to_orchestrator_room() -> None:
+    fake_client = FakeCodexClient()
+    backend = CodexAppServerBackend(client=fake_client)
+    init = backend.init_game("harness_append_room", 10)
+    result = backend.append("harness_append_room", ORCHESTRATOR_ROLE, "P1 執行：pass", 10)
+
+    assert_true(result["returncode"] == 0, f"append should succeed: {result}")
+    assert_true(result["thread_id"] == init["threads"][ORCHESTRATOR_ROLE], "append should target orchestrator thread")
+    assert_true(len(fake_client.inject_requests) == 1, "append should use thread/inject_items")
+    item = fake_client.inject_requests[0]["items"][0]
+    assert_true(item["type"] == "message" and item["role"] == "user", "append should inject a user message item")
+    assert_true("P1 執行" in item["content"][0]["text"], "append text should preserve public action summary")
+
+
+def test_codex_app_server_backend_reuses_player_thread_for_decisions() -> None:
+    fake_client = FakeCodexClient()
+    backend = CodexAppServerBackend(client=fake_client)
+    init = backend.init_game("harness_decide_room", 10)
+    prompt = "game_id: harness_decide_room\nplayer_id: P1\nlegal_actions: pass\n"
+
+    first = backend.decide("harness_decide_room", "P1", prompt, 10)
+    second = backend.decide("harness_decide_room", "P1", prompt, 10)
+
+    assert_true(first["returncode"] == 0 and second["returncode"] == 0, "decide calls should succeed")
+    assert_true(first["thread_id"] == init["threads"]["gcg-ai-player:P1"], "P1 decide should use P1 room")
+    assert_true(second["thread_id"] == first["thread_id"], "P1 second decision should reuse P1 room")
+    assert_true(init["threads"][JUDGE_ROLE] != first["thread_id"], "judge room must not share player thread")
+    assert_true(len(fake_client.thread_requests) == 4, "decide should not create extra threads after init_game")
+
+
+def test_codex_app_server_backend_health_reports_start_failure() -> None:
+    class FailingClient:
+        def start(self) -> None:
+            raise RuntimeError("codex app-server unavailable")
+
+        def close(self) -> None:
+            return None
+
+    backend = CodexAppServerBackend(client=FailingClient())
+    health = backend.health()
+    assert_true(health["ok"] is False, "health should fail when backend cannot start")
+    assert_true("codex app-server unavailable" in health["error"], "health error should expose backend startup failure")
 
 
 def test_ai_decide_does_not_replace_active_game_pointer() -> None:
@@ -391,7 +557,13 @@ def run(live_llm: bool = False) -> None:
         cleanup_harness_state()
         test_ai_output_contract()
         test_ai_decide_uses_gcg_agent_and_reprompts_invalid_allowed()
-        test_codex_adapter_uses_exec_stdin_and_contract_prefix()
+        test_agent_server_adapter_posts_decide_request()
+        test_agent_server_init_and_append_helpers()
+        test_codex_app_server_backend_separates_player_threads()
+        test_codex_app_server_backend_initializes_four_game_rooms()
+        test_codex_app_server_backend_appends_to_orchestrator_room()
+        test_codex_app_server_backend_reuses_player_thread_for_decisions()
+        test_codex_app_server_backend_health_reports_start_failure()
         test_ai_decide_does_not_replace_active_game_pointer()
         test_consideration_sanitizer_blocks_hidden_info()
         test_display_lists_concrete_attack_legality()
@@ -411,5 +583,12 @@ def run(live_llm: bool = False) -> None:
     print(f"GCG direction harness passed{suffix}")
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run GCG runtime/agent-server direction harness")
+    parser.add_argument("--live-llm", action="store_true", help="also call the configured live AI provider")
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    run(live_llm="--live-llm" in sys.argv)
+    args = parse_args()
+    run(live_llm=args.live_llm)

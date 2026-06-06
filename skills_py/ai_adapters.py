@@ -1,37 +1,10 @@
+import json
 import os
-import shlex
-import subprocess
-import tempfile
+import re
 import time
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
-from pathlib import Path
-
-
-PROJECT_ROOT = Path(__file__).parent.parent.absolute()
-
-
-CODEX_GCG_PROMPT_PREFIX = """You are the GCG AI player for a card game runtime.
-
-You must not edit files, inspect hidden state files, or call tools. Decide only from
-the visible runtime display below.
-
-Return exactly two non-empty lines:
-CONSIDER: <public-safe Traditional Chinese short reason>
-COMMAND: <one legal runtime command>
-
-CONSIDER must not reveal hand card ids, card names, shield contents, deck contents,
-or chain-of-thought. If legal_actions is keep, redraw, COMMAND must be exactly keep
-or redraw. If the display lists concrete commands marked with a check mark, choose
-one of those commands exactly. If no legal action is safe, use COMMAND: pass.
-
-Win the game; do not merely make legal moves. Prefer actions in this order when
-they are listed as legal:
-1. Reduce opponent defense layers with attack base/shield/player.
-2. Destroy a rested enemy unit with favorable attack unit.
-3. Block attacks that would meaningfully damage your defense layers.
-4. Deploy or pair only when it improves pressure or defense more than attacking.
-Pass only when no useful attack, block, deploy, pair, or play exists.
-"""
 
 
 @dataclass
@@ -51,146 +24,70 @@ class AIAdapter:
         raise NotImplementedError
 
 
-def _argv_from_env(env_name: str, default: list[str]) -> list[str]:
-    raw = os.environ.get(env_name, "").strip()
-    if not raw:
-        return default
-    return shlex.split(raw)
-
-
-def _gatekeeper_hint(returncode: int, stdout: str, stderr: str) -> str:
-    if returncode == -9 and not stdout.strip() and not stderr.strip():
-        return "process was killed with SIGKILL; on macOS this can mean Gatekeeper blocked the CLI binary."
-    return ""
-
-
-class OpencodeAdapter(AIAdapter):
-    provider = "opencode"
+class AgentServerAdapter(AIAdapter):
+    provider = "agent-server"
 
     def run(self, prompt: str, timeout_seconds: float) -> AIAdapterResult:
-        argv = _argv_from_env(
-            "GCG_AI_OPENCODE_ARGV",
-            ["opencode", "run", "--agent", os.environ.get("GCG_AI_OPENCODE_AGENT", "gcg-ai-player")],
-        )
+        game_id = _prompt_value(prompt, "game_id") or "unknown_game"
+        player_id = _prompt_value(prompt, "player_id") or "unknown_player"
         started = time.monotonic()
-        completed = subprocess.run(
-            [*argv, prompt],
-            cwd=str(PROJECT_ROOT),
-            text=True,
-            capture_output=True,
-            timeout=timeout_seconds,
-            check=False,
+        data = _agent_server_post(
+            "/decide",
+            {
+                "game_id": game_id,
+                "player_id": player_id,
+                "prompt": prompt,
+                "timeout_seconds": timeout_seconds,
+            },
+            timeout_seconds + 5.0,
+            require_ok=False,
         )
         elapsed_seconds = time.monotonic() - started
-        stderr = completed.stderr
-        hint = _gatekeeper_hint(completed.returncode, completed.stdout, completed.stderr)
-        if hint:
-            stderr = hint
         return AIAdapterResult(
-            stdout=completed.stdout,
-            stderr=stderr,
-            returncode=completed.returncode,
-            elapsed_seconds=elapsed_seconds,
-            provider=self.provider,
-            argv=[*argv, "<prompt>"],
+            stdout=str(data.get("stdout") or ""),
+            stderr=str(data.get("stderr") or ""),
+            returncode=int(data.get("returncode") or 0),
+            elapsed_seconds=float(data.get("elapsed_seconds") or elapsed_seconds),
+            provider=str(data.get("provider") or self.provider),
+            argv=["POST", f"{_agent_server_base_url()}/decide"],
         )
 
 
-class CodexCliAdapter(AIAdapter):
-    provider = "codex"
-
-    def run(self, prompt: str, timeout_seconds: float) -> AIAdapterResult:
-        argv = _argv_from_env(
-            "GCG_AI_CODEX_ARGV",
-            [
-                "codex",
-                "exec",
-                "--color",
-                "never",
-                "--ephemeral",
-                "--sandbox",
-                "read-only",
-                "--skip-git-repo-check",
-                "-c",
-                "approval_policy=never",
-            ],
-        )
-        codex_prompt = "\n\n".join([CODEX_GCG_PROMPT_PREFIX, prompt])
-        output_path = ""
-        if "-o" not in argv and "--output-last-message" not in argv:
-            temp = tempfile.NamedTemporaryFile(prefix="gcg_codex_", suffix=".txt", delete=False)
-            output_path = temp.name
-            temp.close()
-            argv = [*argv, "--output-last-message", output_path]
-
-        prompt_mode = os.environ.get("GCG_AI_CODEX_PROMPT_MODE", "stdin").strip().lower()
-        if prompt_mode == "argv":
-            run_argv = [*argv, codex_prompt]
-            stdin_text = None
-        else:
-            run_argv = [*argv, "-"]
-            stdin_text = codex_prompt
-
-        started = time.monotonic()
-        try:
-            completed = subprocess.run(
-                run_argv,
-                cwd=str(PROJECT_ROOT),
-                text=True,
-                input=stdin_text,
-                capture_output=True,
-                timeout=timeout_seconds,
-                check=False,
-            )
-            stdout = completed.stdout
-            stderr = completed.stderr
-            returncode = completed.returncode
-            if output_path:
-                path = Path(output_path)
-                if path.exists():
-                    final_message = path.read_text(encoding="utf-8").strip()
-                    if final_message:
-                        stdout = final_message
-        finally:
-            if output_path:
-                try:
-                    Path(output_path).unlink()
-                except FileNotFoundError:
-                    pass
-        elapsed_seconds = time.monotonic() - started
-        hint = _gatekeeper_hint(returncode, stdout, stderr)
-        if hint:
-            stderr = hint
-        return AIAdapterResult(
-            stdout=stdout,
-            stderr=stderr,
-            returncode=returncode,
-            elapsed_seconds=elapsed_seconds,
-            provider=self.provider,
-            argv=[*argv, "<prompt>" if prompt_mode == "argv" else "-"],
-        )
+def agent_server_enabled() -> bool:
+    return _selected_provider() in {"agent-server", "agent_server", "codex-server", "codex_server"}
 
 
-class ClaudeCodeAdapter(AIAdapter):
-    provider = "claude"
+def agent_server_init_game(game_id: str, timeout_seconds: float = 30.0) -> dict:
+    return _agent_server_post(
+        "/init-game",
+        {"game_id": game_id, "timeout_seconds": timeout_seconds},
+        timeout_seconds + 5.0,
+    )
 
-    def run(self, prompt: str, timeout_seconds: float) -> AIAdapterResult:
-        raise RuntimeError("claude provider placeholder only; implement Claude Code adapter in the next phase.")
+
+def agent_server_append(game_id: str, role: str, message: str, timeout_seconds: float = 10.0) -> dict:
+    return _agent_server_post(
+        "/append",
+        {
+            "game_id": game_id,
+            "role": role,
+            "message": message,
+            "timeout_seconds": timeout_seconds,
+        },
+        timeout_seconds + 5.0,
+    )
 
 
 def get_ai_adapter(provider: str | None = None) -> AIAdapter:
-    selected = (provider or os.environ.get("GCG_AI_PROVIDER", "opencode")).strip().lower()
-    if selected == "opencode":
-        return OpencodeAdapter()
-    if selected in {"codex", "codex-cli", "codex_cli"}:
-        return CodexCliAdapter()
-    if selected in {"claude", "claude-code", "claude_code"}:
-        return ClaudeCodeAdapter()
-    raise RuntimeError(f"未知 AI provider：{selected}")
+    selected = _selected_provider(provider)
+    if selected in {"agent-server", "agent_server", "codex-server", "codex_server"}:
+        return AgentServerAdapter()
+    raise RuntimeError(f"不支援的 AI provider：{selected}；本專案目前主路徑只支援 agent-server。")
 
 
 def probe_provider(provider: str | None = None, timeout_seconds: float = 30.0) -> AIAdapterResult:
     prompt = "\n".join([
+        "game_id: probe_game",
         "player_id: P1",
         "first_player: P1",
         "legal_actions: pass",
@@ -200,3 +97,41 @@ def probe_provider(provider: str | None = None, timeout_seconds: float = 30.0) -
         "COMMAND: pass",
     ])
     return get_ai_adapter(provider).run(prompt, timeout_seconds)
+
+
+def _agent_server_post(path: str, payload: dict, timeout_seconds: float, require_ok: bool = True) -> dict:
+    base_url = _agent_server_base_url()
+    request = urllib.request.Request(
+        f"{base_url}{path}",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+            body = response.read().decode("utf-8")
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace").strip()
+        raise RuntimeError(f"agent-server {path} failed: HTTP {exc.code} {detail}") from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"agent-server unreachable at {base_url}: {exc.reason}") from exc
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"agent-server {path} returned invalid JSON: {body[:200]}") from exc
+    if require_ok and int(data.get("returncode") or 0) != 0:
+        raise RuntimeError(str(data.get("stderr") or f"agent-server {path} failed"))
+    return data
+
+
+def _agent_server_base_url() -> str:
+    return os.environ.get("GCG_AGENT_SERVER_URL", "http://127.0.0.1:8890").rstrip("/")
+
+
+def _selected_provider(provider: str | None = None) -> str:
+    return (provider or os.environ.get("GCG_AI_PROVIDER", "agent-server")).strip().lower()
+
+
+def _prompt_value(prompt: str, key: str) -> str:
+    match = re.search(rf"^{re.escape(key)}:\s*(.+?)\s*$", prompt, flags=re.MULTILINE)
+    return match.group(1).strip() if match else ""
