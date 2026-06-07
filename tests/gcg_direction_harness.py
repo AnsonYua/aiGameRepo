@@ -14,6 +14,7 @@ import sys
 import os
 import json
 import argparse
+import importlib.util
 from pathlib import Path
 
 import yaml
@@ -23,17 +24,28 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from skills_py import ai_adapters, ai_player
+from skills_py.agent_specs import render_player_decision_prompt
 from skills_py.ai_adapters import AIAdapterResult
-from skills_py.gcg_agent_server import GAME_ROLES, JUDGE_ROLE, ORCHESTRATOR_ROLE, CodexAppServerBackend
+from skills_py.gcg_agent_server import GAME_ROLES, JUDGE_ROLE, ORCHESTRATOR_ROLE, PLAYER_P1_ROLE, CodexAppServerBackend, _base_instructions
 from skills_py.ai_player import _parse_ai_output, _public_safe_consideration, ai_decide
 from skills_py.game_engine import init_game, save_state
 from skills_py.game_state import BattleSlot, GameState
 from skills_py.gcg_display import render
 from skills_py.gcg_runtime import _handle_command
+from skills_py.memory_store import format_lessons, search_candidate_lessons
 
 
 ACTIVE_GAME_FILE = PROJECT_ROOT / ".gcg_active_game"
 GAME_STATES_DIR = PROJECT_ROOT / "game-states"
+
+
+def _load_replay_harness_module():
+    path = PROJECT_ROOT / "tests" / "gcg_ai_vs_ai_replay_harness.py"
+    spec = importlib.util.spec_from_file_location("gcg_ai_vs_ai_replay_harness_for_tests", path)
+    assert_true(spec is not None and spec.loader is not None, "could not load replay harness module")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 class FakeAdapter:
@@ -93,13 +105,18 @@ class FakeCodexClient:
             self.turn_requests.append(params)
             turn_id = f"turn-{self.turn_counter}"
             thread_id = params["threadId"]
+            input_text = params.get("input", [{}])[0].get("text", "")
+            if "VERDICT: accept" in input_text or "請審查以下 GCG AI player 決策" in input_text:
+                agent_text = "VERDICT: accept\nREASON: 語意完整，可交給 runtime 驗證。\n"
+            else:
+                agent_text = "CONSIDER: fake\nCOMMAND: pass"
             self.notifications.append(
                 {
                     "method": "item/completed",
                     "params": {
                         "threadId": thread_id,
                         "turnId": turn_id,
-                        "item": {"type": "agentMessage", "text": "CONSIDER: fake\nCOMMAND: pass"},
+                        "item": {"type": "agentMessage", "text": agent_text},
                     },
                 }
             )
@@ -160,6 +177,10 @@ def test_ai_output_contract() -> None:
     parsed = _parse_ai_output("CONSIDER: 公開場面需保守處理\nCOMMAND: attack 0 unit 1\n")
     assert_true(parsed.command == "attack 0 unit 1", "COMMAND line should be parsed")
     assert_true(parsed.consideration == "公開場面需保守處理", "CONSIDER line should be parsed")
+    annotated = _parse_ai_output("CONSIDER: 優先推進防禦層\nCOMMAND: 攻擊 0 — 攻擊對手防禦層\n")
+    assert_true(annotated.command == "攻擊 0", "COMMAND parser should strip display annotation text")
+    compact_annotated = _parse_ai_output("CONSIDER: 優先推進防禦層\nCOMMAND: 攻擊 0—攻擊對手防禦層\n")
+    assert_true(compact_annotated.command == "攻擊 0", "COMMAND parser should strip compact display annotation text")
 
 
 def test_ai_decide_uses_gcg_agent_and_reprompts_invalid_allowed() -> None:
@@ -318,6 +339,64 @@ def test_codex_app_server_backend_reuses_player_thread_for_decisions() -> None:
     assert_true(second["thread_id"] == first["thread_id"], "P1 second decision should reuse P1 room")
     assert_true(init["threads"][JUDGE_ROLE] != first["thread_id"], "judge room must not share player thread")
     assert_true(len(fake_client.thread_requests) == 4, "decide should not create extra threads after init_game")
+    assert_true(first["judge"]["verdict"] == "accept", "decide should include judge verdict metadata")
+    assert_true(first["judge_thread_id"] == init["threads"][JUDGE_ROLE], "decide should review through judge room")
+    assert_true(len(fake_client.turn_requests) == 4, "two decide calls should run player and judge turns")
+
+
+def test_codex_app_server_backend_repairs_after_judge_reject() -> None:
+    class RejectThenAcceptClient(FakeCodexClient):
+        def __init__(self) -> None:
+            super().__init__()
+            self.judge_calls = 0
+
+        def request(self, method: str, params: dict, timeout_seconds: float) -> dict:
+            if method != "turn/start":
+                return super().request(method, params, timeout_seconds)
+            self.turn_counter += 1
+            self.turn_requests.append(params)
+            turn_id = f"turn-{self.turn_counter}"
+            thread_id = params["threadId"]
+            input_text = params.get("input", [{}])[0].get("text", "")
+            if "請審查以下 GCG AI player 決策" in input_text:
+                self.judge_calls += 1
+                if self.judge_calls == 1:
+                    agent_text = "VERDICT: reject\nREASON: COMMAND 缺少必要目標。\nSUGGESTED_COMMAND: 使用 st01/ST01-014 unit 1\n"
+                else:
+                    agent_text = "VERDICT: accept\nREASON: 已修正語意。\n"
+            elif "Judge 修正意見" in input_text:
+                agent_text = "CONSIDER: 依 judge 意見補上公開目標。\nCOMMAND: 使用 st01/ST01-014 unit 1"
+            else:
+                agent_text = "CONSIDER: 想使用公開 command。\nCOMMAND: 使用 st01/ST01-014"
+            self.notifications.append(
+                {
+                    "method": "item/completed",
+                    "params": {
+                        "threadId": thread_id,
+                        "turnId": turn_id,
+                        "item": {"type": "agentMessage", "text": agent_text},
+                    },
+                }
+            )
+            self.notifications.append(
+                {
+                    "method": "turn/completed",
+                    "params": {"threadId": thread_id, "turnId": turn_id, "turn": {"status": "completed"}},
+                }
+            )
+            return {"turn": {"id": turn_id}}
+
+    fake_client = RejectThenAcceptClient()
+    backend = CodexAppServerBackend(client=fake_client)
+    backend.init_game("harness_judge_repair", 10)
+    prompt = "game_id: harness_judge_repair\nplayer_id: P1\nlegal_actions: 使用 st01/ST01-014\n"
+    result = backend.decide("harness_judge_repair", "P1", prompt, 10)
+
+    assert_true(result["returncode"] == 0, f"repair decide should succeed: {result}")
+    assert_true(result["repair_attempted"] is True, "judge reject should trigger one player repair")
+    assert_true(result["judge"]["verdict"] == "accept", "final judge verdict should be accept")
+    assert_true("unit 1" in result["stdout"], "final stdout should come from repaired player command")
+    assert_true(fake_client.judge_calls == 2, "judge should review original and repaired command")
 
 
 def test_codex_app_server_backend_health_reports_start_failure() -> None:
@@ -332,6 +411,63 @@ def test_codex_app_server_backend_health_reports_start_failure() -> None:
     health = backend.health()
     assert_true(health["ok"] is False, "health should fail when backend cannot start")
     assert_true("codex app-server unavailable" in health["error"], "health error should expose backend startup failure")
+
+
+def test_player_base_instructions_include_experience_context() -> None:
+    instructions = _base_instructions(PLAYER_P1_ROLE)
+    assert_true("GCG AI 玩家" in instructions, "player prompt should load from markdown agent spec")
+    assert_true("P1" in instructions, "player-specific room identity should be rendered")
+    assert_true("沒有 `Blocker` 的高 HP Unit 不會保護基地或盾牌" in instructions, "player prompt should include defense truth")
+    assert_true("lethal-race-check" not in instructions, "player base prompt should not load all experience")
+
+
+def test_player_decision_prompt_includes_explicit_context_only() -> None:
+    prompt = "\n".join([
+        "game_id: skill_prompt",
+        "player_id: P1",
+        "legal_actions: deploy, attack, pass",
+        "盾牌：6 剩餘 | 基地：EX-BASE | AP|HP：0|1",
+        "攻擊合法性：攻擊 0 — 攻擊對手防禦層 ✅",
+        "可行指令：部署 st01/ST01-004 — Guntank ✅",
+    ])
+    rendered = render_player_decision_prompt(
+        prompt,
+        "P1",
+        selected_lessons_text="id: lesson-1\nsummary: 公開經驗。",
+        card_text_context="card_id: st01/ST01-004\nname: Guntank",
+    )
+    assert_true("id: lesson-1" in rendered, "explicit selected lesson context should be included")
+    assert_true("card_id: st01/ST01-004" in rendered, "explicit card text context should be included")
+    assert_true("COMMAND 只能輸出命令本體" in rendered, "decision prompt should forbid copying display annotations")
+
+
+def test_player_decision_prompt_does_not_auto_inject_legacy_skills() -> None:
+    prompt = "\n".join([
+        "game_id: skill_prompt_healthy",
+        "player_id: P1",
+        "legal_actions: deploy, pass",
+        "盾牌：6 剩餘 | 基地：EX-BASE | AP|HP：0|3",
+        "對手盾牌：6 剩餘 | 對手基地：有（EX-BASE | AP|HP：0|3）",
+        "可行指令：部署 st01/ST01-004 — Guntank ✅",
+    ])
+    rendered = render_player_decision_prompt(prompt, "P1")
+    assert_true("low-base-defense" not in rendered, "player prompt should not auto-inject legacy skills")
+    assert_true("lethal-race" not in rendered, "player prompt should not auto-inject legacy skills")
+
+
+def test_memory_store_returns_llm_readable_candidates_only() -> None:
+    prompt = "\n".join([
+        "game_id: harness_memory",
+        "player_id: P1",
+        "legal_actions: 使用 st01/ST01-014",
+        "可行指令：使用 st01/ST01-014 — Unforeseen Incident ✅",
+    ])
+    lessons = search_candidate_lessons(prompt)
+    lesson_ids = [lesson.lesson_id for lesson in lessons]
+    assert_true("command-target-required-st01-014" in lesson_ids, "memory retrieval should find matching reviewed lesson")
+    formatted = format_lessons(lessons)
+    assert_true("player_instruction" in formatted, "formatted lessons should be LLM-readable context")
+    assert_true("COMMAND:" not in formatted, "memory store should not emit executable player command protocol")
 
 
 def test_ai_decide_does_not_replace_active_game_pointer() -> None:
@@ -538,6 +674,49 @@ def test_replay_yaml_public_safe_consideration() -> None:
     assert_true("gameState.md" not in replay, "replay must not dump raw state path")
 
 
+def test_replay_review_flags_non_blocking_deploy_under_lethal() -> None:
+    replay_harness = _load_replay_harness_module()
+    events = [
+        {
+            "seq": 1,
+            "event_type": "decision_received",
+            "actor": "P1",
+            "command": "deploy st01/ST01-003",
+            "features": {
+                "p1": {
+                    "shields": 2,
+                    "base": {"alive": False},
+                    "board": {"blockers": 0},
+                },
+                "p2": {
+                    "board": {
+                        "slots": [
+                            {"unit_id": "public-unit-a", "turns_on_field": 1},
+                            {"unit_id": "public-unit-b", "turns_on_field": 1},
+                            {"unit_id": "public-unit-c", "turns_on_field": 1},
+                        ]
+                    }
+                },
+            },
+        },
+        {
+            "seq": 2,
+            "event_type": "decision_applied",
+            "actor": "P1",
+            "command": "deploy st01/ST01-003",
+            "features": {
+                "p1": {
+                    "shields": 2,
+                    "base": {"alive": False},
+                    "board": {"blockers": 0},
+                }
+            },
+        },
+    ]
+    signals = replay_harness._lethal_race_deploy_signals(events)
+    assert_true(signals and "面臨下回合斬殺仍部署" in signals[0], "review should flag non-blocking deploy under lethal")
+
+
 def test_live_llm_contract() -> None:
     state = init_game("harness_live_llm")
     state.first_player = "P1"
@@ -563,7 +742,12 @@ def run(live_llm: bool = False) -> None:
         test_codex_app_server_backend_initializes_four_game_rooms()
         test_codex_app_server_backend_appends_to_orchestrator_room()
         test_codex_app_server_backend_reuses_player_thread_for_decisions()
+        test_codex_app_server_backend_repairs_after_judge_reject()
         test_codex_app_server_backend_health_reports_start_failure()
+        test_player_base_instructions_include_experience_context()
+        test_player_decision_prompt_includes_explicit_context_only()
+        test_player_decision_prompt_does_not_auto_inject_legacy_skills()
+        test_memory_store_returns_llm_readable_candidates_only()
         test_ai_decide_does_not_replace_active_game_pointer()
         test_consideration_sanitizer_blocks_hidden_info()
         test_display_lists_concrete_attack_legality()
@@ -571,6 +755,7 @@ def run(live_llm: bool = False) -> None:
         test_runtime_attack_enemy_unit()
         test_runtime_block_command()
         test_replay_yaml_public_safe_consideration()
+        test_replay_review_flags_non_blocking_deploy_under_lethal()
         if live_llm:
             test_live_llm_contract()
     finally:

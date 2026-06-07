@@ -40,7 +40,15 @@ def _parse_ai_output(output: str) -> AIDecision:
         command = lines[-1]
     if not command:
         raise RuntimeError("AI provider 沒有回傳指令。")
-    return AIDecision(command=command, consideration=consideration, raw_output=output)
+    return AIDecision(command=_clean_command(command), consideration=consideration, raw_output=output)
+
+
+def _clean_command(command: str) -> str:
+    cleaned = command.strip()
+    for separator in (" — ", " – ", "—", "–"):
+        if separator in cleaned:
+            cleaned = cleaned.split(separator, 1)[0].strip()
+    return cleaned
 
 
 def _action_name(command: str) -> str:

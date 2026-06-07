@@ -106,7 +106,7 @@ Live agent-server：
 ```bash
 python3 skills_py/gcg_agent_server.py --host 127.0.0.1 --port 8890
 GCG_AGENT_SERVER_URL=http://127.0.0.1:8890 GCG_AI_PROVIDER=agent-server python3 skills_py/gcg_runtime.py ai-probe --provider agent-server
-GCG_AGENT_SERVER_URL=http://127.0.0.1:8890 GCG_AI_PROVIDER=agent-server python3 tests/gcg_ai_vs_ai_replay_harness.py --live-llm --ai-timeout-seconds 60
+GCG_AGENT_SERVER_URL=http://127.0.0.1:8890 GCG_AI_PROVIDER=agent-server python3 tests/gcg_ai_vs_ai_replay_harness.py --ai-timeout-seconds 60
 ```
 
 Protocol probe：

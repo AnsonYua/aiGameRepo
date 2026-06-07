@@ -133,7 +133,7 @@ Provider harness：
 
 AI-vs-AI 測速：
 
-- `GCG_AI_PROVIDER=agent-server python3 tests/gcg_ai_vs_ai_replay_harness.py --live-llm --ai-timeout-seconds 60`
+- `GCG_AI_PROVIDER=agent-server python3 tests/gcg_ai_vs_ai_replay_harness.py --ai-timeout-seconds 60`
 - 觀察 replay / review 與 provider elapsed time。
 - 若 timeout，分類為 provider latency 或 runtime issue，不新增 retry 掩蓋問題。
 

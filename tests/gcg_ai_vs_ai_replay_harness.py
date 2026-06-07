@@ -2,10 +2,8 @@
 """
 AI-vs-AI replay harness for GCG.
 
-Default mode fakes the AI adapter while still enforcing that every AI
-decision goes through the adapter path. Use --live-llm to call the
-configured live provider. The harness always writes gameplay.yaml, replay.md, and a
-review.md under game-states/<game_id>/.
+Every player decision goes through the configured AI provider. The harness always
+writes gameplay.yaml, replay.md, and a review.md under game-states/<game_id>/.
 """
 
 from __future__ import annotations
@@ -13,7 +11,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import sys
 from collections import Counter
 from pathlib import Path
@@ -25,10 +22,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from skills_py import ai_player
-from skills_py.ai_adapters import AIAdapterResult
-from skills_py.card_db import get_card_type
-from skills_py.game_engine import can_attack, can_attack_unit, can_block, can_play_card, load_state
+from skills_py.game_engine import load_state
 from skills_py.gcg_runtime import _auto, _start_game
 
 
@@ -51,12 +45,10 @@ REQUIRED_REVIEW_FIELDS = [
     "Follow-up",
     "Verdict",
 ]
-FAKE_GAME_ID: str | None = None
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run bounded GCG AI-vs-AI replay harness")
-    parser.add_argument("--live-llm", action="store_true", help="call configured live AI provider")
     parser.add_argument("--max-turns", type=int, default=2)
     parser.add_argument("--max-steps", type=int, default=8)
     parser.add_argument("--per-auto-actions", type=int, default=4)
@@ -70,110 +62,6 @@ def parse_args() -> argparse.Namespace:
 def assert_true(condition: bool, message: str) -> None:
     if not condition:
         raise AssertionError(message)
-
-
-def active_game_id() -> str:
-    return ACTIVE_GAME_FILE.read_text(encoding="utf-8").strip()
-
-
-def fake_consider(command: str) -> str:
-    if command.startswith("attack") and " unit " in command:
-        return "公開場面有可處理的橫置單位，優先交換場面。"
-    if command.startswith("attack"):
-        return "公開防禦層可被推進，選擇攻擊。"
-    if command.startswith("block"):
-        return "對手攻擊進入阻擋窗口，使用公開阻擋者保護防禦層。"
-    if command.startswith("deploy"):
-        return "公開場面需要建立單位，選擇部署。"
-    if command == "keep":
-        return "依調度階段的隱藏資訊評估後選擇此指令，細節不寫入公開 replay。"
-    return "公開場面沒有更高價值行動，選擇讓過。"
-
-
-def choose_fake_command(player_id: str) -> str:
-    state = load_state(FAKE_GAME_ID or active_game_id())
-    assert_true(state is not None, "fake AI could not load active state")
-    assert state is not None
-    player = state.get_player(player_id)
-    opponent = state.get_opponent(player_id)
-
-    if state.phase == "pre-game":
-        return "keep"
-
-    if state.phase == "battle" and state.step in ("attack", "block") and state.priority == player_id:
-        for slot in player.battle_area:
-            if can_block(state, player_id, slot.slot)[0]:
-                return f"block {slot.slot}"
-        return "pass"
-
-    if state.phase in ("battle", "end") and state.step == "action":
-        return "pass"
-
-    if state.phase != "main" or state.active_player != player_id or state.priority != player_id:
-        return "pass"
-
-    for card_id in player.hand_cards:
-        if get_card_type(card_id) == "unit" and can_play_card(state, player_id, card_id)[0]:
-            return f"deploy {card_id}"
-
-    for card_id in player.hand_cards:
-        if get_card_type(card_id) == "base" and can_play_card(state, player_id, card_id)[0]:
-            return f"deploy {card_id}"
-
-    for attacker in player.battle_area:
-        if not can_attack(state, player_id, attacker.slot)[0]:
-            continue
-        for target in opponent.battle_area:
-            if not target.unit_id:
-                continue
-            remaining_hp = target.hp - target.damage
-            if target.status == "rested" and attacker.ap >= remaining_hp:
-                if can_attack_unit(state, player_id, attacker.slot, target.slot)[0]:
-                    return f"attack {attacker.slot} unit {target.slot}"
-
-    for attacker in player.battle_area:
-        if can_attack(state, player_id, attacker.slot)[0]:
-            return f"attack {attacker.slot}"
-
-    for card_id in player.hand_cards:
-        if get_card_type(card_id) == "pilot" and can_play_card(state, player_id, card_id)[0]:
-            for slot in player.battle_area:
-                if slot.unit_id and not slot.pilot_id:
-                    return f"pair {card_id} {slot.slot}"
-
-    return "pass"
-
-
-def install_fake_adapter() -> tuple[Any, list[list[str]]]:
-    calls: list[list[str]] = []
-    original_get_adapter = ai_player.ai_adapters.get_ai_adapter
-
-    class FakeAdapter:
-        provider = "fake"
-
-        def run(self, prompt: str, timeout_seconds: float) -> AIAdapterResult:
-            calls.append(["fake-ai", "<prompt>"])
-            match = re.search(r"^player_id:\s*(P[12])$", prompt, flags=re.MULTILINE)
-            assert_true(match is not None, "AI prompt must include player_id")
-            player_id = match.group(1) if match else "P1"
-            command = choose_fake_command(player_id)
-            return AIAdapterResult(
-                stdout=f"CONSIDER: {fake_consider(command)}\nCOMMAND: {command}\n",
-                returncode=0,
-                elapsed_seconds=0.01,
-                provider=self.provider,
-                argv=["fake-ai", "<prompt>"],
-            )
-
-    def fake_get_adapter(provider: str | None = None) -> FakeAdapter:
-        return FakeAdapter()
-
-    ai_player.ai_adapters.get_ai_adapter = fake_get_adapter
-    return original_get_adapter, calls
-
-
-def restore_adapter(original_get_adapter: Any) -> None:
-    ai_player.ai_adapters.get_ai_adapter = original_get_adapter
 
 
 def run_auto_step(game_id: str, player_id: str, per_auto_actions: int) -> dict[str, Any]:
@@ -278,6 +166,61 @@ def _max_consecutive_action(commands: list[str], action: str) -> int:
     return best
 
 
+def _potential_attackers_next_turn(player_features: dict[str, Any]) -> int:
+    board = player_features.get("board") if isinstance(player_features, dict) else {}
+    slots = board.get("slots") if isinstance(board, dict) else []
+    if not isinstance(slots, list):
+        return 0
+    attackers = 0
+    for slot in slots:
+        if not isinstance(slot, dict) or not slot.get("unit_id"):
+            continue
+        attackers += 1
+    return attackers
+
+
+def _blocker_count(player_features: dict[str, Any]) -> int:
+    board = player_features.get("board") if isinstance(player_features, dict) else {}
+    blockers = board.get("blockers") if isinstance(board, dict) else None
+    return blockers if isinstance(blockers, int) else 0
+
+
+def _lethal_race_deploy_signals(events: list[dict[str, Any]]) -> list[str]:
+    signals: list[str] = []
+    events_by_seq = {event.get("seq"): event for event in events}
+    for event in events:
+        if event.get("event_type") != "decision_received":
+            continue
+        if command_action(event.get("command", "")) != "deploy":
+            continue
+        actor = event.get("actor")
+        if actor not in {"P1", "P2"}:
+            continue
+        opponent = "P2" if actor == "P1" else "P1"
+        features = event.get("features") or {}
+        actor_features = features.get(actor.lower()) or {}
+        opponent_features = features.get(opponent.lower()) or {}
+        base = actor_features.get("base") if isinstance(actor_features, dict) else {}
+        if not isinstance(base, dict) or base.get("alive", True):
+            continue
+        shields = actor_features.get("shields")
+        if not isinstance(shields, int):
+            continue
+        opponent_attackers = _potential_attackers_next_turn(opponent_features)
+        if opponent_attackers <= shields:
+            continue
+        applied = events_by_seq.get((event.get("seq") or 0) + 1) or {}
+        before_blockers = _blocker_count(actor_features)
+        after_features = (applied.get("features") or {}).get(actor.lower()) or {}
+        after_blockers = _blocker_count(after_features)
+        if after_blockers <= before_blockers:
+            signals.append(
+                f"面臨下回合斬殺仍部署：seq {event.get('seq')} {actor} 選擇 {event.get('command')}，"
+                f"對手可攻擊單位 {opponent_attackers} > 己方盾牌 {shields}，且 blocker 未增加。"
+            )
+    return signals
+
+
 def _passive_quality_signals(events: list[dict[str, Any]], ai_events: list[dict[str, Any]], commands: list[str]) -> list[str]:
     signals: list[str] = []
     action_counts = Counter(command_action(command) for command in commands)
@@ -303,6 +246,7 @@ def _passive_quality_signals(events: list[dict[str, Any]], ai_events: list[dict[
             deploy_with_board += 1
     if deploy_with_board >= 3:
         signals.append(f"已有場面後仍多次部署：{deploy_with_board} 次 deploy 發生在自己場上已有至少 2 個單位時。")
+    signals.extend(_lethal_race_deploy_signals(events))
     return signals
 
 
@@ -401,7 +345,7 @@ def analyze(game_id: str, snapshots: list[dict[str, Any]], ai_adapter_calls: int
     }
 
 
-def write_review(game_id: str, analysis: dict[str, Any], ai_adapter_calls: int, live_llm: bool) -> Path:
+def write_review(game_id: str, analysis: dict[str, Any], ai_adapter_calls: int) -> Path:
     action_counts = analysis["action_counts"]
     ai_events = analysis["ai_events"]
     problems = []
@@ -430,6 +374,8 @@ def write_review(game_id: str, analysis: dict[str, Any], ai_adapter_calls: int, 
     likely_causes = []
     if analysis["incomplete"] and not analysis["ai_failures"] and not analysis["illegal"]:
         likely_causes.append("AI strategy quality bug：AI 指令合法但未在上限內有效推進勝利；必須回看 replay 判斷是 AI player prompt 還是 display command surface 問題。")
+    if any("面臨下回合斬殺仍部署" in signal for signal in passive_signals):
+        likely_causes.append("AI prompt problem：AI 沒有在基地被摧毀後先做 lethal race check，面臨下回合斬殺仍選擇無法增加 blocker 的部署。")
     if action_counts.get("attack_base", 0) == 0 or action_counts.get("attack_unit", 0) == 0 or action_counts.get("block", 0) == 0:
         likely_causes.append("AI prompt problem 或 Display problem：先檢查 replay/display 是否列出具體 ✅ attack/block 指令；有列出但 AI 不選才改 AI prompt。")
     if analysis["illegal"]:
@@ -463,7 +409,7 @@ def write_review(game_id: str, analysis: dict[str, Any], ai_adapter_calls: int, 
         f"Pass/action-window quality: pass={action_counts.get('pass', 0)}, auto_pass_events={sum(1 for event in analysis['events'] if '自動讓過' in event.get('message', ''))}",
         f"Defense progress: damage_events={analysis['defense_progress']['damage_event_count']}, last_damage_seq={analysis['defense_progress']['last_damage_seq'] or 'none'}",
         f"Passive-play signals: {passive_signals if passive_signals else 'none'}",
-        f"Replay/log quality: gameplay.yaml parsed, replay.md present, ai_adapter_calls={ai_adapter_calls}, live_llm={live_llm}, ai_failures={len(analysis['ai_failures'])}, missing_ai_evaluation={len(analysis['missing_ai_evaluation'])}, ai_latency_max={max(analysis['ai_latencies']) if analysis['ai_latencies'] else 0:.3f}s",
+        f"Replay/log quality: gameplay.yaml parsed, replay.md present, ai_adapter_calls={ai_adapter_calls}, provider_mode=configured, ai_failures={len(analysis['ai_failures'])}, missing_ai_evaluation={len(analysis['missing_ai_evaluation'])}, ai_latency_max={max(analysis['ai_latencies']) if analysis['ai_latencies'] else 0:.3f}s",
         "Problems:",
         *[f"- {problem}" for problem in problems],
         "Likely root cause:",
@@ -481,19 +427,13 @@ def write_review(game_id: str, analysis: dict[str, Any], ai_adapter_calls: int, 
 
 
 def run_harness(args: argparse.Namespace) -> tuple[str, Path, str]:
-    global FAKE_GAME_ID
     original_active = ACTIVE_GAME_FILE.read_text(encoding="utf-8") if ACTIVE_GAME_FILE.exists() else None
-    original_run = None
     original_timeout = os.environ.get("GCG_AI_TIMEOUT_SECONDS")
-    ai_adapter_calls: list[list[str]] = []
     snapshots: list[dict[str, Any]] = []
     try:
-        if not args.live_llm:
-            original_run, ai_adapter_calls = install_fake_adapter()
         os.environ["GCG_AI_TIMEOUT_SECONDS"] = str(args.ai_timeout_seconds)
         started = json.loads(_start_game("P1", True, args.first_player))
         game_id = started["game_id"]
-        FAKE_GAME_ID = game_id
         snapshots.append(started)
 
         first = run_auto_step(game_id, args.first_player, args.per_auto_actions)
@@ -524,15 +464,12 @@ def run_harness(args: argparse.Namespace) -> tuple[str, Path, str]:
         else:
             max_reached = True
 
-        if args.live_llm:
-            ai_adapter_call_count = sum(
-                1 for event in (snapshots[-1].get("all_events") or [])
-                if event.get("event_type") in {"decision_received", "ai_failure"} and event.get("actor") in {"P1", "P2"}
-            )
-        else:
-            ai_adapter_call_count = len(ai_adapter_calls)
+        ai_adapter_call_count = sum(
+            1 for event in (snapshots[-1].get("all_events") or [])
+            if event.get("event_type") in {"decision_received", "ai_failure"} and event.get("actor") in {"P1", "P2"}
+        )
         analysis = analyze(game_id, snapshots, ai_adapter_call_count, max_reached)
-        review_path = write_review(game_id, analysis, ai_adapter_call_count, args.live_llm)
+        review_path = write_review(game_id, analysis, ai_adapter_call_count)
         if args.require_game_over and not analysis["game_over"]:
             print(f"AI-vs-AI replay harness FAIL: {game_id}")
             print(f"Review: {review_path}")
@@ -543,9 +480,6 @@ def run_harness(args: argparse.Namespace) -> tuple[str, Path, str]:
             raise AssertionError("; ".join(analysis["hard_failures"]))
         return game_id, review_path, "INCOMPLETE" if analysis["incomplete"] else "PASS"
     finally:
-        if original_run is not None:
-            restore_adapter(original_run)
-        FAKE_GAME_ID = None
         if original_active is None:
             ACTIVE_GAME_FILE.unlink(missing_ok=True)
         else:

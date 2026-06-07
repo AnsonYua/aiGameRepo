@@ -1,0 +1,8 @@
+{
+  "provider": "agent-server/codex-app-server",
+  "game_id": "probe_game",
+  "role": "gcg-orchestrator",
+  "thread_id": "019ea28c-a371-7e63-a84c-c4a00014e5bc",
+  "created_at": 1780843587.982739,
+  "note": "This records the long-lived Codex app-server thread for review. Runtime state remains in gameState.md."
+}

@@ -76,6 +76,12 @@ python3 skills_py/gcg_runtime.py command --player P1 --cmd "<玩家原始指令>
 - P1/P2 不得共用 thread；同一玩家多次決策必須 reuse 同一 thread。
 - Orchestrator/Judge 不得和玩家共用 thread。
 - Runtime 仍是唯一 state mutator；LLM 不直接改 state、不讀 hidden raw state。
+- `agents/gcg-ai-player.md` 是 live player room 的主 agent spec；`skills_py/gcg_agent_server.py` 只負責載入 spec、建立 room、轉送 decision prompt。
+- `gcg_skills/*.md` 是 legacy public-safe tactical skill 參考；下一階段應改為 `experience/lessons/` + LLM selector。Python 只能用非策略文字 retrieval 取得候選內容；是否適用與如何運用必須交給 LLM selector/player/judge，不得在 Python 端依技能內容決定 move 優劣或自動改 COMMAND。
+- `experience/*.yaml` 是舊策略素材/分析參考，不是 Python 策略引擎，也不是 fallback；不得依 YAML 在 Python 端自動選牌、評分或改變 COMMAND。
+- 修改 `agents/*.md` 後，要重啟 agent-server 或建立新 game room 才能保證新 room 使用新 base instructions。`gcg_skills/*.md` 目前是 legacy/reference；新經驗路徑應使用 `experience/lessons/` 與 LLM selector。
+- 新增或修改 agent prompt / tactical skill 時，對玩家與 review 可見的指令、規則、策略文字必須使用繁體中文；只有程式碼識別字、protocol key、檔名、command syntax 可維持英文。
+- `gcg_skills/*.md` 或 `experience/lessons/*.yaml` 只能提供 public-safe tactical hints，不得要求 AI 讀 raw state，也不得包含 hidden hand/deck/shield card id。
 - `.opencode/agents` 與 `.opencode/skills` 目前只作 legacy prompt / rule reference；不要把它們當成主執行路徑。
 
 ## Agent Server 操作
@@ -136,10 +142,11 @@ POST /decide
 ## Gameplay Log / Replay 約定
 
 - AI-vs-AI simulation / replay review 的測試原則固定在 `GCG_TESTING_PRINCIPLES.md`。
-- AI-vs-AI replay harness 指令：`python3 tests/gcg_ai_vs_ai_replay_harness.py`。
-- live LLM 模式：`GCG_AI_PROVIDER=agent-server python3 tests/gcg_ai_vs_ai_replay_harness.py --live-llm --ai-timeout-seconds 60`。
+- AI-vs-AI replay harness 一律走 configured LLM provider；不得使用 fake AI player 或 Python 策略 fallback。
+- AI-vs-AI replay harness 指令：`GCG_AI_PROVIDER=agent-server python3 tests/gcg_ai_vs_ai_replay_harness.py --ai-timeout-seconds 60`。
 - AI-vs-AI harness 必須產生 `gameplay.yaml`、`replay.md`、`review.md`。
 - AI-vs-AI `INCOMPLETE` 是 bug/quality signal，不是正常 pass。
+- AI-vs-AI review 必須標記「面臨下回合斬殺仍部署」這類 lethal race 問題：例如己方基地已摧毀、對手下回合潛在攻擊者數量大於己方盾牌數、AI 仍選擇無法增加 blocker 的 deploy。此分類應視為 `AI prompt problem`，優先更新 `agents/gcg-ai-player.md` 或 `experience/lessons/*.yaml`，而不是新增 Python fallback。
 - Gameplay log / replay 寫入邏輯集中在 `skills_py/gameplay_log.py`；不要在 runtime 之外手寫另一套 replay 格式。
 - Runtime 每局必須維護 `game-states/<game_id>/gameplay.yaml` 作為 canonical structured gameplay log。
 - Runtime 每局必須維護 `game-states/<game_id>/replay.md` 作為玩家可讀 replay；此 Markdown 必須使用繁體中文。
@@ -173,7 +180,7 @@ GCG_AGENT_SERVER_URL=http://127.0.0.1:8890 GCG_AI_PROVIDER=agent-server python3 
 AI-vs-AI：
 
 ```bash
-GCG_AGENT_SERVER_URL=http://127.0.0.1:8890 GCG_AI_PROVIDER=agent-server python3 tests/gcg_ai_vs_ai_replay_harness.py --live-llm --ai-timeout-seconds 60
+GCG_AGENT_SERVER_URL=http://127.0.0.1:8890 GCG_AI_PROVIDER=agent-server python3 tests/gcg_ai_vs_ai_replay_harness.py --ai-timeout-seconds 60
 ```
 
 AI-vs-AI harness 預設是短上限 fail-fast；完整壓力測試可明確加 `--max-turns`、`--max-steps`、`--per-auto-actions`。

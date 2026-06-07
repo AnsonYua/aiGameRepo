@@ -21,7 +21,7 @@ skills_py/gcg_runtime.py auto / P2 auto
   -> skills_py/ai_adapters.py
   -> local agent-server HTTP API
   -> one long-lived codex app-server process
-  -> per-game role room
+  -> per-game role rooms
 ```
 
 `gameState.md` 是內部 state source。玩家與 AI Player 不直接讀取它；所有決策前都先產生該玩家視角的完整可見狀態。
@@ -43,7 +43,7 @@ game_id
 | Room | 用途 |
 |---|---|
 | `gcg-orchestrator` | 接收 public-safe action summary，保留流程上下文。 |
-| `gcg-judge` | 保留 public-safe rule context；第一版先建 room，不作 state applier。 |
+| `gcg-judge` | 目標是接入 `/decide` 做 LLM 語意審查；不作 state applier。 |
 | `gcg-ai-player:P1` | P1 決策 room，只看 P1 viewer display。 |
 | `gcg-ai-player:P2` | P2 決策 room，只看 P2 viewer display。 |
 
@@ -75,7 +75,8 @@ LLM 是策略層與語意輔助層。
 
 - AI 玩家決策
 - public-safe 考量摘要
-- 複雜卡牌效果語意 reviewer
+- 卡牌效果與 command 語意 reviewer
+- 依公開經驗判斷 lesson 是否適用
 - replay review / 文件 review
 
 不可交給 LLM：
@@ -100,6 +101,18 @@ LLM 是策略層與語意輔助層。
 | Gameplay log | `skills_py/gameplay_log.py` | `gameplay.yaml` 與 `replay.md` 的 canonical public-safe 記錄。 |
 | Card DB | `skills_py/card_db.py` | 卡片資料讀取、摘要與效果 metadata；不直接 mutate state。 |
 | Legacy prompt reference | `.opencode/agents/*.md`、`.opencode/skills/gcg/*.md` | 待遷移的 prompt / rule reference；不是主執行路徑。 |
+
+## LLM Experience Boundary
+
+下一階段目標見 `GCG_LLM_EXPERIENCE_ROADMAP.md`。核心原則：
+
+- Experience / lessons 不是 Python 策略 fallback。
+- Python 可以讀取 public-safe lesson 與公開卡片文字，並把候選內容傳給 LLM。
+- Python 不得根據 lesson 自動選牌、評分、選 target、reject command 或替換 command。
+- `gcg-ai-player` 負責提出 command。
+- `gcg-judge` 負責 LLM 語意審查。
+- `gcg-memory-selector` / `gcg-memory-curator` 負責經驗選取與萃取。
+- Runtime 仍是最終合法性與 state mutation 邊界。
 
 ## Runtime Boundary
 
@@ -129,7 +142,7 @@ POST /append
 POST /decide
 ```
 
-`POST /init-game` 建立 4 rooms。`POST /append` 注入 public-safe 訊息到指定 role。`POST /decide` 對指定 player room 追加 viewer display 並取得 `CONSIDER` / `COMMAND`。
+`POST /init-game` 建立 4 rooms。`POST /append` 注入 public-safe 訊息到指定 role。`POST /decide` 目前對指定 player room 追加 viewer display 並取得 `CONSIDER` / `COMMAND`；依 `GCG_LLM_EXPERIENCE_ROADMAP.md` Phase 1 後，`/decide` 需 orchestrate player -> judge -> repair，並回傳 judge metadata。
 
 Codex app-server protocol 使用：
 

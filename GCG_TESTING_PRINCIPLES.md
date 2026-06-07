@@ -191,18 +191,18 @@ AI-vs-AI replay test 只有在以下全部成立時才算 pass：
 ```bash
 python3 -m py_compile skills_py/gcg_agent_server.py skills_py/ai_adapters.py skills_py/ai_player.py skills_py/gcg_runtime.py tests/gcg_direction_harness.py tests/gcg_ai_vs_ai_replay_harness.py
 python3 tests/gcg_direction_harness.py
-python3 tests/gcg_ai_vs_ai_replay_harness.py
 python3 skills_py/gcg_agent_server.py --probe --timeout-seconds 60
+GCG_AGENT_SERVER_URL=http://127.0.0.1:8890 GCG_AI_PROVIDER=agent-server python3 tests/gcg_ai_vs_ai_replay_harness.py --ai-timeout-seconds 60
 ```
 
-`gcg_ai_vs_ai_replay_harness.py` 預設使用短上限 fail-fast。需要完整壓力測試時，明確指定 `--max-turns`、`--max-steps`、`--per-auto-actions`，並把結果視為 review artifact，不要只用長時間執行取代 root cause 分析。
+`gcg_ai_vs_ai_replay_harness.py` 一律呼叫 configured AI provider，不使用 fake AI player。預設仍是短上限 fail-fast。需要完整壓力測試時，明確指定 `--max-turns`、`--max-steps`、`--per-auto-actions`，並把結果視為 review artifact，不要只用長時間執行取代 root cause 分析。
 
 Live provider：
 
 ```bash
 python3 skills_py/gcg_agent_server.py --host 127.0.0.1 --port 8890
 GCG_AGENT_SERVER_URL=http://127.0.0.1:8890 GCG_AI_PROVIDER=agent-server python3 skills_py/gcg_runtime.py ai-probe --provider agent-server
-GCG_AGENT_SERVER_URL=http://127.0.0.1:8890 GCG_AI_PROVIDER=agent-server python3 tests/gcg_ai_vs_ai_replay_harness.py --live-llm --ai-timeout-seconds 60
+GCG_AGENT_SERVER_URL=http://127.0.0.1:8890 GCG_AI_PROVIDER=agent-server python3 tests/gcg_ai_vs_ai_replay_harness.py --ai-timeout-seconds 60
 ```
 
 `gcg_direction_harness.py` 驗證方向與合約。`gcg_ai_vs_ai_replay_harness.py` 會產生 AI-vs-AI `gameplay.yaml`、`replay.md`、`review.md`，並依本文件欄位做 replay review。

@@ -20,13 +20,26 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).parent.parent.absolute()
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from skills_py.agent_specs import (
+    build_card_text_context,
+    render_agent_instructions,
+    render_judge_prompt,
+    render_player_decision_prompt,
+    render_selector_prompt,
+)
+from skills_py.memory_store import filter_lessons_by_ids, format_lessons, search_candidate_lessons
+
 PROVIDER_NAME = "agent-server/codex-app-server"
 
 ORCHESTRATOR_ROLE = "gcg-orchestrator"
 JUDGE_ROLE = "gcg-judge"
+MEMORY_SELECTOR_ROLE = "gcg-memory-selector"
 PLAYER_P1_ROLE = "gcg-ai-player:P1"
 PLAYER_P2_ROLE = "gcg-ai-player:P2"
-GAME_ROLES = (ORCHESTRATOR_ROLE, JUDGE_ROLE, PLAYER_P1_ROLE, PLAYER_P2_ROLE)
+GAME_ROLES = (ORCHESTRATOR_ROLE, JUDGE_ROLE, MEMORY_SELECTOR_ROLE, PLAYER_P1_ROLE, PLAYER_P2_ROLE)
 
 
 # ## Codex app-server architecture
@@ -37,48 +50,6 @@ GAME_ROLES = (ORCHESTRATOR_ROLE, JUDGE_ROLE, PLAYER_P1_ROLE, PLAYER_P2_ROLE)
 # Runtime remains the only state mutator. These Codex threads only receive
 # public-safe text and return AI decisions; they should not read gameState.md or
 # edit files.
-PLAYER_BASE_INSTRUCTIONS = """You are the GCG AI player for a card game runtime.
-
-You must not edit files, inspect hidden state files, or call tools. Decide only from
-the visible runtime display provided in the latest user message.
-
-Return exactly two non-empty lines:
-CONSIDER: <public-safe Traditional Chinese short reason>
-COMMAND: <one legal runtime command>
-
-CONSIDER must not reveal hand card ids, card names, shield contents, deck contents,
-or chain-of-thought. If legal_actions is keep, redraw, COMMAND must be exactly keep
-or redraw. If the display lists concrete commands marked with a check mark, choose
-one of those commands exactly. If no legal action is safe, use COMMAND: pass.
-
-Win the game; do not merely make legal moves. Prefer actions in this order when
-they are listed as legal:
-1. Reduce opponent defense layers with attack base/shield/player.
-2. Destroy a rested enemy unit with favorable attack unit.
-3. Block attacks that would meaningfully damage your defense layers.
-4. Deploy or pair only when it improves pressure or defense more than attacking.
-Pass only when no useful attack, block, deploy, pair, or play exists.
-
-The latest viewer display is authoritative. Ignore older board state if it conflicts
-with the latest display.
-"""
-
-
-ORCHESTRATOR_BASE_INSTRUCTIONS = """You are the GCG orchestrator chatroom for one card game.
-
-Keep only public-safe game flow context. Python runtime is the source of truth for
-state mutation, legality, and display. Do not inspect hidden state files or edit
-files. Treat appended actions as conversation context for coordination.
-"""
-
-
-JUDGE_BASE_INSTRUCTIONS = """You are the GCG judge chatroom for one card game.
-
-Review public-safe rule context only when asked. Python runtime is the final
-validator/applier. Do not inspect hidden state files or edit files.
-"""
-
-
 @dataclass
 class BackendMetrics:
     started_at: float = field(default_factory=time.time)
@@ -87,6 +58,26 @@ class BackendMetrics:
     total_backend_seconds: float = 0.0
     last_error: str = ""
     sessions: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class JudgeVerdict:
+    verdict: str
+    reason: str = ""
+    suggested_command: str = ""
+    raw_output: str = ""
+
+    @property
+    def accepted(self) -> bool:
+        return self.verdict == "accept"
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "verdict": self.verdict,
+            "reason": self.reason,
+            "suggested_command": self.suggested_command,
+            "raw_output": self.raw_output,
+        }
 
 
 class AgentSessionBackend(ABC):
@@ -288,7 +279,7 @@ class CodexAppServerBackend(AgentSessionBackend):
                 self.client.request(
                     "thread/inject_items",
                     {"threadId": thread_id, "items": [_user_response_item(message)]},
-                    timeout_seconds=min(timeout_seconds, 10.0),
+                    timeout_seconds=min(timeout_seconds, 30.0),
                 )
                 elapsed = time.monotonic() - started
                 self.metrics.total_backend_seconds += elapsed
@@ -304,7 +295,59 @@ class CodexAppServerBackend(AgentSessionBackend):
                 self.start()
                 role = _player_role(player_id)
                 thread_id = self._thread_id(game_id, role, timeout_seconds)
-                output = self._run_turn(thread_id, prompt, timeout_seconds)
+                judge_thread_id = self._thread_id(game_id, JUDGE_ROLE, timeout_seconds)
+                card_text_context = build_card_text_context(prompt)
+                candidate_lessons = search_candidate_lessons(prompt)
+                candidate_lesson_ids = [lesson.lesson_id for lesson in candidate_lessons]
+                selector_thread_id = ""
+                selector_output = ""
+                selected_lesson_ids: list[str] = []
+                selected_lessons_text = ""
+                if candidate_lessons:
+                    selector_thread_id = self._thread_id(game_id, MEMORY_SELECTOR_ROLE, timeout_seconds)
+                    selector_prompt = render_selector_prompt(prompt, format_lessons(candidate_lessons), card_text_context)
+                    selector_output = self._run_turn(selector_thread_id, selector_prompt, timeout_seconds)
+                    selected_lesson_ids = _parse_selected_lesson_ids(selector_output)
+                    selected_lessons = filter_lessons_by_ids(candidate_lessons, selected_lesson_ids)
+                    selected_lessons_text = format_lessons(selected_lessons)
+                decision_prompt = render_player_decision_prompt(
+                    prompt,
+                    player_id,
+                    selected_lessons_text=selected_lessons_text,
+                    card_text_context=card_text_context,
+                )
+                output = self._run_turn(thread_id, decision_prompt, timeout_seconds)
+                judge = self._judge_decision(
+                    judge_thread_id,
+                    prompt,
+                    output,
+                    selected_lessons_text,
+                    card_text_context,
+                    timeout_seconds,
+                )
+                repair_attempted = False
+                judge_history = [judge.to_dict()]
+                if not judge.accepted:
+                    repair_attempted = True
+                    repair_prompt = render_player_decision_prompt(
+                        prompt,
+                        player_id,
+                        selected_lessons_text=selected_lessons_text,
+                        card_text_context=card_text_context,
+                        judge_feedback=_judge_feedback_text(judge),
+                    )
+                    output = self._run_turn(thread_id, repair_prompt, timeout_seconds)
+                    judge = self._judge_decision(
+                        judge_thread_id,
+                        prompt,
+                        output,
+                        selected_lessons_text,
+                        card_text_context,
+                        timeout_seconds,
+                    )
+                    judge_history.append(judge.to_dict())
+                if not judge.accepted:
+                    raise RuntimeError(f"judge rejected final command: {judge.reason or judge.raw_output}")
                 elapsed = time.monotonic() - started
                 self.metrics.total_backend_seconds += elapsed
                 return _ok_response(
@@ -313,6 +356,15 @@ class CodexAppServerBackend(AgentSessionBackend):
                     role=role,
                     thread_id=thread_id,
                     stdout=output,
+                    judge=judge.to_dict(),
+                    judge_history=judge_history,
+                    judge_thread_id=judge_thread_id,
+                    repair_attempted=repair_attempted,
+                    selected_lesson_ids=selected_lesson_ids,
+                    candidate_lesson_ids=candidate_lesson_ids,
+                    selector_thread_id=selector_thread_id,
+                    selector_output=selector_output,
+                    card_text_context_included=bool(card_text_context),
                 )
             except Exception as exc:
                 return self._failure_response(exc, started, game_id=game_id, role=_player_role(player_id), thread_id="")
@@ -415,6 +467,24 @@ class CodexAppServerBackend(AgentSessionBackend):
                     raise RuntimeError("codex turn completed without an agent message")
                 return output
         raise TimeoutError(f"codex app-server turn timed out after {timeout_seconds:g}s")
+
+    def _judge_decision(
+        self,
+        judge_thread_id: str,
+        prompt: str,
+        player_output: str,
+        selected_lessons_text: str,
+        card_text_context: str,
+        timeout_seconds: float,
+    ) -> JudgeVerdict:
+        judge_prompt = render_judge_prompt(
+            prompt,
+            player_output,
+            selected_lessons_text=selected_lessons_text,
+            card_text_context=card_text_context,
+        )
+        output = self._run_turn(judge_thread_id, judge_prompt, timeout_seconds)
+        return _parse_judge_output(output)
 
 
 class AgentRequestHandler(BaseHTTPRequestHandler):
@@ -521,7 +591,7 @@ def run_probe(timeout_seconds: float = 60.0) -> dict[str, Any]:
     )
     try:
         init = backend.init_game("probe_game", timeout_seconds)
-        append = backend.append("probe_game", ORCHESTRATOR_ROLE, "公開事件：probe 開始", 10.0)
+        append = backend.append("probe_game", ORCHESTRATOR_ROLE, "公開事件：probe 開始", timeout_seconds)
         first = backend.decide("probe_game", "P1", prompt, timeout_seconds)
         second = backend.decide("probe_game", "P1", prompt, timeout_seconds)
         return {"init": init, "append": append, "first": first, "second": second, "metrics": backend.snapshot_metrics()}
@@ -547,14 +617,59 @@ def _agent_text_from_turn(turn: dict[str, Any]) -> str:
     return ""
 
 
+def _parse_judge_output(output: str) -> JudgeVerdict:
+    verdict = ""
+    reason = ""
+    suggested_command = ""
+    for line in [line.strip() for line in output.splitlines() if line.strip()]:
+        lower = line.lower()
+        if lower.startswith("verdict:"):
+            value = line.split(":", 1)[1].strip().lower()
+            if value in {"accept", "accepted", "pass"}:
+                verdict = "accept"
+            elif value in {"reject", "rejected", "fail"}:
+                verdict = "reject"
+            else:
+                verdict = value
+        elif lower.startswith("reason:"):
+            reason = line.split(":", 1)[1].strip()
+        elif lower.startswith("suggested_command:"):
+            suggested_command = line.split(":", 1)[1].strip()
+    if verdict not in {"accept", "reject"}:
+        raise RuntimeError(f"judge output missing VERDICT: {output.strip()[:200]}")
+    return JudgeVerdict(verdict=verdict, reason=reason, suggested_command=suggested_command, raw_output=output)
+
+
+def _parse_selected_lesson_ids(output: str) -> list[str]:
+    for line in [line.strip() for line in output.splitlines() if line.strip()]:
+        if line.lower().startswith("selected_lesson_ids:"):
+            raw = line.split(":", 1)[1].strip()
+            if not raw:
+                return []
+            return [part.strip() for part in raw.split(",") if part.strip()]
+    raise RuntimeError(f"selector output missing SELECTED_LESSON_IDS: {output.strip()[:200]}")
+
+
+def _judge_feedback_text(judge: JudgeVerdict) -> str:
+    lines = [
+        f"上一個 COMMAND 被 judge 判定為 reject。",
+        f"REASON: {judge.reason or '未提供'}",
+    ]
+    if judge.suggested_command:
+        lines.append(f"SUGGESTED_COMMAND 僅供你參考，必須由你重新輸出 COMMAND: {judge.suggested_command}")
+    return "\n".join(lines)
+
+
 def _base_instructions(role: str) -> str:
     if role == ORCHESTRATOR_ROLE:
-        return ORCHESTRATOR_BASE_INSTRUCTIONS
+        return render_agent_instructions("gcg-orchestrator")
     if role == JUDGE_ROLE:
-        return JUDGE_BASE_INSTRUCTIONS
+        return render_agent_instructions("gcg-judge")
+    if role == MEMORY_SELECTOR_ROLE:
+        return render_agent_instructions("gcg-memory-selector")
     if role in {PLAYER_P1_ROLE, PLAYER_P2_ROLE}:
         player_id = role.rsplit(":", 1)[1]
-        return "\n".join([PLAYER_BASE_INSTRUCTIONS, f"\nYou are the persistent chatroom for {player_id}."])
+        return render_agent_instructions("gcg-ai-player", player_id=player_id, tactical_skills="")
     raise ValueError(f"unknown GCG role: {role}")
 
 
@@ -566,6 +681,8 @@ def _canonical_role(role: str) -> str:
         return PLAYER_P1_ROLE
     if normalized in {"P2", "player_P2", "gcg-ai-player-P2"}:
         return PLAYER_P2_ROLE
+    if normalized in {"memory-selector", "selector"}:
+        return MEMORY_SELECTOR_ROLE
     raise ValueError(f"unknown GCG role: {role}")
 
 

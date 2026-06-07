@@ -11,7 +11,30 @@ skills_py/ai_player.py
   -> codex app-server room
 ```
 
-若未來要使用這些經驗檔，必須先由 runtime 或 agent-server 轉成 public-safe prompt context，再交給對應的 `gcg-ai-player:P1|P2` room。不要在 Python 中直接依 YAML 自動選牌、評分或改變 COMMAND；runtime 仍只負責顯示、合法性驗證與 state mutation。
+目前 live player prompt 的主路徑是 `agents/gcg-ai-player.md`。新經驗學習方向以 `experience/lessons/*.yaml` 作為 LLM-readable reviewed lessons；舊的 `experience/*.yaml` 與 `gcg_skills/*.md` 保留為舊策略素材與分析參考。
+
+不要在 Python 中直接依 YAML 自動選牌、評分、選 target 或改變 COMMAND。Python 只能做 public-safe retrieval / formatting；是否適用與如何運用必須交給 LLM selector / player / judge。runtime 仍只負責顯示、合法性驗證與 state mutation。
+
+## Lessons
+
+`experience/lessons/*.yaml` 是給 LLM 閱讀的 reviewed lessons，不是 Python strategy engine。
+
+建議欄位：
+
+- `id`
+- `source_game`
+- `status: draft|reviewed|rejected`
+- `lesson_type`
+- `confidence: low|medium|high`
+- `summary`
+- `applies_when`
+- `bad_example`
+- `better_example`
+- `player_instruction`
+- `judge_instruction`
+- `notes`
+
+只有 `status: reviewed` 的 lesson 才應進入決策候選 retrieval。`draft` 必須先由人工或 judge/coach review。
 
 ## 格式
 

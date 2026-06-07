@@ -126,8 +126,8 @@ GCG_AI_PROVIDER=agent-server python3 tests/gcg_direction_harness.py --live-llm
 AI-vs-AI replay harness：
 
 ```bash
-python3 tests/gcg_ai_vs_ai_replay_harness.py
-GCG_AI_PROVIDER=agent-server python3 tests/gcg_ai_vs_ai_replay_harness.py --live-llm --ai-timeout-seconds 60
+python3 skills_py/gcg_agent_server.py --host 127.0.0.1 --port 8890
+GCG_AI_PROVIDER=agent-server python3 tests/gcg_ai_vs_ai_replay_harness.py --ai-timeout-seconds 60
 ```
 
 AI-vs-AI 會產生 `gameplay.yaml`、`replay.md`、`review.md`。`INCOMPLETE` 是 quality signal，必須讀 replay/review 分類 root cause，不可只調高上限。
