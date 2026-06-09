@@ -46,7 +46,7 @@ class RuntimeCore:
 
     def start_game(
         self,
-        first_player="P1",
+        first_player=None,
         decision_player=None,
         p1_deck_id="deck001",
         p2_deck_id="deck001",
