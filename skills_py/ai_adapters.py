@@ -15,6 +15,7 @@ class AIAdapterResult:
     elapsed_seconds: float = 0.0
     provider: str = ""
     argv: list[str] | None = None
+    metadata: dict | None = None
 
 
 class AIAdapter:
@@ -50,6 +51,21 @@ class AgentServerAdapter(AIAdapter):
             elapsed_seconds=float(data.get("elapsed_seconds") or elapsed_seconds),
             provider=str(data.get("provider") or self.provider),
             argv=["POST", f"{_agent_server_base_url()}/decide"],
+            metadata={
+                key: data.get(key)
+                for key in (
+                    "judge",
+                    "judge_history",
+                    "judge_mode",
+                    "repair_attempted",
+                    "selected_lesson_ids",
+                    "candidate_lesson_ids",
+                    "selector_output",
+                    "stage_seconds",
+                    "card_text_context_included",
+                )
+                if key in data
+            },
         )
 
 
@@ -111,8 +127,10 @@ def _agent_server_post(path: str, payload: dict, timeout_seconds: float, require
         with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
             body = response.read().decode("utf-8")
     except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace").strip()
-        raise RuntimeError(f"agent-server {path} failed: HTTP {exc.code} {detail}") from exc
+        body = exc.read().decode("utf-8", errors="replace")
+        if require_ok:
+            detail = body.strip()
+            raise RuntimeError(f"agent-server {path} failed: HTTP {exc.code} {detail}") from exc
     except urllib.error.URLError as exc:
         raise RuntimeError(f"agent-server unreachable at {base_url}: {exc.reason}") from exc
     try:

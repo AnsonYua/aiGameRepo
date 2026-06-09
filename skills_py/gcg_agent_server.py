@@ -26,6 +26,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from skills_py.agent_specs import (
     build_card_text_context,
     render_agent_instructions,
+    render_curator_prompt,
     render_judge_prompt,
     render_player_decision_prompt,
     render_selector_prompt,
@@ -37,6 +38,7 @@ PROVIDER_NAME = "agent-server/codex-app-server"
 ORCHESTRATOR_ROLE = "gcg-orchestrator"
 JUDGE_ROLE = "gcg-judge"
 MEMORY_SELECTOR_ROLE = "gcg-memory-selector"
+MEMORY_CURATOR_ROLE = "gcg-memory-curator"
 PLAYER_P1_ROLE = "gcg-ai-player:P1"
 PLAYER_P2_ROLE = "gcg-ai-player:P2"
 GAME_ROLES = (ORCHESTRATOR_ROLE, JUDGE_ROLE, MEMORY_SELECTOR_ROLE, PLAYER_P1_ROLE, PLAYER_P2_ROLE)
@@ -44,7 +46,7 @@ GAME_ROLES = (ORCHESTRATOR_ROLE, JUDGE_ROLE, MEMORY_SELECTOR_ROLE, PLAYER_P1_ROL
 
 # ## Codex app-server architecture
 # This process is a small HTTP wrapper around one long-lived
-# `codex app-server --stdio` child process. A GCG game maps to four Codex
+# `codex app-server --stdio` child process. A GCG game maps to canonical Codex
 # threads, and each thread behaves like an independent chatroom.
 #
 # Runtime remains the only state mutator. These Codex threads only receive
@@ -69,7 +71,7 @@ class JudgeVerdict:
 
     @property
     def accepted(self) -> bool:
-        return self.verdict == "accept"
+        return self.verdict in {"accept", "skipped"}
 
     def to_dict(self) -> dict[str, str]:
         return {
@@ -93,6 +95,10 @@ class AgentSessionBackend(ABC):
 
     @abstractmethod
     def decide(self, game_id: str, player_id: str, prompt: str, timeout_seconds: float) -> dict[str, Any]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def curate_memory(self, game_id: str, source_text: str, timeout_seconds: float) -> dict[str, Any]:
         raise NotImplementedError
 
     @abstractmethod
@@ -291,32 +297,91 @@ class CodexAppServerBackend(AgentSessionBackend):
         started = time.monotonic()
         with self._lock:
             self.metrics.requests += 1
-            try:
-                self.start()
-                role = _player_role(player_id)
-                thread_id = self._thread_id(game_id, role, timeout_seconds)
-                judge_thread_id = self._thread_id(game_id, JUDGE_ROLE, timeout_seconds)
-                card_text_context = build_card_text_context(prompt)
-                candidate_lessons = search_candidate_lessons(prompt)
-                candidate_lesson_ids = [lesson.lesson_id for lesson in candidate_lessons]
-                selector_thread_id = ""
-                selector_output = ""
-                selected_lesson_ids: list[str] = []
-                selected_lessons_text = ""
-                if candidate_lessons:
-                    selector_thread_id = self._thread_id(game_id, MEMORY_SELECTOR_ROLE, timeout_seconds)
-                    selector_prompt = render_selector_prompt(prompt, format_lessons(candidate_lessons), card_text_context)
-                    selector_output = self._run_turn(selector_thread_id, selector_prompt, timeout_seconds)
-                    selected_lesson_ids = _parse_selected_lesson_ids(selector_output)
-                    selected_lessons = filter_lessons_by_ids(candidate_lessons, selected_lesson_ids)
-                    selected_lessons_text = format_lessons(selected_lessons)
-                decision_prompt = render_player_decision_prompt(
+        try:
+            return self._decide_unlocked(game_id, player_id, prompt, timeout_seconds, started)
+        except Exception as exc:
+            return self._failure_response(exc, started, game_id=game_id, role=_player_role(player_id), thread_id="")
+
+    def _decide_unlocked(self, game_id: str, player_id: str, prompt: str, timeout_seconds: float, started: float) -> dict[str, Any]:
+        self.start()
+        role = _player_role(player_id)
+        thread_id = self._thread_id(game_id, role, timeout_seconds)
+        card_text_context = build_card_text_context(prompt)
+        candidate_lessons = search_candidate_lessons(prompt)
+        candidate_lesson_ids = [lesson.lesson_id for lesson in candidate_lessons]
+        selector_thread_id = ""
+        selector_output = ""
+        selected_lesson_ids: list[str] = []
+        selected_lessons_text = ""
+        stage_seconds: dict[str, float] = {}
+        try:
+            if candidate_lessons:
+                selector_started = time.monotonic()
+                selector_thread_id = self._thread_id(game_id, MEMORY_SELECTOR_ROLE, timeout_seconds)
+                selector_prompt = render_selector_prompt(prompt, format_lessons(candidate_lessons), card_text_context)
+                selector_output = self._run_turn(selector_thread_id, selector_prompt, timeout_seconds)
+                stage_seconds["selector"] = round(time.monotonic() - selector_started, 3)
+                selected_lesson_ids = _parse_selected_lesson_ids(selector_output)
+                selected_lessons = filter_lessons_by_ids(candidate_lessons, selected_lesson_ids)
+                selected_lessons_text = format_lessons(selected_lessons)
+        except Exception as exc:
+            elapsed = time.monotonic() - started
+            with self._lock:
+                self.metrics.failures += 1
+                self.metrics.last_error = str(exc)
+            response = _error_response(str(exc), elapsed)
+            response.update(
+                game_id=game_id,
+                role=role,
+                thread_id=thread_id,
+                stdout="",
+                stage="memory_selector",
+                candidate_lesson_ids=candidate_lesson_ids,
+                selector_thread_id=selector_thread_id,
+                selector_output=selector_output,
+                stage_seconds=stage_seconds,
+                card_text_context_included=bool(card_text_context),
+            )
+            return response
+        decision_prompt = render_player_decision_prompt(
+            prompt,
+            player_id,
+            selected_lessons_text=selected_lessons_text,
+            card_text_context=card_text_context,
+        )
+        player_started = time.monotonic()
+        output = self._run_turn(thread_id, decision_prompt, timeout_seconds)
+        stage_seconds["player"] = round(time.monotonic() - player_started, 3)
+        repair_attempted = False
+        judge_thread_id = ""
+        judge_mode = _judge_mode()
+        should_judge = _should_run_judge(judge_mode, candidate_lessons, card_text_context, output)
+        if should_judge:
+            judge_thread_id = self._thread_id(game_id, JUDGE_ROLE, timeout_seconds)
+            judge_started = time.monotonic()
+            judge = self._judge_decision(
+                judge_thread_id,
+                prompt,
+                output,
+                selected_lessons_text,
+                card_text_context,
+                timeout_seconds,
+            )
+            stage_seconds["judge"] = round(time.monotonic() - judge_started, 3)
+            judge_history = [judge.to_dict()]
+            if not judge.accepted:
+                repair_attempted = True
+                repair_prompt = render_player_decision_prompt(
                     prompt,
                     player_id,
                     selected_lessons_text=selected_lessons_text,
                     card_text_context=card_text_context,
+                    judge_feedback=_judge_feedback_text(judge),
                 )
-                output = self._run_turn(thread_id, decision_prompt, timeout_seconds)
+                repair_started = time.monotonic()
+                output = self._run_turn(thread_id, repair_prompt, timeout_seconds)
+                stage_seconds["repair_player"] = round(time.monotonic() - repair_started, 3)
+                repair_judge_started = time.monotonic()
                 judge = self._judge_decision(
                     judge_thread_id,
                     prompt,
@@ -325,49 +390,83 @@ class CodexAppServerBackend(AgentSessionBackend):
                     card_text_context,
                     timeout_seconds,
                 )
-                repair_attempted = False
-                judge_history = [judge.to_dict()]
-                if not judge.accepted:
-                    repair_attempted = True
-                    repair_prompt = render_player_decision_prompt(
-                        prompt,
-                        player_id,
-                        selected_lessons_text=selected_lessons_text,
-                        card_text_context=card_text_context,
-                        judge_feedback=_judge_feedback_text(judge),
-                    )
-                    output = self._run_turn(thread_id, repair_prompt, timeout_seconds)
-                    judge = self._judge_decision(
-                        judge_thread_id,
-                        prompt,
-                        output,
-                        selected_lessons_text,
-                        card_text_context,
-                        timeout_seconds,
-                    )
-                    judge_history.append(judge.to_dict())
-                if not judge.accepted:
-                    raise RuntimeError(f"judge rejected final command: {judge.reason or judge.raw_output}")
+                stage_seconds["repair_judge"] = round(time.monotonic() - repair_judge_started, 3)
+                judge_history.append(judge.to_dict())
+        else:
+            judge = JudgeVerdict(
+                verdict="skipped",
+                reason=f"judge_mode={judge_mode}; no selected lesson or command semantic risk",
+            )
+            judge_history = [judge.to_dict()]
+        if not judge.accepted:
+            elapsed = time.monotonic() - started
+            message = f"judge rejected final command: {judge.reason or judge.raw_output}"
+            with self._lock:
+                self.metrics.failures += 1
+                self.metrics.last_error = message
+            response = _error_response(message, elapsed)
+            response.update(
+                game_id=game_id,
+                role=role,
+                thread_id=thread_id,
+                stdout="",
+                judge=judge.to_dict(),
+                judge_history=judge_history,
+                judge_thread_id=judge_thread_id,
+                judge_mode=judge_mode,
+                repair_attempted=repair_attempted,
+                selected_lesson_ids=selected_lesson_ids,
+                candidate_lesson_ids=candidate_lesson_ids,
+                selector_thread_id=selector_thread_id,
+                selector_output=selector_output,
+                stage_seconds=stage_seconds,
+                card_text_context_included=bool(card_text_context),
+            )
+            return response
+        elapsed = time.monotonic() - started
+        with self._lock:
+            self.metrics.total_backend_seconds += elapsed
+        return _ok_response(
+            game_id=game_id,
+            elapsed=elapsed,
+            role=role,
+            thread_id=thread_id,
+            stdout=output,
+            judge=judge.to_dict(),
+            judge_history=judge_history,
+            judge_thread_id=judge_thread_id,
+            judge_mode=judge_mode,
+            repair_attempted=repair_attempted,
+            selected_lesson_ids=selected_lesson_ids,
+            candidate_lesson_ids=candidate_lesson_ids,
+            selector_thread_id=selector_thread_id,
+            selector_output=selector_output,
+            stage_seconds=stage_seconds,
+            card_text_context_included=bool(card_text_context),
+        )
+
+    def curate_memory(self, game_id: str, source_text: str, timeout_seconds: float) -> dict[str, Any]:
+        started = time.monotonic()
+        with self._lock:
+            self.metrics.requests += 1
+            try:
+                _reject_hidden_source_text(source_text)
+                self.start()
+                thread_id = self._thread_id(game_id, MEMORY_CURATOR_ROLE, timeout_seconds)
+                prompt = render_curator_prompt(source_text)
+                output = self._run_turn(thread_id, prompt, timeout_seconds)
                 elapsed = time.monotonic() - started
                 self.metrics.total_backend_seconds += elapsed
                 return _ok_response(
                     game_id=game_id,
                     elapsed=elapsed,
-                    role=role,
+                    role=MEMORY_CURATOR_ROLE,
                     thread_id=thread_id,
                     stdout=output,
-                    judge=judge.to_dict(),
-                    judge_history=judge_history,
-                    judge_thread_id=judge_thread_id,
-                    repair_attempted=repair_attempted,
-                    selected_lesson_ids=selected_lesson_ids,
-                    candidate_lesson_ids=candidate_lesson_ids,
-                    selector_thread_id=selector_thread_id,
-                    selector_output=selector_output,
-                    card_text_context_included=bool(card_text_context),
+                    status="draft_only",
                 )
             except Exception as exc:
-                return self._failure_response(exc, started, game_id=game_id, role=_player_role(player_id), thread_id="")
+                return self._failure_response(exc, started, game_id=game_id, role=MEMORY_CURATOR_ROLE, thread_id="")
 
     def snapshot_metrics(self) -> dict[str, Any]:
         avg = self.metrics.total_backend_seconds / self.metrics.requests if self.metrics.requests else 0.0
@@ -396,26 +495,31 @@ class CodexAppServerBackend(AgentSessionBackend):
     def _thread_id(self, game_id: str, role: str, timeout_seconds: float) -> str:
         role = _canonical_role(role)
         key = (game_id, role)
-        if key in self._threads:
-            return self._threads[key]
-        result = self.client.request(
-            "thread/start",
-            {
-                "cwd": str(PROJECT_ROOT),
-                "approvalPolicy": "never",
-                "sandbox": "read-only",
-                "baseInstructions": _base_instructions(role),
-                "ephemeral": True,
-                "serviceName": "gcg-agent-server",
-                "threadSource": "user",
-            },
-            timeout_seconds=min(timeout_seconds, 30.0),
-        )
-        thread = (result or {}).get("thread") or {}
-        thread_id = thread.get("id")
-        if not isinstance(thread_id, str) or not thread_id:
-            raise RuntimeError(f"thread/start did not return a thread id: {result}")
-        self._threads[key] = thread_id
+        with self._lock:
+            if key in self._threads:
+                return self._threads[key]
+            saved_thread_id = _read_session_thread_id(game_id, role)
+            if saved_thread_id:
+                self._threads[key] = saved_thread_id
+                return saved_thread_id
+            result = self.client.request(
+                "thread/start",
+                {
+                    "cwd": str(PROJECT_ROOT),
+                    "approvalPolicy": "never",
+                    "sandbox": "read-only",
+                    "baseInstructions": _base_instructions(role),
+                    "ephemeral": False,
+                    "serviceName": "gcg-agent-server",
+                    "threadSource": "user",
+                },
+                timeout_seconds=min(timeout_seconds, 30.0),
+            )
+            thread = (result or {}).get("thread") or {}
+            thread_id = thread.get("id")
+            if not isinstance(thread_id, str) or not thread_id:
+                raise RuntimeError(f"thread/start did not return a thread id: {result}")
+            self._threads[key] = thread_id
         _write_session_metadata(game_id, role, thread_id)
         return thread_id
 
@@ -505,6 +609,8 @@ class AgentRequestHandler(BaseHTTPRequestHandler):
             self._handle_append()
         elif self.path == "/decide":
             self._handle_decide()
+        elif self.path == "/curate-memory":
+            self._handle_curate_memory()
         else:
             self._write_json({"error": "not found"}, status=404)
 
@@ -544,6 +650,19 @@ class AgentRequestHandler(BaseHTTPRequestHandler):
             if not game_id or not player_id or not prompt:
                 raise ValueError("game_id, player_id, and prompt are required")
             result = self.backend.decide(game_id, player_id, prompt, timeout_seconds)
+            self._write_json(result, status=200 if result.get("returncode") == 0 else 500)
+        except Exception as exc:
+            self._write_json(_error_response(str(exc), 0.0), status=400)
+
+    def _handle_curate_memory(self) -> None:
+        try:
+            payload = self._read_payload()
+            game_id = str(payload.get("game_id") or "")
+            source_text = str(payload.get("source_text") or "")
+            timeout_seconds = float(payload.get("timeout_seconds") or 60.0)
+            if not game_id or not source_text:
+                raise ValueError("game_id and source_text are required")
+            result = self.backend.curate_memory(game_id, source_text, timeout_seconds)
             self._write_json(result, status=200 if result.get("returncode") == 0 else 500)
         except Exception as exc:
             self._write_json(_error_response(str(exc), 0.0), status=400)
@@ -642,12 +761,60 @@ def _parse_judge_output(output: str) -> JudgeVerdict:
 
 def _parse_selected_lesson_ids(output: str) -> list[str]:
     for line in [line.strip() for line in output.splitlines() if line.strip()]:
-        if line.lower().startswith("selected_lesson_ids:"):
-            raw = line.split(":", 1)[1].strip()
+        normalized = line.replace("：", ":", 1)
+        if normalized.lower().startswith("selected_lesson_ids:"):
+            raw = normalized.split(":", 1)[1].strip()
             if not raw:
                 return []
-            return [part.strip() for part in raw.split(",") if part.strip()]
+            return [part.strip() for part in re.split(r"[,、，]", raw) if part.strip()]
     raise RuntimeError(f"selector output missing SELECTED_LESSON_IDS: {output.strip()[:200]}")
+
+
+def _judge_mode() -> str:
+    mode = os.environ.get("GCG_AGENT_JUDGE_MODE", "risk").strip().lower()
+    if mode in {"strict", "always", "on"}:
+        return "strict"
+    if mode in {"off", "never", "skip"}:
+        return "off"
+    return "risk"
+
+
+def _should_run_judge(mode: str, candidate_lessons: list[Any], card_text_context: str, player_output: str) -> bool:
+    if mode == "strict":
+        return True
+    if mode == "off":
+        return False
+    if candidate_lessons:
+        return True
+    command = _command_from_player_output(player_output)
+    if any(separator in command for separator in ("—", "–")):
+        return True
+    action = command.split(maxsplit=1)[0].lower() if command.strip() else ""
+    if action in {"play", "使用"} and _card_context_has_command_target_risk(card_text_context):
+        return True
+    return False
+
+
+def _command_from_player_output(output: str) -> str:
+    for line in output.splitlines():
+        stripped = line.strip()
+        lower = stripped.lower()
+        if lower.startswith("command:") or stripped.startswith("指令：") or stripped.startswith("指令:"):
+            return stripped.split(":", 1)[1].strip() if ":" in stripped else stripped.split("：", 1)[1].strip()
+    return ""
+
+
+def _card_context_has_command_target_risk(card_text_context: str) -> bool:
+    if "cardType: command" not in card_text_context:
+        return False
+    risk_terms = ("Choose", "choose", "選擇", "target:", "target: enemy")
+    return any(term in card_text_context for term in risk_terms)
+
+
+def _reject_hidden_source_text(source_text: str) -> None:
+    forbidden = ("gameState.md", "hand_cards", "deck_cards", "shield_cards", "hidden", "Unknown")
+    if any(term in source_text for term in forbidden):
+        raise ValueError("curator source_text must be public-safe replay/review text, not raw hidden state")
 
 
 def _judge_feedback_text(judge: JudgeVerdict) -> str:
@@ -667,9 +834,11 @@ def _base_instructions(role: str) -> str:
         return render_agent_instructions("gcg-judge")
     if role == MEMORY_SELECTOR_ROLE:
         return render_agent_instructions("gcg-memory-selector")
+    if role == MEMORY_CURATOR_ROLE:
+        return render_agent_instructions("gcg-memory-curator")
     if role in {PLAYER_P1_ROLE, PLAYER_P2_ROLE}:
         player_id = role.rsplit(":", 1)[1]
-        return render_agent_instructions("gcg-ai-player", player_id=player_id, tactical_skills="")
+        return render_agent_instructions("gcg-ai-player", player_id=player_id)
     raise ValueError(f"unknown GCG role: {role}")
 
 
@@ -683,6 +852,8 @@ def _canonical_role(role: str) -> str:
         return PLAYER_P2_ROLE
     if normalized in {"memory-selector", "selector"}:
         return MEMORY_SELECTOR_ROLE
+    if normalized in {MEMORY_CURATOR_ROLE, "memory-curator", "curator"}:
+        return MEMORY_CURATOR_ROLE
     raise ValueError(f"unknown GCG role: {role}")
 
 
@@ -723,6 +894,18 @@ def _write_session_metadata(game_id: str, role: str, thread_id: str) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def _read_session_thread_id(game_id: str, role: str) -> str:
+    path = _session_metadata_path(game_id, role)
+    if not path.exists():
+        return ""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ""
+    thread_id = data.get("thread_id")
+    return thread_id if isinstance(thread_id, str) else ""
+
+
 def _ok_response(elapsed: float, **extra: Any) -> dict[str, Any]:
     response = {
         "provider": PROVIDER_NAME,
@@ -751,7 +934,15 @@ def _codex_app_server_argv() -> list[str]:
     raw = os.environ.get("GCG_CODEX_APP_SERVER_ARGV", "").strip()
     if raw:
         return shlex.split(raw)
-    return ["codex", "app-server", "--stdio"]
+    argv = ["codex", "app-server"]
+    model = os.environ.get("GCG_CODEX_MODEL", "").strip()
+    reasoning_effort = os.environ.get("GCG_CODEX_REASONING_EFFORT", "").strip()
+    if model:
+        argv.extend(["-c", f'model="{model}"'])
+    if reasoning_effort:
+        argv.extend(["-c", f'model_reasoning_effort="{reasoning_effort}"'])
+    argv.append("--stdio")
+    return argv
 
 
 def main() -> int:

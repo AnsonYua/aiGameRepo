@@ -156,6 +156,20 @@ def _ai_evaluation(decision: AIDecision) -> dict:
         data["consideration"] = decision.consideration
     if decision.elapsed_seconds:
         data["elapsed_seconds"] = round(decision.elapsed_seconds, 3)
+    if decision.metadata:
+        for key in (
+            "judge",
+            "judge_history",
+            "judge_mode",
+            "repair_attempted",
+            "selected_lesson_ids",
+            "candidate_lesson_ids",
+            "selector_output",
+            "stage_seconds",
+            "card_text_context_included",
+        ):
+            if key in decision.metadata:
+                data[key] = decision.metadata[key]
     return data
 
 
@@ -410,6 +424,7 @@ def _mulligan(player_id: str, action: str, viewer: str, as_json: bool, game_id: 
                 consideration=p2_decision.consideration,
                 elapsed_seconds=p2_decision.elapsed_seconds,
                 provider=p2_decision.provider,
+                metadata=p2_decision.metadata,
             )),
         )
         _try_append_orchestrator(state, events, viewer, f"P2 調度：{p2_action}")
@@ -777,6 +792,7 @@ def _auto(player_id: str, viewer: str, as_json: bool, game_id: Optional[str], ma
                 consideration=decision.consideration,
                 elapsed_seconds=decision.elapsed_seconds,
                 provider=decision.provider,
+                metadata=decision.metadata,
             )),
         )
         _try_append_orchestrator(state, events, viewer, f"{player_id} 調度：{action}")
@@ -819,6 +835,7 @@ def _auto(player_id: str, viewer: str, as_json: bool, game_id: Optional[str], ma
                     consideration=p2_decision.consideration,
                     elapsed_seconds=p2_decision.elapsed_seconds,
                     provider=p2_decision.provider,
+                    metadata=p2_decision.metadata,
                 )),
             )
             _try_append_orchestrator(state, events, viewer, f"P2 調度：{p2_action}")

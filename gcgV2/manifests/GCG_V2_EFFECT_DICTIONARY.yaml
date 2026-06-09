@@ -1,0 +1,274 @@
+schema_version: "1.0"
+purpose: "LLM effect interpreter prompt data"
+
+rules:
+  use_only_defined_vocabulary: true
+  do_not_invent_primitives: true
+  do_not_mutate_state: true
+  do_not_guess_missing_targets: true
+  unresolved_status: "unresolved"
+  unsupported_status: "unsupported"
+
+output_schema:
+  status:
+    allowed:
+      - resolved
+      - unresolved
+      - unsupported
+  fields:
+    - source_card_id
+    - timing
+    - optional
+    - chosen_targets
+    - target_requirements
+    - primitive_steps
+    - unresolved_requirements
+    - unsupported_capabilities
+    - notes
+
+timings:
+  - COST
+  - ENTERS_PLAY
+  - PAIRING_COMPLETE
+  - PAIRING_COMPLETE_GLOBAL
+  - ATTACK_PHASE
+  - ATTACK_REDIRECT
+  - BATTLE_DESTROY
+  - BATTLE_DAMAGE_TO_UNIT
+  - DEFENSE_AREA_BATTLE_DAMAGE
+  - DESTROYED
+  - END_OF_TURN
+  - EX_RESOURCE_PLACED
+  - EFFECT_DAMAGE_RECEIVED
+  - EFFECT_DRAW
+  - AP_REDUCED_BY_ENEMY_EFFECT
+  - BURST_CONDITION
+  - SUPPORT_AP_INCREASED
+  - UNIT_RESTED_BY_EFFECT
+
+keywords:
+  - Blocker
+  - Breach
+  - First Strike
+  - High-Maneuver
+  - Repair
+  - Support
+  - Suppression
+
+target_filters:
+  controller:
+    - self
+    - opponent
+    - any
+  card_type:
+    - unit
+    - pilot
+    - command
+    - base
+    - resource
+    - player
+    - shield
+  zone:
+    - battle_area
+    - hand
+    - trash
+    - shield_area
+    - resource_area
+    - deck
+  status:
+    - active
+    - rested
+    - damaged
+  scope:
+    - source
+    - source_paired_unit
+    - source_paired_pilot
+    - self_all_unit
+    - opponent_all_unit
+    - any_all_unit
+  comparisons:
+    - level_lte
+    - level_gte
+    - ap_lte
+    - ap_gte
+    - hp_lte
+    - hp_gte
+    - damage_gte
+  booleans:
+    - link_required
+    - other_than_source
+    - damaged_only
+    - highest_level
+  extra_filters:
+    - trait_any
+    - trait_all
+    - keyword_has
+    - name_contains
+    - color
+
+primitives:
+  state_and_zone:
+    - deploy
+    - deploy_from_hand
+    - move_card
+    - addToHand
+    - returnToHand
+    - destroy
+    - pair_from_trash
+    - designate_pilot
+  damage_and_heal:
+    - damage
+    - damageShield
+    - heal
+    - prevent_damage
+    - prevent_battle_damage
+    - prevent_ap_reduction
+  status_and_stats:
+    - rest
+    - setActive
+    - setActive_then_restrict_attack
+    - modifyAP
+    - modifyHP
+    - modifyCost
+    - modifyLevel
+    - prevent_set_active_next_turn
+  resource_and_draw:
+    - draw
+    - draw_then_discard
+    - discard
+    - addBasicEnergy
+    - addExtraEnergy
+  attack_and_combat:
+    - redirect_attack
+    - allow_attack_target
+    - require_attack_target_if_available
+    - restrict_attack
+  search_and_top_deck:
+    - scry_top_deck
+    - select_from_top_deck
+  keyword_and_registration:
+    - grant_keyword
+    - grant_breach
+    - activate_ability
+  wrappers:
+    - sequence
+    - conditional
+    - conditionalTokenDeploy
+    - replace_cost
+    - choose_one_then_deploy_token
+
+condition_patterns:
+  turn_side:
+    - during_your_turn
+    - during_opponent_turn
+    - if_it_is_your_turn
+  board_count:
+    - friendly_units_gte
+    - other_friendly_units_gte
+    - enemy_units_gte
+    - friendly_link_units_gte
+  trait_checks:
+    - source_has_trait
+    - target_has_trait
+    - friendly_unit_with_trait_exists
+    - pilot_with_trait_required
+  link_checks:
+    - source_is_link_unit
+    - source_is_paired
+    - another_link_unit_exists
+  battle_context:
+    - attacking_enemy_player
+    - attacking_enemy_unit
+    - destroyed_by_battle_damage
+    - battling_enemy_unit
+  trash_and_resource:
+    - trash_count_gte
+    - trash_trait_count_gte
+    - command_in_trash_gte
+    - ex_resource_placed
+    - level_gte
+  state_checks:
+    - source_damaged
+    - target_damaged
+    - target_active
+    - target_rested
+  naming_and_color:
+    - card_name_contains
+    - source_color_is
+    - target_color_is
+
+hidden_zone_capabilities:
+  - select_from_top_deck
+  - scry_top_deck
+  - add_from_trash
+  - deploy_from_trash
+  - deploy_from_hand
+
+first_v2_priority_primitives:
+  - damage
+  - heal
+  - rest
+  - setActive
+  - modifyAP
+  - modifyHP
+  - draw
+  - draw_then_discard
+  - addToHand
+  - returnToHand
+  - destroy
+  - deploy
+  - conditionalTokenDeploy
+  - grant_keyword
+  - grant_breach
+  - redirect_attack
+  - allow_attack_target
+  - restrict_attack
+  - select_from_top_deck
+  - scry_top_deck
+  - addBasicEnergy
+  - addExtraEnergy
+  - sequence
+  - conditional
+  - replace_cost
+  - prevent_battle_damage
+  - prevent_set_active_next_turn
+
+examples:
+  resolved:
+    source_card_id: GD01-008
+    timing: ENTERS_PLAY
+    optional: false
+    chosen_targets:
+      - p2_slot_1
+    target_requirements:
+      - controller: opponent
+        card_type: unit
+        status: rested
+        count: 1
+    primitive_steps:
+      - primitive: deploy
+      - primitive: damage
+        target: p2_slot_1
+        amount: 1
+  unresolved:
+    source_card_id: GD01-008
+    timing: ENTERS_PLAY
+    optional: false
+    chosen_targets: []
+    target_requirements:
+      - controller: opponent
+        card_type: unit
+        status: rested
+        count: 1
+    unresolved_requirements:
+      - type: select_target
+        controller: opponent
+        card_type: unit
+        status: rested
+        count: 1
+  unsupported:
+    source_card_id: EXAMPLE-001
+    timing: MAIN
+    unsupported_capabilities:
+      - reorder_top_deck_any_order
+      - simultaneous_secret_choice

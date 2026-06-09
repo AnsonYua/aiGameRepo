@@ -12,20 +12,11 @@ from .card_db import get_card
 
 PROJECT_ROOT = Path(__file__).parent.parent.absolute()
 AGENTS_DIR = PROJECT_ROOT / "agents"
-TACTICAL_SKILLS_DIR = PROJECT_ROOT / "gcg_skills"
 
 
 @dataclass(frozen=True)
 class AgentSpec:
     spec_id: str
-    metadata: dict[str, Any]
-    body: str
-    path: Path
-
-
-@dataclass(frozen=True)
-class TacticalSkill:
-    skill_id: str
     metadata: dict[str, Any]
     body: str
     path: Path
@@ -144,22 +135,6 @@ def load_agent_spec(agent_id: str) -> AgentSpec:
     return AgentSpec(spec_id=spec_id, metadata=metadata, body=body, path=path)
 
 
-def select_tactical_skills(prompt: str, max_skills: int = 4) -> list[TacticalSkill]:
-    selected: list[TacticalSkill] = []
-    for path in sorted(TACTICAL_SKILLS_DIR.glob("*.md")):
-        metadata, body = _load_frontmatter_markdown(path)
-        skill_id = str(metadata.get("id") or path.stem)
-        skill = TacticalSkill(skill_id=skill_id, metadata=metadata, body=body, path=path)
-        if _skill_matches_prompt(skill, prompt):
-            selected.append(skill)
-    if not selected:
-        fallback = TACTICAL_SKILLS_DIR / "deployment-evaluation.md"
-        if fallback.exists():
-            metadata, body = _load_frontmatter_markdown(fallback)
-            selected.append(TacticalSkill(str(metadata.get("id") or fallback.stem), metadata, body, fallback))
-    return selected[:max_skills]
-
-
 def _load_frontmatter_markdown(path: Path) -> tuple[dict[str, Any], str]:
     text = path.read_text(encoding="utf-8")
     if not text.startswith("---\n"):
@@ -219,23 +194,3 @@ def _format_card_text(card_id: str, card: dict[str, Any]) -> str:
     }
     return yaml.safe_dump(data, allow_unicode=True, sort_keys=False).strip()
 
-
-def _skill_matches_prompt(skill: TacticalSkill, prompt: str) -> bool:
-    triggers = skill.metadata.get("triggers") if isinstance(skill.metadata, dict) else None
-    if not isinstance(triggers, dict):
-        return False
-    keywords = triggers.get("keywords")
-    if isinstance(keywords, list):
-        for keyword in keywords:
-            if isinstance(keyword, str) and keyword and keyword in prompt:
-                return True
-    return False
-
-
-def _format_tactical_skills(skills: list[TacticalSkill]) -> str:
-    if not skills:
-        return "（無額外技能）"
-    chunks = []
-    for skill in skills:
-        chunks.append(f"## {skill.skill_id}\n{skill.body.strip()}")
-    return "\n\n".join(chunks)

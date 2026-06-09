@@ -15,6 +15,7 @@ import os
 import json
 import argparse
 import importlib.util
+import io
 from pathlib import Path
 
 import yaml
@@ -32,7 +33,7 @@ from skills_py.game_engine import init_game, save_state
 from skills_py.game_state import BattleSlot, GameState
 from skills_py.gcg_display import render
 from skills_py.gcg_runtime import _handle_command
-from skills_py.memory_store import format_lessons, search_candidate_lessons
+from skills_py.memory_store import LESSONS_DIR, format_lessons, load_reviewed_lessons, search_candidate_lessons
 
 
 ACTIVE_GAME_FILE = PROJECT_ROOT / ".gcg_active_game"
@@ -106,7 +107,11 @@ class FakeCodexClient:
             turn_id = f"turn-{self.turn_counter}"
             thread_id = params["threadId"]
             input_text = params.get("input", [{}])[0].get("text", "")
-            if "VERDICT: accept" in input_text or "請審查以下 GCG AI player 決策" in input_text:
+            if "SELECTED_LESSON_IDS:" in input_text or "請從候選 lessons" in input_text:
+                agent_text = "SELECTED_LESSON_IDS: command-target-required-st01-014\nREASON: 當前可見 ST01-014。\n"
+            elif "萃取可重用 lesson draft" in input_text or "status 必須是 draft" in input_text:
+                agent_text = "id: draft-test\nstatus: draft\nlesson_type: review\nconfidence: low\nsummary: 測試 draft。\n"
+            elif "VERDICT: accept" in input_text or "請審查以下 GCG AI player 決策" in input_text:
                 agent_text = "VERDICT: accept\nREASON: 語意完整，可交給 runtime 驗證。\n"
             else:
                 agent_text = "CONSIDER: fake\nCOMMAND: pass"
@@ -221,6 +226,9 @@ def test_agent_server_adapter_posts_decide_request() -> None:
                 "stderr": "",
                 "returncode": 0,
                 "elapsed_seconds": 1.25,
+                "judge": {"verdict": "accept", "reason": "語意完整"},
+                "repair_attempted": False,
+                "selected_lesson_ids": ["lesson-a"],
             }
         )
 
@@ -239,9 +247,53 @@ def test_agent_server_adapter_posts_decide_request() -> None:
     body = json.loads(calls[0]["request"].data.decode("utf-8"))
     assert_true(result.provider == "agent-server/codex-app-server", "agent-server adapter should preserve backend provider")
     assert_true(result.stdout.strip().endswith("COMMAND: pass"), "agent-server adapter should return stdout")
+    assert_true(result.metadata and result.metadata["judge"]["verdict"] == "accept", "agent-server adapter should preserve judge metadata")
+    assert_true(result.metadata["selected_lesson_ids"] == ["lesson-a"], "agent-server adapter should preserve selected lesson ids")
     assert_true(body["game_id"] == "harness_agent", "agent-server request should include game_id from prompt")
     assert_true(body["player_id"] == "P1", "agent-server request should include player_id from prompt")
     assert_true(body["timeout_seconds"] == 10, "agent-server request should include timeout")
+
+
+def test_agent_server_adapter_preserves_error_response_metadata() -> None:
+    original_urlopen = ai_adapters.urllib.request.urlopen
+    original_url = os.environ.get("GCG_AGENT_SERVER_URL")
+
+    def fake_urlopen(request, timeout: float) -> FakeHttpResponse:
+        payload = {
+            "provider": "agent-server/codex-app-server",
+            "stdout": "",
+            "stderr": "judge final reject",
+            "returncode": 1,
+            "elapsed_seconds": 2.5,
+            "judge": {"verdict": "reject", "reason": "語意仍不完整"},
+            "judge_history": [{"verdict": "reject"}, {"verdict": "reject"}],
+            "repair_attempted": True,
+            "selected_lesson_ids": ["lesson-a"],
+        }
+        raise ai_adapters.urllib.error.HTTPError(
+            request.full_url,
+            500,
+            "Internal Server Error",
+            hdrs=None,
+            fp=io.BytesIO(json.dumps(payload).encode("utf-8")),
+        )
+
+    ai_adapters.urllib.request.urlopen = fake_urlopen
+    os.environ["GCG_AGENT_SERVER_URL"] = "http://127.0.0.1:8765"
+    try:
+        adapter = ai_adapters.get_ai_adapter("agent-server")
+        result = adapter.run("game_id: harness_agent_error\nplayer_id: P1\nlegal_actions: pass", 10)
+    finally:
+        ai_adapters.urllib.request.urlopen = original_urlopen
+        if original_url is None:
+            os.environ.pop("GCG_AGENT_SERVER_URL", None)
+        else:
+            os.environ["GCG_AGENT_SERVER_URL"] = original_url
+
+    assert_true(result.returncode == 1, "agent-server adapter should preserve backend failure returncode")
+    assert_true(result.stderr == "judge final reject", "agent-server adapter should preserve backend stderr")
+    assert_true(result.metadata and result.metadata["judge"]["verdict"] == "reject", "error response should preserve judge metadata")
+    assert_true(result.metadata["repair_attempted"] is True, "error response should preserve repair metadata")
 
 
 def test_agent_server_init_and_append_helpers() -> None:
@@ -295,20 +347,33 @@ def test_codex_app_server_backend_separates_player_threads() -> None:
     assert_true(len(fake_client.thread_requests) == 2, "backend should create only one thread per game/player")
 
 
-def test_codex_app_server_backend_initializes_four_game_rooms() -> None:
+def test_codex_app_server_backend_initializes_canonical_game_rooms() -> None:
     fake_client = FakeCodexClient()
     backend = CodexAppServerBackend(client=fake_client)
     result = backend.init_game("harness_agent_rooms", 10)
     threads = result["threads"]
 
     assert_true(result["returncode"] == 0, f"init_game should succeed: {result}")
-    assert_true(set(threads) == set(GAME_ROLES), "init_game should create the four canonical GCG rooms")
-    assert_true(len(set(threads.values())) == 4, "each GCG room should have its own Codex thread")
-    assert_true(len(fake_client.thread_requests) == 4, "backend should call thread/start exactly four times")
+    assert_true(set(threads) == set(GAME_ROLES), "init_game should create the canonical GCG rooms")
+    assert_true(len(set(threads.values())) == len(GAME_ROLES), "each GCG room should have its own Codex thread")
+    assert_true(len(fake_client.thread_requests) == len(GAME_ROLES), "backend should call thread/start for each role")
     session_dir = GAME_STATES_DIR / "harness_agent_rooms" / "ai_sessions"
     for role in GAME_ROLES:
         path = session_dir / f"{role.replace(':', '_')}.json"
         assert_true(path.exists(), f"session metadata should be written for {role}")
+
+
+def test_codex_app_server_backend_reuses_persisted_session_metadata() -> None:
+    first_client = FakeCodexClient()
+    first_backend = CodexAppServerBackend(client=first_client)
+    first = first_backend.init_game("harness_persisted_rooms", 10)
+
+    second_client = FakeCodexClient()
+    second_backend = CodexAppServerBackend(client=second_client)
+    thread_id = second_backend._thread_id("harness_persisted_rooms", PLAYER_P1_ROLE, 10)
+
+    assert_true(thread_id == first["threads"][PLAYER_P1_ROLE], "backend restart should reuse persisted player room thread id")
+    assert_true(len(second_client.thread_requests) == 0, "reusing persisted room should not create a replacement thread")
 
 
 def test_codex_app_server_backend_appends_to_orchestrator_room() -> None:
@@ -338,10 +403,11 @@ def test_codex_app_server_backend_reuses_player_thread_for_decisions() -> None:
     assert_true(first["thread_id"] == init["threads"]["gcg-ai-player:P1"], "P1 decide should use P1 room")
     assert_true(second["thread_id"] == first["thread_id"], "P1 second decision should reuse P1 room")
     assert_true(init["threads"][JUDGE_ROLE] != first["thread_id"], "judge room must not share player thread")
-    assert_true(len(fake_client.thread_requests) == 4, "decide should not create extra threads after init_game")
-    assert_true(first["judge"]["verdict"] == "accept", "decide should include judge verdict metadata")
-    assert_true(first["judge_thread_id"] == init["threads"][JUDGE_ROLE], "decide should review through judge room")
-    assert_true(len(fake_client.turn_requests) == 4, "two decide calls should run player and judge turns")
+    assert_true(len(fake_client.thread_requests) == len(GAME_ROLES), "decide should not create extra threads after init_game")
+    assert_true(first["judge"]["verdict"] == "skipped", "low-risk decide should include skipped judge metadata")
+    assert_true(first["judge_mode"] == "risk", "default judge mode should be risk")
+    assert_true(first["judge_thread_id"] == "", "low-risk decide should not run judge turn")
+    assert_true(len(fake_client.turn_requests) == 2, "two low-risk decide calls should only run player turns")
 
 
 def test_codex_app_server_backend_repairs_after_judge_reject() -> None:
@@ -358,7 +424,9 @@ def test_codex_app_server_backend_repairs_after_judge_reject() -> None:
             turn_id = f"turn-{self.turn_counter}"
             thread_id = params["threadId"]
             input_text = params.get("input", [{}])[0].get("text", "")
-            if "請審查以下 GCG AI player 決策" in input_text:
+            if "請從候選 lessons" in input_text:
+                agent_text = "SELECTED_LESSON_IDS: command-target-required-st01-014\nREASON: 當前可見 ST01-014。\n"
+            elif "請審查以下 GCG AI player 決策" in input_text:
                 self.judge_calls += 1
                 if self.judge_calls == 1:
                     agent_text = "VERDICT: reject\nREASON: COMMAND 缺少必要目標。\nSUGGESTED_COMMAND: 使用 st01/ST01-014 unit 1\n"
@@ -395,8 +463,87 @@ def test_codex_app_server_backend_repairs_after_judge_reject() -> None:
     assert_true(result["returncode"] == 0, f"repair decide should succeed: {result}")
     assert_true(result["repair_attempted"] is True, "judge reject should trigger one player repair")
     assert_true(result["judge"]["verdict"] == "accept", "final judge verdict should be accept")
+    assert_true(result["stdout"].startswith("CONSIDER:") and "COMMAND:" in result["stdout"], "final stdout should be player contract output")
     assert_true("unit 1" in result["stdout"], "final stdout should come from repaired player command")
     assert_true(fake_client.judge_calls == 2, "judge should review original and repaired command")
+    assert_true(len(fake_client.turn_requests) == 5, "selector, player, judge, repair player, judge turns should run")
+    repair_prompt = fake_client.turn_requests[3]["input"][0]["text"]
+    assert_true("Judge 修正意見" in repair_prompt, "repair prompt should be sent to player room")
+    assert_true(fake_client.turn_requests[3]["threadId"] != fake_client.turn_requests[2]["threadId"], "repair turn must not run in judge room")
+
+
+def test_codex_app_server_backend_fails_closed_after_second_judge_reject() -> None:
+    class AlwaysRejectClient(FakeCodexClient):
+        def request(self, method: str, params: dict, timeout_seconds: float) -> dict:
+            if method != "turn/start":
+                return super().request(method, params, timeout_seconds)
+            self.turn_counter += 1
+            self.turn_requests.append(params)
+            turn_id = f"turn-{self.turn_counter}"
+            thread_id = params["threadId"]
+            input_text = params.get("input", [{}])[0].get("text", "")
+            if "請從候選 lessons" in input_text:
+                agent_text = "SELECTED_LESSON_IDS: command-target-required-st01-014\nREASON: 當前可見 ST01-014。\n"
+            elif "請審查以下 GCG AI player 決策" in input_text:
+                agent_text = "VERDICT: reject\nREASON: COMMAND 仍缺少必要目標。\n"
+            else:
+                agent_text = "CONSIDER: 嘗試使用 command。\nCOMMAND: 使用 st01/ST01-014"
+            self.notifications.append(
+                {
+                    "method": "item/completed",
+                    "params": {
+                        "threadId": thread_id,
+                        "turnId": turn_id,
+                        "item": {"type": "agentMessage", "text": agent_text},
+                    },
+                }
+            )
+            self.notifications.append(
+                {
+                    "method": "turn/completed",
+                    "params": {"threadId": thread_id, "turnId": turn_id, "turn": {"status": "completed"}},
+                }
+            )
+            return {"turn": {"id": turn_id}}
+
+    fake_client = AlwaysRejectClient()
+    backend = CodexAppServerBackend(client=fake_client)
+    backend.init_game("harness_judge_reject_closed", 10)
+    prompt = "game_id: harness_judge_reject_closed\nplayer_id: P1\nlegal_actions: 使用 st01/ST01-014\n"
+    result = backend.decide("harness_judge_reject_closed", "P1", prompt, 10)
+
+    assert_true(result["returncode"] == 1, "second judge reject should fail closed")
+    assert_true(result["stdout"] == "", "failed judge decision should not return player command stdout")
+    assert_true(result["repair_attempted"] is True, "failure metadata should preserve repair_attempted")
+    assert_true(len(result["judge_history"]) == 2, "failure metadata should preserve both judge verdicts")
+    assert_true(result["judge"]["verdict"] == "reject", "final judge metadata should be reject")
+
+
+def test_codex_app_server_backend_curates_memory_as_draft_only() -> None:
+    fake_client = FakeCodexClient()
+    backend = CodexAppServerBackend(client=fake_client)
+    init = backend.init_game("harness_curator", 10)
+    before_lesson_files = {path.name for path in LESSONS_DIR.glob("*.yaml")} if LESSONS_DIR.exists() else set()
+    result = backend.curate_memory("harness_curator", "Review: public-safe bad move", 10)
+    after_lesson_files = {path.name for path in LESSONS_DIR.glob("*.yaml")} if LESSONS_DIR.exists() else set()
+
+    assert_true(result["returncode"] == 0, f"curate_memory should succeed: {result}")
+    assert_true(result["role"] == "gcg-memory-curator", "curator response should identify curator role")
+    assert_true("status: draft" in result["stdout"], "curator should produce draft lesson text")
+    assert_true("gcg-memory-curator" not in init["threads"], "curator should not be part of per-game init rooms")
+    assert_true(before_lesson_files == after_lesson_files, "curator should not write draft lessons into reviewed store")
+    reviewed_ids = [lesson.lesson_id for lesson in load_reviewed_lessons()]
+    assert_true("draft-test" not in reviewed_ids, "curator draft output should not become reviewed memory automatically")
+
+
+def test_codex_app_server_backend_rejects_hidden_curator_source() -> None:
+    fake_client = FakeCodexClient()
+    backend = CodexAppServerBackend(client=fake_client)
+    result = backend.curate_memory("harness_curator_hidden", "gameState.md\nhand_cards: [st01/ST01-001]", 10)
+
+    assert_true(result["returncode"] == 1, "curator should reject raw hidden state source text")
+    assert_true("public-safe" in result["stderr"], "curator hidden-source failure should explain public-safe requirement")
+    assert_true(len(fake_client.turn_requests) == 0, "hidden-source rejection should happen before any LLM turn")
 
 
 def test_codex_app_server_backend_health_reports_start_failure() -> None:
@@ -470,6 +617,19 @@ def test_memory_store_returns_llm_readable_candidates_only() -> None:
     assert_true("COMMAND:" not in formatted, "memory store should not emit executable player command protocol")
 
 
+def test_memory_store_does_not_retrieve_card_lesson_from_generic_command_words() -> None:
+    prompt = "\n".join([
+        "game_id: harness_memory_generic",
+        "player_id: P1",
+        "legal_actions: pass",
+        "Return exactly:",
+        "CONSIDER: probe",
+        "COMMAND: pass",
+    ])
+    lesson_ids = [lesson.lesson_id for lesson in search_candidate_lessons(prompt)]
+    assert_true("command-target-required-st01-014" not in lesson_ids, "generic COMMAND wording should not retrieve card-specific lessons")
+
+
 def test_ai_decide_does_not_replace_active_game_pointer() -> None:
     state = make_main_state("harness_ai_active_pointer")
     ACTIVE_GAME_FILE.write_text("preserve_active_game", encoding="utf-8")
@@ -489,6 +649,59 @@ def test_ai_decide_does_not_replace_active_game_pointer() -> None:
         ACTIVE_GAME_FILE.read_text(encoding="utf-8").strip() == "preserve_active_game",
         "AI display rendering must not replace .gcg_active_game",
     )
+
+
+def test_ai_evaluation_includes_agent_server_metadata() -> None:
+    from skills_py.gcg_runtime import _ai_evaluation
+
+    decision = ai_player.AIDecision(
+        command="pass",
+        consideration="依公開場面讓過。",
+        provider="agent-server",
+        metadata={
+            "judge": {"verdict": "accept", "reason": "語意完整"},
+            "repair_attempted": False,
+            "selected_lesson_ids": ["lesson-a"],
+        },
+    )
+    data = _ai_evaluation(decision)
+    assert_true(data["judge"]["verdict"] == "accept", "ai_evaluation should include judge metadata")
+    assert_true(data["repair_attempted"] is False, "ai_evaluation should include repair metadata")
+    assert_true(data["selected_lesson_ids"] == ["lesson-a"], "ai_evaluation should include selected lesson ids")
+
+
+def test_replay_review_counts_applied_ai_metadata() -> None:
+    replay_harness = _load_replay_harness_module()
+    game_id = "harness_review_applied_metadata"
+    game_dir = GAME_STATES_DIR / game_id
+    game_dir.mkdir(parents=True, exist_ok=True)
+    gameplay = {
+        "schema_version": 1,
+        "game_id": game_id,
+        "summary": {},
+        "events": [
+            {
+                "seq": 1,
+                "event_type": "decision_applied",
+                "actor": "P1",
+                "command": "keep",
+                "message": "P1 保留手牌",
+                "result": {"ok": True, "reason": ""},
+                "ai_evaluation": {
+                    "chosen_command": "keep",
+                    "judge": {"verdict": "accept", "reason": "調度語意完整"},
+                    "repair_attempted": False,
+                    "selected_lesson_ids": ["mulligan-lesson"],
+                },
+            }
+        ],
+    }
+    (game_dir / "gamePlay.yaml").write_text(yaml.safe_dump(gameplay, allow_unicode=True), encoding="utf-8")
+    (game_dir / "replay.md").write_text("# Replay\n", encoding="utf-8")
+    analysis = replay_harness.analyze(game_id, [{"game_over": False}], ai_adapter_calls=1, max_reached=False)
+
+    assert_true(analysis["judge_verdicts"] == ["accept"], "review analyze should count decision_applied AI judge metadata")
+    assert_true(analysis["selected_lesson_ids"] == ["mulligan-lesson"], "review analyze should count decision_applied selected lessons")
 
 
 def test_consideration_sanitizer_blocks_hidden_info() -> None:
@@ -737,18 +950,26 @@ def run(live_llm: bool = False) -> None:
         test_ai_output_contract()
         test_ai_decide_uses_gcg_agent_and_reprompts_invalid_allowed()
         test_agent_server_adapter_posts_decide_request()
+        test_agent_server_adapter_preserves_error_response_metadata()
         test_agent_server_init_and_append_helpers()
         test_codex_app_server_backend_separates_player_threads()
-        test_codex_app_server_backend_initializes_four_game_rooms()
+        test_codex_app_server_backend_initializes_canonical_game_rooms()
+        test_codex_app_server_backend_reuses_persisted_session_metadata()
         test_codex_app_server_backend_appends_to_orchestrator_room()
         test_codex_app_server_backend_reuses_player_thread_for_decisions()
         test_codex_app_server_backend_repairs_after_judge_reject()
+        test_codex_app_server_backend_fails_closed_after_second_judge_reject()
+        test_codex_app_server_backend_curates_memory_as_draft_only()
+        test_codex_app_server_backend_rejects_hidden_curator_source()
         test_codex_app_server_backend_health_reports_start_failure()
         test_player_base_instructions_include_experience_context()
         test_player_decision_prompt_includes_explicit_context_only()
         test_player_decision_prompt_does_not_auto_inject_legacy_skills()
         test_memory_store_returns_llm_readable_candidates_only()
+        test_memory_store_does_not_retrieve_card_lesson_from_generic_command_words()
         test_ai_decide_does_not_replace_active_game_pointer()
+        test_ai_evaluation_includes_agent_server_metadata()
+        test_replay_review_counts_applied_ai_metadata()
         test_consideration_sanitizer_blocks_hidden_info()
         test_display_lists_concrete_attack_legality()
         test_display_lists_concrete_block_legality()

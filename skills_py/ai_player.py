@@ -20,6 +20,7 @@ class AIDecision:
     raw_output: str = ""
     elapsed_seconds: float = 0.0
     provider: str = ""
+    metadata: dict | None = None
 
 
 def _state_path(state: GameState) -> Path:
@@ -120,6 +121,7 @@ def ai_decide(state: GameState, player_id: str, allowed: Optional[set[str]] = No
         decision = _parse_ai_output(completed.stdout)
         decision.elapsed_seconds = completed.elapsed_seconds
         decision.provider = completed.provider or adapter.provider
+        decision.metadata = completed.metadata or {}
         action = _action_name(decision.command)
         if allowed and action not in allowed:
             last_decision = decision

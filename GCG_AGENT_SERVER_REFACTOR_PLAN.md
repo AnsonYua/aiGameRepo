@@ -4,7 +4,7 @@
 
 此計畫已進入實作方向：主 provider 是 `agent-server`，背後使用長駐 `codex app-server --stdio`。本文件保留原始決策脈絡與 harness 驗收標準；實際架構以 `GCG_ARCHITECTURE.md`、`GCG_TESTING_PRINCIPLES.md`、`REVIEW_SPEC.md` 與 `AGENTS.md` 為準。
 
-尚未完成的後續清理：`.opencode/agents/gcg-ai-player.md` 仍保留較完整的策略 prompt，可作為遷移到 app-server player instructions 的參考。遷移完成前不要直接刪除該策略內容。
+`.opencode/agents` 與 `.opencode/skills` 只保留為 legacy reference，不是目前主執行路徑。新的 player/judge/selector/curator prompt 在 `agents/*.md`；可重用經驗應整理到 `experience/lessons/*.yaml`。
 
 ## 目標
 
@@ -31,12 +31,13 @@ runtime command
 
 ## 架構
 
-每一局 `game_id` 都初始化 4 個獨立聊天室：
+每一局 `game_id` 都初始化 5 個獨立聊天室：
 
 ```text
 game_id
   ├─ gcg-orchestrator
   ├─ gcg-judge
+  ├─ gcg-memory-selector
   ├─ gcg-ai-player:P1
   └─ gcg-ai-player:P2
 ```
@@ -44,7 +45,8 @@ game_id
 角色分工：
 
 - `gcg-orchestrator`：保留 public-safe 流程摘要與動作歷史。Python runtime 仍是唯一狀態修改者。
-- `gcg-judge`：保留 public-safe 規則判定上下文。第一版不主動呼叫裁判，只先建立獨立 room。
+- `gcg-judge`：進入 `/decide` 做 LLM 語意審查；不作 state applier。
+- `gcg-memory-selector`：從候選 lessons 中選本次相關經驗；不決定 move。
 - `gcg-ai-player:P1`：P1 決策聊天室，只根據 P1 viewer display 回 `CONSIDER` / `COMMAND`。
 - `gcg-ai-player:P2`：P2 決策聊天室，只根據 P2 viewer display 回 `CONSIDER` / `COMMAND`。
 
@@ -58,7 +60,7 @@ Codex app-server protocol 使用方式：
 ## 需求
 
 - 玩家 chat 指令不變：`start game`、`status`、`keep/redraw`、`play`、`attack`、`pass`。
-- `start game` 後嘗試呼叫 agent server `/init-game` 建立 4 rooms。
+- `start game` 後嘗試呼叫 agent server `/init-game` 建立 5 rooms。
 - `/init-game` 失敗只寫 warning event，不阻止開局。
 - AI 決策主路徑使用 `GCG_AI_PROVIDER=agent-server`，不得每次 spawn `codex exec`。
 - P1/P2 必須是不同 thread；同一玩家多次決策必須 reuse 同一 thread。
@@ -76,6 +78,7 @@ GET  /metrics
 POST /init-game
 POST /append
 POST /decide
+POST /curate-memory
 ```
 
 `POST /init-game`：
@@ -109,11 +112,23 @@ POST /decide
 }
 ```
 
+`POST /curate-memory`：
+
+```json
+{
+  "game_id": "game_xxx",
+  "source_text": "<public-safe review/replay text>",
+  "timeout_seconds": 60
+}
+```
+
+`/curate-memory` 只回傳 `status: draft` lesson 文字，不寫入 reviewed memory，也不參與每局 `/init-game` canonical rooms。
+
 ## Harness 驗收
 
 Unit harness：
 
-- `init_game` 建立剛好 4 個 role sessions。
+- `init_game` 建立 canonical role sessions。
 - P1/P2 thread id 不同。
 - P1 第二次 decision reuse P1 thread id。
 - Judge/Orchestrator thread id 不等於 player thread id。

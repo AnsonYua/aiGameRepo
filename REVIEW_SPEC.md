@@ -20,7 +20,7 @@
 | Main provider | AI 主路徑是 `GCG_AI_PROVIDER=agent-server`。 |
 | Process model | `skills_py/gcg_agent_server.py` 只維持一個長駐 `codex app-server --stdio` process。 |
 | API | `GET /health`、`GET /metrics`、`POST /init-game`、`POST /append`、`POST /decide` 可用。 |
-| Room init | `start game` 後嘗試建立 4 rooms；失敗只 warning，不阻止開局。 |
+| Room init | `start game` 後嘗試建立 canonical rooms；失敗只 warning，不阻止開局。 |
 | Thread isolation | P1/P2 thread id 不同；Judge/Orchestrator 不等於任何 player thread。 |
 | Reuse | 同一 game + player 的第二次 decision reuse 原 thread。 |
 | Append | 成功 public action summary 只 append 到 `gcg-orchestrator` 或指定 role，不污染 player room。 |
@@ -82,7 +82,7 @@
 | 範圍 | 檢查要點 |
 |---|---|
 | Canonical log | `skills_py/gameplay_log.py` 是唯一 gameplay/replay 寫入邏輯。 |
-| YAML | `gameplay.yaml` 是單一 YAML document，可 `yaml.safe_load`。 |
+| YAML | `gamePlay.yaml` 是單一 YAML document，可 `yaml.safe_load`。 |
 | Sequence | event `seq` 單調遞增。 |
 | Public features | 事件可記 active/priority、hand_count、resources、board summary、shields、base AP/HP/alive。 |
 | Hidden info | 不得記 `hand_cards`、`deck_cards`、`shield_cards`。 |

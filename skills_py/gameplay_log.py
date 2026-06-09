@@ -15,7 +15,7 @@ SCHEMA_VERSION = 1
 
 
 def gameplay_log_path(game_id: str) -> Path:
-    return GAME_STATES_DIR / game_id / "gameplay.yaml"
+    return GAME_STATES_DIR / game_id / "gamePlay.yaml"
 
 
 def replay_path(game_id: str) -> Path:

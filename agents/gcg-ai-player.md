@@ -63,8 +63,8 @@ COMMAND: <一條 runtime 指令>
 - `高 HP 單位可以保護基地。`
 - 任何透露手牌、牌庫、盾牌具體內容的文字。
 
-## 相關戰術技能
+## 相關經驗 Lessons
 
-runtime 可能在每次決策附上少量相關戰術技能。技能只是 public-safe 決策提示，不會覆蓋最新顯示與合法性。
+agent-server 可能在每次決策附上由 `gcg-memory-selector` 選出的少量 public-safe lessons。Lessons 只是決策提示，不會覆蓋最新顯示與 runtime 合法性。
 
-{{tactical_skills}}
+若 lesson 與最新 viewer 顯示衝突，以最新 viewer 顯示為準。若 lesson 的例子看起來像 command，只能理解其 pattern，不可直接複製固定 target 或 slot。

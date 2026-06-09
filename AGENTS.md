@@ -72,7 +72,8 @@ python3 skills_py/gcg_runtime.py command --player P1 --cmd "<玩家原始指令>
 - 決策前一律用 `--viewer P1|P2` 產生完整可見狀態。
 - AI 決策主路徑是 `GCG_AI_PROVIDER=agent-server`。
 - `skills_py/gcg_agent_server.py` 是本機長駐 HTTP wrapper，內部只啟動一個 `codex app-server --stdio` process。
-- 每局 `game_id` 初始化 4 個獨立 Codex room：`gcg-orchestrator`、`gcg-judge`、`gcg-ai-player:P1`、`gcg-ai-player:P2`。
+- 每局 `game_id` 初始化 5 個獨立 Codex room：`gcg-orchestrator`、`gcg-judge`、`gcg-memory-selector`、`gcg-ai-player:P1`、`gcg-ai-player:P2`。
+- 這些 Codex room 必須 keep alive/reuse；server 會把 thread id 記在 `game-states/<game_id>/ai_sessions/`，重啟後也應優先復用既有 room。不要用降低 reasoning effort 當預設速度修法。
 - P1/P2 不得共用 thread；同一玩家多次決策必須 reuse 同一 thread。
 - Orchestrator/Judge 不得和玩家共用 thread。
 - Runtime 仍是唯一 state mutator；LLM 不直接改 state、不讀 hidden raw state。
@@ -113,9 +114,10 @@ GET  /metrics
 POST /init-game
 POST /append
 POST /decide
+POST /curate-memory
 ```
 
-`start game` 會嘗試 `/init-game` 建立 4 rooms；初始化失敗只記 warning，不阻止開局。AI 決策走 `/decide`；成功公開動作用 `/append` 注入 `gcg-orchestrator`。
+`start game` 會嘗試 `/init-game` 建立 5 rooms；初始化失敗只記 warning，不阻止開局。AI 決策走 `/decide`；成功公開動作用 `/append` 注入 `gcg-orchestrator`。`/curate-memory` 只產生 draft lesson，不自動啟用經驗。
 
 ## Debug / Fix 原則
 
@@ -124,7 +126,7 @@ POST /decide
 - live LLM 很慢時，先量測 agent-server probe 與 runtime probe，分類為 provider latency、app-server protocol、runtime issue 或 display/prompt issue。
 - 修 timeout / slow harness 時，優先做 fail-fast、latency recording、review artifact 與明確錯誤分類。
 - 不要在 Python 裡新增策略 fallback，也不要把多次 retry 當成 AI 變聰明。
-- AI-vs-AI 達到 harness 上限時，不可只調高 `max_turns` / `max_steps` / `max_actions`。必須先 review `gameplay.yaml` / `replay.md` 並分類 root cause。
+- AI-vs-AI 達到 harness 上限時，不可只調高 `max_turns` / `max_steps` / `max_actions`。必須先 review `gamePlay.yaml` / `replay.md` 並分類 root cause。
 - Review 分類固定為 `AI prompt problem`、`Display problem`、`Runtime problem`、`Harness problem`、`provider app-server/model latency problem`。
 - `GCG_AI_TIMEOUT_SECONDS` 與 harness 的 `--ai-timeout-seconds` 是診斷與 fail-fast 工具，不是讓測試悄悄通過的手段。
 
@@ -144,14 +146,14 @@ POST /decide
 - AI-vs-AI simulation / replay review 的測試原則固定在 `GCG_TESTING_PRINCIPLES.md`。
 - AI-vs-AI replay harness 一律走 configured LLM provider；不得使用 fake AI player 或 Python 策略 fallback。
 - AI-vs-AI replay harness 指令：`GCG_AI_PROVIDER=agent-server python3 tests/gcg_ai_vs_ai_replay_harness.py --ai-timeout-seconds 60`。
-- AI-vs-AI harness 必須產生 `gameplay.yaml`、`replay.md`、`review.md`。
+- AI-vs-AI harness 必須產生 `gamePlay.yaml`、`replay.md`、`review.md`。
 - AI-vs-AI `INCOMPLETE` 是 bug/quality signal，不是正常 pass。
 - AI-vs-AI review 必須標記「面臨下回合斬殺仍部署」這類 lethal race 問題：例如己方基地已摧毀、對手下回合潛在攻擊者數量大於己方盾牌數、AI 仍選擇無法增加 blocker 的 deploy。此分類應視為 `AI prompt problem`，優先更新 `agents/gcg-ai-player.md` 或 `experience/lessons/*.yaml`，而不是新增 Python fallback。
 - Gameplay log / replay 寫入邏輯集中在 `skills_py/gameplay_log.py`；不要在 runtime 之外手寫另一套 replay 格式。
-- Runtime 每局必須維護 `game-states/<game_id>/gameplay.yaml` 作為 canonical structured gameplay log。
+- Runtime 每局必須維護 `game-states/<game_id>/gamePlay.yaml` 作為 canonical structured gameplay log。
 - Runtime 每局必須維護 `game-states/<game_id>/replay.md` 作為玩家可讀 replay；此 Markdown 必須使用繁體中文。
-- `gameplay.yaml` / `replay.md` 只記錄 public-safe 資訊；不要寫入對手隱藏手牌 card id、deck card id、shield card id，也不要 dump 完整 raw `gameState.md`。
-- `gameplay.yaml` 使用單一 YAML document，至少包含 `schema_version`、`game_id`、`summary`、`events`；事件 `seq` 必須單調遞增且可被 `yaml.safe_load` 解析。
+- `gamePlay.yaml` / `replay.md` 只記錄 public-safe 資訊；不要寫入對手隱藏手牌 card id、deck card id、shield card id，也不要 dump 完整 raw `gameState.md`。
+- `gamePlay.yaml` 使用單一 YAML document，至少包含 `schema_version`、`game_id`、`summary`、`events`；事件 `seq` 必須單調遞增且可被 `yaml.safe_load` 解析。
 - Runtime stdout 可以在最終完整 display 前輸出短事件行，例如 `P2 正在決定調度...`、`P2 選擇重新調度`，讓 chat room 看起來有進度。
 - 若 runtime 使用 `--json`，輸出需包含本次回覆的 `events`、完整累積的 `all_events`、`replay_path`、`gameplay_log_path`，且 `display_text` 仍保留完整顯示文字。
 

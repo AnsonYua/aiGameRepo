@@ -24,17 +24,20 @@ skills_py/gcg_runtime.py auto / P2 auto
   -> per-game Codex room thread
 ```
 
-每一局初始化 4 個獨立 Codex rooms：
+每一局初始化 canonical Codex rooms：
 
 ```text
 game_id
   ├─ gcg-orchestrator
   ├─ gcg-judge
+  ├─ gcg-memory-selector
   ├─ gcg-ai-player:P1
   └─ gcg-ai-player:P2
 ```
 
 玩家與 AI Player 都不直接讀 `gameState.md`。任一決策前，runtime 會產生該玩家視角的完整可見狀態。
+
+Agent server 會 keep alive 並 reuse 每個 role room；thread id 記在 `game-states/<game_id>/ai_sessions/`。速度優先靠長駐 app-server 與 room reuse，不靠預設降低 reasoning effort。
 
 ## 玩家指令
 
@@ -96,9 +99,10 @@ GET  /metrics
 POST /init-game
 POST /append
 POST /decide
+POST /curate-memory
 ```
 
-`start game` 在 `GCG_AI_PROVIDER=agent-server` 時會呼叫 `/init-game` 建 4 rooms。AI 決策走 `/decide`。成功公開動作會用 `/append` 注入 `gcg-orchestrator` room。
+`start game` 在 `GCG_AI_PROVIDER=agent-server` 時會呼叫 `/init-game` 建 canonical rooms。AI 決策走 `/decide`，內部流程是 memory-selector -> player -> judge -> one repair。成功公開動作會用 `/append` 注入 `gcg-orchestrator` room。`/curate-memory` 只把 public-safe review/replay 文字整理成 draft lesson，不自動啟用經驗。
 
 ## 視角與隱私
 
@@ -130,7 +134,7 @@ python3 skills_py/gcg_agent_server.py --host 127.0.0.1 --port 8890
 GCG_AI_PROVIDER=agent-server python3 tests/gcg_ai_vs_ai_replay_harness.py --ai-timeout-seconds 60
 ```
 
-AI-vs-AI 會產生 `gameplay.yaml`、`replay.md`、`review.md`。`INCOMPLETE` 是 quality signal，必須讀 replay/review 分類 root cause，不可只調高上限。
+AI-vs-AI 會產生 `gamePlay.yaml`、`replay.md`、`review.md`。`INCOMPLETE` 是 quality signal，必須讀 replay/review 分類 root cause，不可只調高上限。
 
 ## 清理規則
 

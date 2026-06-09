@@ -3,7 +3,7 @@
 AI-vs-AI replay harness for GCG.
 
 Every player decision goes through the configured AI provider. The harness always
-writes gameplay.yaml, replay.md, and a review.md under game-states/<game_id>/.
+writes gamePlay.yaml, replay.md, and a review.md under game-states/<game_id>/.
 """
 
 from __future__ import annotations
@@ -39,6 +39,7 @@ REQUIRED_REVIEW_FIELDS = [
     "Blocker usage",
     "Unit-target attack usage",
     "Pass/action-window quality",
+    "Judge/experience quality",
     "Replay/log quality",
     "Problems",
     "Likely root cause",
@@ -55,6 +56,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-ai-failures", type=int, default=1)
     parser.add_argument("--ai-timeout-seconds", type=float, default=60)
     parser.add_argument("--require-game-over", action="store_true")
+    parser.add_argument("--live-llm", action="store_true", help="compatibility flag; harness always uses the configured AI provider")
     parser.add_argument("--first-player", choices=("P1", "P2"), default="P1")
     return parser.parse_args()
 
@@ -97,19 +99,27 @@ def command_action(command: str) -> str:
     return action
 
 
+def _is_ai_decision_event(event: dict[str, Any]) -> bool:
+    if event.get("actor") not in {"P1", "P2"} or not event.get("command"):
+        return False
+    if event.get("event_type") == "decision_received":
+        return True
+    return event.get("event_type") == "decision_applied" and isinstance(event.get("ai_evaluation"), dict)
+
+
 def ai_failure_count(snapshot: dict[str, Any]) -> int:
     return sum(1 for event in snapshot.get("all_events") or [] if event.get("event_type") == "ai_failure")
 
 
 def load_artifacts(game_id: str) -> tuple[dict[str, Any], str]:
     game_dir = GAME_STATES_DIR / game_id
-    gameplay_path = game_dir / "gameplay.yaml"
+    gameplay_path = game_dir / "gamePlay.yaml"
     replay_path = game_dir / "replay.md"
     assert_true(gameplay_path.exists(), f"missing gameplay log: {gameplay_path}")
     assert_true(replay_path.exists(), f"missing replay: {replay_path}")
     gameplay = yaml.safe_load(gameplay_path.read_text(encoding="utf-8"))
     replay = replay_path.read_text(encoding="utf-8")
-    assert_true(isinstance(gameplay, dict), "gameplay.yaml must parse as mapping")
+    assert_true(isinstance(gameplay, dict), "gamePlay.yaml must parse as mapping")
     return gameplay, replay
 
 
@@ -254,10 +264,7 @@ def analyze(game_id: str, snapshots: list[dict[str, Any]], ai_adapter_calls: int
     gameplay, replay = load_artifacts(game_id)
     events = gameplay.get("events", [])
     seqs = [event.get("seq") for event in events]
-    ai_events = [
-        event for event in events
-        if event.get("event_type") == "decision_received" and event.get("actor") in {"P1", "P2"} and event.get("command")
-    ]
+    ai_events = [event for event in events if _is_ai_decision_event(event)]
     missing_ai_evaluation = [
         event for event in ai_events
         if not isinstance(event.get("ai_evaluation"), dict)
@@ -274,6 +281,9 @@ def analyze(game_id: str, snapshots: list[dict[str, Any]], ai_adapter_calls: int
     ]
     considerations = []
     ai_latencies = []
+    judge_verdicts = []
+    repair_attempts = 0
+    selected_lesson_ids: list[str] = []
     for event in ai_events:
         ai_eval = event.get("ai_evaluation") or {}
         consideration = ai_eval.get("consideration")
@@ -282,6 +292,16 @@ def analyze(game_id: str, snapshots: list[dict[str, Any]], ai_adapter_calls: int
         elapsed = ai_eval.get("elapsed_seconds")
         if isinstance(elapsed, (int, float)):
             ai_latencies.append(float(elapsed))
+        judge = ai_eval.get("judge")
+        if isinstance(judge, dict):
+            verdict = judge.get("verdict")
+            if isinstance(verdict, str):
+                judge_verdicts.append(verdict)
+        if ai_eval.get("repair_attempted") is True:
+            repair_attempts += 1
+        lessons = ai_eval.get("selected_lesson_ids")
+        if isinstance(lessons, list):
+            selected_lesson_ids.extend(str(lesson_id) for lesson_id in lessons if lesson_id)
 
     hidden_leaks = []
     for key in ("hand_cards", "deck_cards", "shield_cards"):
@@ -336,6 +356,9 @@ def analyze(game_id: str, snapshots: list[dict[str, Any]], ai_adapter_calls: int
         "turn_backtracks": turn_backtracks,
         "considerations": considerations,
         "ai_latencies": ai_latencies,
+        "judge_verdicts": judge_verdicts,
+        "repair_attempts": repair_attempts,
+        "selected_lesson_ids": selected_lesson_ids,
         "hidden_leaks": hidden_leaks,
         "game_over": game_over,
         "winner": winner,
@@ -409,7 +432,8 @@ def write_review(game_id: str, analysis: dict[str, Any], ai_adapter_calls: int) 
         f"Pass/action-window quality: pass={action_counts.get('pass', 0)}, auto_pass_events={sum(1 for event in analysis['events'] if '自動讓過' in event.get('message', ''))}",
         f"Defense progress: damage_events={analysis['defense_progress']['damage_event_count']}, last_damage_seq={analysis['defense_progress']['last_damage_seq'] or 'none'}",
         f"Passive-play signals: {passive_signals if passive_signals else 'none'}",
-        f"Replay/log quality: gameplay.yaml parsed, replay.md present, ai_adapter_calls={ai_adapter_calls}, provider_mode=configured, ai_failures={len(analysis['ai_failures'])}, missing_ai_evaluation={len(analysis['missing_ai_evaluation'])}, ai_latency_max={max(analysis['ai_latencies']) if analysis['ai_latencies'] else 0:.3f}s",
+        f"Judge/experience quality: judge_verdicts={dict(Counter(analysis.get('judge_verdicts', [])))}, repair_attempts={analysis.get('repair_attempts', 0)}, selected_lesson_ids={sorted(set(analysis.get('selected_lesson_ids', [])))}",
+        f"Replay/log quality: gamePlay.yaml parsed, replay.md present, ai_adapter_calls={ai_adapter_calls}, provider_mode=configured, ai_failures={len(analysis['ai_failures'])}, missing_ai_evaluation={len(analysis['missing_ai_evaluation'])}, ai_latency_max={max(analysis['ai_latencies']) if analysis['ai_latencies'] else 0:.3f}s",
         "Problems:",
         *[f"- {problem}" for problem in problems],
         "Likely root cause:",
@@ -417,6 +441,7 @@ def write_review(game_id: str, analysis: dict[str, Any], ai_adapter_calls: int) 
         "Follow-up:",
         "- 先讀 replay.md 找出 AI pass/deploy 但沒有推進勝利的決策點；若 display 有具體 ✅ command 而 AI 不選，改 AI player prompt / Codex prompt。",
         "- 若 display 沒有列出具體 ✅ attack/block 指令，先改 gcg_display.py，不要先怪 AI。",
+        "- 若 judge_reject 或 repair_attempts 偏高，優先讀 judge reason 與 selected lessons，判斷是 player prompt、lesson 品質或 command surface 問題。",
         "- 只有 review 證明上限太低、且 AI 持續正常推進防禦層時，才調高 max_turns/max_steps/max_actions。",
         f"Verdict: {verdict}",
         "",
@@ -466,7 +491,7 @@ def run_harness(args: argparse.Namespace) -> tuple[str, Path, str]:
 
         ai_adapter_call_count = sum(
             1 for event in (snapshots[-1].get("all_events") or [])
-            if event.get("event_type") in {"decision_received", "ai_failure"} and event.get("actor") in {"P1", "P2"}
+            if (_is_ai_decision_event(event) or event.get("event_type") == "ai_failure") and event.get("actor") in {"P1", "P2"}
         )
         analysis = analyze(game_id, snapshots, ai_adapter_call_count, max_reached)
         review_path = write_review(game_id, analysis, ai_adapter_call_count)

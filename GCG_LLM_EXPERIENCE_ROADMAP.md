@@ -116,7 +116,7 @@ IGNORED_LESSONS:
 
 職責：
 
-- 在一局結束或 review 後，讀 public-safe `gameplay.yaml` / `replay.md` / `review.md`。
+- 在一局結束或 review 後，讀 public-safe `gamePlay.yaml` / `replay.md` / `review.md`。
 - 萃取錯誤、成功案例與可重用教訓。
 - 產生 draft lessons；經人工或 judge/coach review 後才可標記為 reviewed。
 - 不把單局偶然現象直接升級成通用規則；必須寫明適用條件與信心。
@@ -137,7 +137,7 @@ experience/
 
   raw/
     game_<id>/
-      gameplay.yaml
+      gamePlay.yaml
       replay.md
       review.md
 
@@ -168,8 +168,8 @@ applies_when:
   - 可見手牌或可行指令中有 command card。
   - 卡片文字包含 Choose / 選擇，且效果需要公開目標。
   - proposed COMMAND 使用該 card 但沒有指定 target。
-bad_example: "play st01/ST01-014"
-better_example: "使用 st01/ST01-014 unit 1"
+bad_example: "targetless use/play ST01-014"
+better_example: "使用 ST01-014 時需附上當前公開、合法的敵方 Unit 目標欄位"
 player_instruction: >
   若 command card 文字要求選擇目標，COMMAND 必須包含公開目標。
   若目前 display 沒有列出可表達 target 的合法 command，避免輸出 targetless play/use。
@@ -298,7 +298,7 @@ Curator 產生 lesson 後，應標記：
 
 - 建立本文件。
 - 更新 `AGENTS.md` / `GCG_ARCHITECTURE.md`，明確寫入「經驗不是 Python 策略 fallback」。
-- 確認 `gcg-judge` 目前只是 room placeholder，不要誤以為已在決策流程。
+- 實作前需確認 `gcg-judge` 是否仍只是 room placeholder；完成 Phase 1 後，它必須已接入 `/decide`，不可再被當成未使用 room。
 
 驗收：
 
@@ -384,7 +384,7 @@ Curator 產生 lesson 後，應標記：
 
 目標：
 
-- `gameplay.yaml` / `review.md` 記錄 judge verdict、selected lesson ids、repair attempt。
+- `gamePlay.yaml` / `review.md` 記錄 judge verdict、selected lesson ids、repair attempt。
 - AI-vs-AI review 能標記：
   - judge reject rate
   - repair success rate
@@ -423,9 +423,9 @@ if card == ST01-014:
 
 ```text
 source_game: game_20260607_214139_166237
-bad move: play st01/ST01-014
+bad move pattern: targetless use/play ST01-014
 reason: 卡片文字需要 Choose 1 enemy Unit，但 command 沒有指定目標。
-instruction: 看到需要目標的 command card 時，player 必須指定公開目標；judge 應 reject targetless command。
+instruction: 看到需要目標的 command card 時，player 必須指定公開目標；judge 應 reject targetless command。此 lesson 不提供可直接複製的 COMMAND。
 ```
 
 之後流程：

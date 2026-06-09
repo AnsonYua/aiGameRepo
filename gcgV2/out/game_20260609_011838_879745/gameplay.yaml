@@ -1,0 +1,2458 @@
+{
+  "schema_version": "2.0",
+  "game_id": "game_20260609_011838_879745",
+  "summary": {
+    "status": "in_progress",
+    "winner": null,
+    "turn": 1,
+    "phase": "opening-complete",
+    "total_events": 6
+  },
+  "events": [
+    {
+      "seq": 1,
+      "ts": "2026-06-09T01:18:38+08:00",
+      "turn": 0,
+      "phase": "pre-game",
+      "step": "opening",
+      "actor": "system",
+      "viewer": "P1",
+      "event_type": "game_started",
+      "public": true,
+      "message": "對局開始，P1 為先攻。",
+      "result": {
+        "ok": true,
+        "reason": "",
+        "payload": {
+          "message": "對局開始，P1 為先攻。",
+          "first_player": "P1",
+          "features": {
+            "game_id": "game_20260609_011838_879745",
+            "turn": 0,
+            "phase": "pre-game",
+            "step": "opening",
+            "active_player": "P1",
+            "priority_player": "P1",
+            "current_attacker": null,
+            "pending_choice": {
+              "type": "mulligan",
+              "player_id": "P1",
+              "message": "請決定是否保留起手牌",
+              "options": [
+                {
+                  "id": "keep",
+                  "label": "保留"
+                },
+                {
+                  "id": "redraw",
+                  "label": "重抽"
+                }
+              ]
+            },
+            "game_over": false,
+            "winner": null,
+            "p1": {
+              "hand_count": 5,
+              "deck_count": 45,
+              "resource_deck_count": 10,
+              "shields": 0,
+              "resources": {
+                "active": 0,
+                "rested": 0,
+                "ex": 0
+              },
+              "base": {
+                "card_id": "EX-BASE",
+                "ap": 0,
+                "hp": 3,
+                "damage": 0,
+                "alive": true,
+                "status": null
+              },
+              "board": {
+                "units": 0,
+                "empty_slots": 6,
+                "rested_units": 0,
+                "damaged_units": 0,
+                "blockers": 0,
+                "slots": [
+                  {
+                    "slot": 0,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 1,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 2,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 3,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 4,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 5,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  }
+                ]
+              },
+              "trash": [],
+              "removal": []
+            },
+            "p2": {
+              "hand_count": 5,
+              "deck_count": 45,
+              "resource_deck_count": 10,
+              "shields": 0,
+              "resources": {
+                "active": 0,
+                "rested": 0,
+                "ex": 0
+              },
+              "base": {
+                "card_id": "EX-BASE",
+                "ap": 0,
+                "hp": 3,
+                "damage": 0,
+                "alive": true,
+                "status": null
+              },
+              "board": {
+                "units": 0,
+                "empty_slots": 6,
+                "rested_units": 0,
+                "damaged_units": 0,
+                "blockers": 0,
+                "slots": [
+                  {
+                    "slot": 0,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 1,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 2,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 3,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 4,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 5,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  }
+                ]
+              },
+              "trash": [],
+              "removal": []
+            },
+            "opening": {
+              "decision_player": null,
+              "first_player": "P1",
+              "second_player": "P2",
+              "mulligan_done": {
+                "P1": false,
+                "P2": false
+              }
+            }
+          }
+        }
+      },
+      "features": {
+        "game_id": "game_20260609_011838_879745",
+        "turn": 0,
+        "phase": "pre-game",
+        "step": "opening",
+        "active_player": "P1",
+        "priority_player": "P1",
+        "current_attacker": null,
+        "pending_choice": {
+          "type": "mulligan",
+          "player_id": "P1",
+          "message": "請決定是否保留起手牌",
+          "options": [
+            {
+              "id": "keep",
+              "label": "保留"
+            },
+            {
+              "id": "redraw",
+              "label": "重抽"
+            }
+          ]
+        },
+        "game_over": false,
+        "winner": null,
+        "p1": {
+          "hand_count": 5,
+          "deck_count": 45,
+          "resource_deck_count": 10,
+          "shields": 0,
+          "resources": {
+            "active": 0,
+            "rested": 0,
+            "ex": 0
+          },
+          "base": {
+            "card_id": "EX-BASE",
+            "ap": 0,
+            "hp": 3,
+            "damage": 0,
+            "alive": true,
+            "status": null
+          },
+          "board": {
+            "units": 0,
+            "empty_slots": 6,
+            "rested_units": 0,
+            "damaged_units": 0,
+            "blockers": 0,
+            "slots": [
+              {
+                "slot": 0,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 1,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 2,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 3,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 4,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 5,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              }
+            ]
+          },
+          "trash": [],
+          "removal": []
+        },
+        "p2": {
+          "hand_count": 5,
+          "deck_count": 45,
+          "resource_deck_count": 10,
+          "shields": 0,
+          "resources": {
+            "active": 0,
+            "rested": 0,
+            "ex": 0
+          },
+          "base": {
+            "card_id": "EX-BASE",
+            "ap": 0,
+            "hp": 3,
+            "damage": 0,
+            "alive": true,
+            "status": null
+          },
+          "board": {
+            "units": 0,
+            "empty_slots": 6,
+            "rested_units": 0,
+            "damaged_units": 0,
+            "blockers": 0,
+            "slots": [
+              {
+                "slot": 0,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 1,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 2,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 3,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 4,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 5,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              }
+            ]
+          },
+          "trash": [],
+          "removal": []
+        },
+        "opening": {
+          "decision_player": null,
+          "first_player": "P1",
+          "second_player": "P2",
+          "mulligan_done": {
+            "P1": false,
+            "P2": false
+          }
+        }
+      }
+    },
+    {
+      "seq": 2,
+      "ts": "2026-06-09T01:18:38+08:00",
+      "turn": 0,
+      "phase": "pre-game",
+      "step": "opening",
+      "actor": "system",
+      "viewer": "P1",
+      "event_type": "pending_choice_created",
+      "public": true,
+      "message": "請決定是否保留起手牌",
+      "result": {
+        "ok": true,
+        "reason": "",
+        "pending_choice": {
+          "type": "mulligan",
+          "player_id": "P1",
+          "message": "請決定是否保留起手牌",
+          "options": [
+            {
+              "id": "keep",
+              "label": "保留"
+            },
+            {
+              "id": "redraw",
+              "label": "重抽"
+            }
+          ]
+        }
+      },
+      "features": {
+        "game_id": "game_20260609_011838_879745",
+        "turn": 0,
+        "phase": "pre-game",
+        "step": "opening",
+        "active_player": "P1",
+        "priority_player": "P1",
+        "current_attacker": null,
+        "pending_choice": {
+          "type": "mulligan",
+          "player_id": "P1",
+          "message": "請決定是否保留起手牌",
+          "options": [
+            {
+              "id": "keep",
+              "label": "保留"
+            },
+            {
+              "id": "redraw",
+              "label": "重抽"
+            }
+          ]
+        },
+        "game_over": false,
+        "winner": null,
+        "p1": {
+          "hand_count": 5,
+          "deck_count": 45,
+          "resource_deck_count": 10,
+          "shields": 0,
+          "resources": {
+            "active": 0,
+            "rested": 0,
+            "ex": 0
+          },
+          "base": {
+            "card_id": "EX-BASE",
+            "ap": 0,
+            "hp": 3,
+            "damage": 0,
+            "alive": true,
+            "status": null
+          },
+          "board": {
+            "units": 0,
+            "empty_slots": 6,
+            "rested_units": 0,
+            "damaged_units": 0,
+            "blockers": 0,
+            "slots": [
+              {
+                "slot": 0,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 1,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 2,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 3,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 4,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 5,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              }
+            ]
+          },
+          "trash": [],
+          "removal": []
+        },
+        "p2": {
+          "hand_count": 5,
+          "deck_count": 45,
+          "resource_deck_count": 10,
+          "shields": 0,
+          "resources": {
+            "active": 0,
+            "rested": 0,
+            "ex": 0
+          },
+          "base": {
+            "card_id": "EX-BASE",
+            "ap": 0,
+            "hp": 3,
+            "damage": 0,
+            "alive": true,
+            "status": null
+          },
+          "board": {
+            "units": 0,
+            "empty_slots": 6,
+            "rested_units": 0,
+            "damaged_units": 0,
+            "blockers": 0,
+            "slots": [
+              {
+                "slot": 0,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 1,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 2,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 3,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 4,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 5,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              }
+            ]
+          },
+          "trash": [],
+          "removal": []
+        },
+        "opening": {
+          "decision_player": null,
+          "first_player": "P1",
+          "second_player": "P2",
+          "mulligan_done": {
+            "P1": false,
+            "P2": false
+          }
+        }
+      }
+    },
+    {
+      "seq": 3,
+      "ts": "2026-06-09T01:18:38+08:00",
+      "turn": 0,
+      "phase": "pre-game",
+      "step": "opening",
+      "actor": "system",
+      "viewer": "P1",
+      "event_type": "mulligan_resolved",
+      "public": true,
+      "message": "P1 選擇保留起手牌。",
+      "result": {
+        "ok": true,
+        "reason": "",
+        "payload": {
+          "message": "P1 選擇保留起手牌。",
+          "features": {
+            "game_id": "game_20260609_011838_879745",
+            "turn": 0,
+            "phase": "pre-game",
+            "step": "opening",
+            "active_player": "P1",
+            "priority_player": "P1",
+            "current_attacker": null,
+            "pending_choice": null,
+            "game_over": false,
+            "winner": null,
+            "p1": {
+              "hand_count": 5,
+              "deck_count": 45,
+              "resource_deck_count": 10,
+              "shields": 0,
+              "resources": {
+                "active": 0,
+                "rested": 0,
+                "ex": 0
+              },
+              "base": {
+                "card_id": "EX-BASE",
+                "ap": 0,
+                "hp": 3,
+                "damage": 0,
+                "alive": true,
+                "status": null
+              },
+              "board": {
+                "units": 0,
+                "empty_slots": 6,
+                "rested_units": 0,
+                "damaged_units": 0,
+                "blockers": 0,
+                "slots": [
+                  {
+                    "slot": 0,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 1,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 2,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 3,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 4,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 5,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  }
+                ]
+              },
+              "trash": [],
+              "removal": []
+            },
+            "p2": {
+              "hand_count": 5,
+              "deck_count": 45,
+              "resource_deck_count": 10,
+              "shields": 0,
+              "resources": {
+                "active": 0,
+                "rested": 0,
+                "ex": 0
+              },
+              "base": {
+                "card_id": "EX-BASE",
+                "ap": 0,
+                "hp": 3,
+                "damage": 0,
+                "alive": true,
+                "status": null
+              },
+              "board": {
+                "units": 0,
+                "empty_slots": 6,
+                "rested_units": 0,
+                "damaged_units": 0,
+                "blockers": 0,
+                "slots": [
+                  {
+                    "slot": 0,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 1,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 2,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 3,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 4,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 5,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  }
+                ]
+              },
+              "trash": [],
+              "removal": []
+            },
+            "opening": {
+              "decision_player": null,
+              "first_player": "P1",
+              "second_player": "P2",
+              "mulligan_done": {
+                "P1": true,
+                "P2": false
+              }
+            }
+          }
+        }
+      },
+      "features": {
+        "game_id": "game_20260609_011838_879745",
+        "turn": 0,
+        "phase": "pre-game",
+        "step": "opening",
+        "active_player": "P1",
+        "priority_player": "P1",
+        "current_attacker": null,
+        "pending_choice": null,
+        "game_over": false,
+        "winner": null,
+        "p1": {
+          "hand_count": 5,
+          "deck_count": 45,
+          "resource_deck_count": 10,
+          "shields": 0,
+          "resources": {
+            "active": 0,
+            "rested": 0,
+            "ex": 0
+          },
+          "base": {
+            "card_id": "EX-BASE",
+            "ap": 0,
+            "hp": 3,
+            "damage": 0,
+            "alive": true,
+            "status": null
+          },
+          "board": {
+            "units": 0,
+            "empty_slots": 6,
+            "rested_units": 0,
+            "damaged_units": 0,
+            "blockers": 0,
+            "slots": [
+              {
+                "slot": 0,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 1,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 2,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 3,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 4,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 5,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              }
+            ]
+          },
+          "trash": [],
+          "removal": []
+        },
+        "p2": {
+          "hand_count": 5,
+          "deck_count": 45,
+          "resource_deck_count": 10,
+          "shields": 0,
+          "resources": {
+            "active": 0,
+            "rested": 0,
+            "ex": 0
+          },
+          "base": {
+            "card_id": "EX-BASE",
+            "ap": 0,
+            "hp": 3,
+            "damage": 0,
+            "alive": true,
+            "status": null
+          },
+          "board": {
+            "units": 0,
+            "empty_slots": 6,
+            "rested_units": 0,
+            "damaged_units": 0,
+            "blockers": 0,
+            "slots": [
+              {
+                "slot": 0,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 1,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 2,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 3,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 4,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 5,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              }
+            ]
+          },
+          "trash": [],
+          "removal": []
+        },
+        "opening": {
+          "decision_player": null,
+          "first_player": "P1",
+          "second_player": "P2",
+          "mulligan_done": {
+            "P1": true,
+            "P2": false
+          }
+        }
+      }
+    },
+    {
+      "seq": 4,
+      "ts": "2026-06-09T01:18:38+08:00",
+      "turn": 0,
+      "phase": "pre-game",
+      "step": "opening",
+      "actor": "system",
+      "viewer": "P2",
+      "event_type": "pending_choice_created",
+      "public": true,
+      "message": "請決定是否保留起手牌",
+      "result": {
+        "ok": true,
+        "reason": "",
+        "pending_choice": {
+          "type": "mulligan",
+          "player_id": "P2",
+          "message": "請決定是否保留起手牌",
+          "options": [
+            {
+              "id": "keep",
+              "label": "保留"
+            },
+            {
+              "id": "redraw",
+              "label": "重抽"
+            }
+          ]
+        }
+      },
+      "features": {
+        "game_id": "game_20260609_011838_879745",
+        "turn": 0,
+        "phase": "pre-game",
+        "step": "opening",
+        "active_player": "P1",
+        "priority_player": "P1",
+        "current_attacker": null,
+        "pending_choice": {
+          "type": "mulligan",
+          "player_id": "P2",
+          "message": "請決定是否保留起手牌",
+          "options": [
+            {
+              "id": "keep",
+              "label": "保留"
+            },
+            {
+              "id": "redraw",
+              "label": "重抽"
+            }
+          ]
+        },
+        "game_over": false,
+        "winner": null,
+        "p1": {
+          "hand_count": 5,
+          "deck_count": 45,
+          "resource_deck_count": 10,
+          "shields": 0,
+          "resources": {
+            "active": 0,
+            "rested": 0,
+            "ex": 0
+          },
+          "base": {
+            "card_id": "EX-BASE",
+            "ap": 0,
+            "hp": 3,
+            "damage": 0,
+            "alive": true,
+            "status": null
+          },
+          "board": {
+            "units": 0,
+            "empty_slots": 6,
+            "rested_units": 0,
+            "damaged_units": 0,
+            "blockers": 0,
+            "slots": [
+              {
+                "slot": 0,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 1,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 2,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 3,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 4,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 5,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              }
+            ]
+          },
+          "trash": [],
+          "removal": []
+        },
+        "p2": {
+          "hand_count": 5,
+          "deck_count": 45,
+          "resource_deck_count": 10,
+          "shields": 0,
+          "resources": {
+            "active": 0,
+            "rested": 0,
+            "ex": 0
+          },
+          "base": {
+            "card_id": "EX-BASE",
+            "ap": 0,
+            "hp": 3,
+            "damage": 0,
+            "alive": true,
+            "status": null
+          },
+          "board": {
+            "units": 0,
+            "empty_slots": 6,
+            "rested_units": 0,
+            "damaged_units": 0,
+            "blockers": 0,
+            "slots": [
+              {
+                "slot": 0,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 1,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 2,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 3,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 4,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 5,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              }
+            ]
+          },
+          "trash": [],
+          "removal": []
+        },
+        "opening": {
+          "decision_player": null,
+          "first_player": "P1",
+          "second_player": "P2",
+          "mulligan_done": {
+            "P1": true,
+            "P2": false
+          }
+        }
+      }
+    },
+    {
+      "seq": 5,
+      "ts": "2026-06-09T01:18:38+08:00",
+      "turn": 0,
+      "phase": "pre-game",
+      "step": "opening",
+      "actor": "system",
+      "viewer": "P1",
+      "event_type": "mulligan_resolved",
+      "public": true,
+      "message": "P2 選擇保留起手牌。",
+      "result": {
+        "ok": true,
+        "reason": "",
+        "payload": {
+          "message": "P2 選擇保留起手牌。",
+          "features": {
+            "game_id": "game_20260609_011838_879745",
+            "turn": 0,
+            "phase": "pre-game",
+            "step": "opening",
+            "active_player": "P1",
+            "priority_player": "P1",
+            "current_attacker": null,
+            "pending_choice": null,
+            "game_over": false,
+            "winner": null,
+            "p1": {
+              "hand_count": 5,
+              "deck_count": 45,
+              "resource_deck_count": 10,
+              "shields": 0,
+              "resources": {
+                "active": 0,
+                "rested": 0,
+                "ex": 0
+              },
+              "base": {
+                "card_id": "EX-BASE",
+                "ap": 0,
+                "hp": 3,
+                "damage": 0,
+                "alive": true,
+                "status": null
+              },
+              "board": {
+                "units": 0,
+                "empty_slots": 6,
+                "rested_units": 0,
+                "damaged_units": 0,
+                "blockers": 0,
+                "slots": [
+                  {
+                    "slot": 0,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 1,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 2,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 3,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 4,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 5,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  }
+                ]
+              },
+              "trash": [],
+              "removal": []
+            },
+            "p2": {
+              "hand_count": 5,
+              "deck_count": 45,
+              "resource_deck_count": 10,
+              "shields": 0,
+              "resources": {
+                "active": 0,
+                "rested": 0,
+                "ex": 0
+              },
+              "base": {
+                "card_id": "EX-BASE",
+                "ap": 0,
+                "hp": 3,
+                "damage": 0,
+                "alive": true,
+                "status": null
+              },
+              "board": {
+                "units": 0,
+                "empty_slots": 6,
+                "rested_units": 0,
+                "damaged_units": 0,
+                "blockers": 0,
+                "slots": [
+                  {
+                    "slot": 0,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 1,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 2,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 3,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 4,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 5,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  }
+                ]
+              },
+              "trash": [],
+              "removal": []
+            },
+            "opening": {
+              "decision_player": null,
+              "first_player": "P1",
+              "second_player": "P2",
+              "mulligan_done": {
+                "P1": true,
+                "P2": true
+              }
+            }
+          }
+        }
+      },
+      "features": {
+        "game_id": "game_20260609_011838_879745",
+        "turn": 0,
+        "phase": "pre-game",
+        "step": "opening",
+        "active_player": "P1",
+        "priority_player": "P1",
+        "current_attacker": null,
+        "pending_choice": null,
+        "game_over": false,
+        "winner": null,
+        "p1": {
+          "hand_count": 5,
+          "deck_count": 45,
+          "resource_deck_count": 10,
+          "shields": 0,
+          "resources": {
+            "active": 0,
+            "rested": 0,
+            "ex": 0
+          },
+          "base": {
+            "card_id": "EX-BASE",
+            "ap": 0,
+            "hp": 3,
+            "damage": 0,
+            "alive": true,
+            "status": null
+          },
+          "board": {
+            "units": 0,
+            "empty_slots": 6,
+            "rested_units": 0,
+            "damaged_units": 0,
+            "blockers": 0,
+            "slots": [
+              {
+                "slot": 0,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 1,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 2,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 3,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 4,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 5,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              }
+            ]
+          },
+          "trash": [],
+          "removal": []
+        },
+        "p2": {
+          "hand_count": 5,
+          "deck_count": 45,
+          "resource_deck_count": 10,
+          "shields": 0,
+          "resources": {
+            "active": 0,
+            "rested": 0,
+            "ex": 0
+          },
+          "base": {
+            "card_id": "EX-BASE",
+            "ap": 0,
+            "hp": 3,
+            "damage": 0,
+            "alive": true,
+            "status": null
+          },
+          "board": {
+            "units": 0,
+            "empty_slots": 6,
+            "rested_units": 0,
+            "damaged_units": 0,
+            "blockers": 0,
+            "slots": [
+              {
+                "slot": 0,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 1,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 2,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 3,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 4,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 5,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              }
+            ]
+          },
+          "trash": [],
+          "removal": []
+        },
+        "opening": {
+          "decision_player": null,
+          "first_player": "P1",
+          "second_player": "P2",
+          "mulligan_done": {
+            "P1": true,
+            "P2": true
+          }
+        }
+      }
+    },
+    {
+      "seq": 6,
+      "ts": "2026-06-09T01:18:38+08:00",
+      "turn": 1,
+      "phase": "opening-complete",
+      "step": "ready",
+      "actor": "system",
+      "viewer": "P1",
+      "event_type": "rule_event",
+      "public": true,
+      "message": "開局設置完成。",
+      "result": {
+        "ok": true,
+        "reason": "",
+        "payload": {
+          "message": "開局設置完成。",
+          "features": {
+            "game_id": "game_20260609_011838_879745",
+            "turn": 1,
+            "phase": "opening-complete",
+            "step": "ready",
+            "active_player": "P1",
+            "priority_player": "P1",
+            "current_attacker": null,
+            "pending_choice": null,
+            "game_over": false,
+            "winner": null,
+            "p1": {
+              "hand_count": 5,
+              "deck_count": 39,
+              "resource_deck_count": 10,
+              "shields": 6,
+              "resources": {
+                "active": 0,
+                "rested": 0,
+                "ex": 0
+              },
+              "base": {
+                "card_id": "EX-BASE",
+                "ap": 0,
+                "hp": 3,
+                "damage": 0,
+                "alive": true,
+                "status": null
+              },
+              "board": {
+                "units": 0,
+                "empty_slots": 6,
+                "rested_units": 0,
+                "damaged_units": 0,
+                "blockers": 0,
+                "slots": [
+                  {
+                    "slot": 0,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 1,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 2,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 3,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 4,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 5,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  }
+                ]
+              },
+              "trash": [],
+              "removal": []
+            },
+            "p2": {
+              "hand_count": 5,
+              "deck_count": 39,
+              "resource_deck_count": 10,
+              "shields": 6,
+              "resources": {
+                "active": 0,
+                "rested": 0,
+                "ex": 1
+              },
+              "base": {
+                "card_id": "EX-BASE",
+                "ap": 0,
+                "hp": 3,
+                "damage": 0,
+                "alive": true,
+                "status": null
+              },
+              "board": {
+                "units": 0,
+                "empty_slots": 6,
+                "rested_units": 0,
+                "damaged_units": 0,
+                "blockers": 0,
+                "slots": [
+                  {
+                    "slot": 0,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 1,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 2,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 3,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 4,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  },
+                  {
+                    "slot": 5,
+                    "unit_id": null,
+                    "pilot_id": null,
+                    "ap": 0,
+                    "hp": 0,
+                    "damage": 0,
+                    "status": null,
+                    "keywords": [],
+                    "link": false,
+                    "turns_on_field": 0
+                  }
+                ]
+              },
+              "trash": [],
+              "removal": []
+            },
+            "opening": {
+              "decision_player": null,
+              "first_player": "P1",
+              "second_player": "P2",
+              "mulligan_done": {
+                "P1": true,
+                "P2": true
+              }
+            }
+          }
+        }
+      },
+      "features": {
+        "game_id": "game_20260609_011838_879745",
+        "turn": 1,
+        "phase": "opening-complete",
+        "step": "ready",
+        "active_player": "P1",
+        "priority_player": "P1",
+        "current_attacker": null,
+        "pending_choice": null,
+        "game_over": false,
+        "winner": null,
+        "p1": {
+          "hand_count": 5,
+          "deck_count": 39,
+          "resource_deck_count": 10,
+          "shields": 6,
+          "resources": {
+            "active": 0,
+            "rested": 0,
+            "ex": 0
+          },
+          "base": {
+            "card_id": "EX-BASE",
+            "ap": 0,
+            "hp": 3,
+            "damage": 0,
+            "alive": true,
+            "status": null
+          },
+          "board": {
+            "units": 0,
+            "empty_slots": 6,
+            "rested_units": 0,
+            "damaged_units": 0,
+            "blockers": 0,
+            "slots": [
+              {
+                "slot": 0,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 1,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 2,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 3,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 4,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 5,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              }
+            ]
+          },
+          "trash": [],
+          "removal": []
+        },
+        "p2": {
+          "hand_count": 5,
+          "deck_count": 39,
+          "resource_deck_count": 10,
+          "shields": 6,
+          "resources": {
+            "active": 0,
+            "rested": 0,
+            "ex": 1
+          },
+          "base": {
+            "card_id": "EX-BASE",
+            "ap": 0,
+            "hp": 3,
+            "damage": 0,
+            "alive": true,
+            "status": null
+          },
+          "board": {
+            "units": 0,
+            "empty_slots": 6,
+            "rested_units": 0,
+            "damaged_units": 0,
+            "blockers": 0,
+            "slots": [
+              {
+                "slot": 0,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 1,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 2,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 3,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 4,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              },
+              {
+                "slot": 5,
+                "unit_id": null,
+                "pilot_id": null,
+                "ap": 0,
+                "hp": 0,
+                "damage": 0,
+                "status": null,
+                "keywords": [],
+                "link": false,
+                "turns_on_field": 0
+              }
+            ]
+          },
+          "trash": [],
+          "removal": []
+        },
+        "opening": {
+          "decision_player": null,
+          "first_player": "P1",
+          "second_player": "P2",
+          "mulligan_done": {
+            "P1": true,
+            "P2": true
+          }
+        }
+      }
+    }
+  ]
+}

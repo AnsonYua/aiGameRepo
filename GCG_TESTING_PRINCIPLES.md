@@ -8,7 +8,7 @@
    - P1 AI、P2 AI、AI-vs-AI 都必須透過 `skills_py/ai_player.py` 與 `skills_py/ai_adapters.py`。
    - 主 provider 是 `GCG_AI_PROVIDER=agent-server`。
    - agent-server 背後是一個長駐 `codex app-server --stdio` process。
-   - 每局固定 4 rooms：`gcg-orchestrator`、`gcg-judge`、`gcg-ai-player:P1`、`gcg-ai-player:P2`。
+   - 每局固定 canonical rooms：`gcg-orchestrator`、`gcg-judge`、`gcg-memory-selector`、`gcg-ai-player:P1`、`gcg-ai-player:P2`。
    - P1/P2 thread 必須依 `game_id + player_id` 分開；不得共用 thread，避免 hidden-info 污染。
    - Python 不得新增策略 fallback、評分器或自動選牌邏輯。
    - Python 只負責 viewer display、解析 `CONSIDER` / `COMMAND`、合法性驗證、state mutation、gameplay log 與 replay。
@@ -19,8 +19,8 @@
    - 不直接修改 `gameState.md` 來推進正式流程；需要 fixture 時必須明確標為 fixture test。
 
 3. Replay 是測試產物，不是附屬品
-   - 每場 AI-vs-AI 測試都必須產生 `gameplay.yaml`、`replay.md` 與 `review.md`。
-   - `gameplay.yaml` 是 canonical structured log；`replay.md` 是人類 review 用紀錄。
+   - 每場 AI-vs-AI 測試都必須產生 `gamePlay.yaml`、`replay.md` 與 `review.md`。
+   - `gamePlay.yaml` 是 canonical structured log；`replay.md` 是人類 review 用紀錄。
    - YAML 與 replay 必須從同一事件序列產生，不能各寫一套。
 
 4. Review 要看決策品質，也要看邊界安全
@@ -32,7 +32,7 @@
 
 Unit harness 必須覆蓋：
 
-- `init_game` 建立剛好 4 個 role sessions。
+- `init_game` 建立 canonical role sessions。
 - P1/P2 thread id 不同。
 - P1 第二次 decision reuse P1 thread id。
 - Judge/Orchestrator thread id 不等於任何 player thread id。
@@ -89,7 +89,7 @@ AI-vs-AI harness 至少要跑以下流程：
    - 每次 auto 後讀 JSON 狀態，直到 game_over 或達到 max_turns / max_actions
 
 4. artifacts
-   - 確認 game-states/<game_id>/gameplay.yaml 存在
+   - 確認 game-states/<game_id>/gamePlay.yaml 存在
    - 確認 game-states/<game_id>/replay.md 存在
    - 確認 game-states/<game_id>/review.md 存在
 ```
@@ -100,7 +100,7 @@ Harness 必須有上限：
 - `max_actions`：避免單一 priority loop 卡死。
 - `timeout_seconds`：避免 live LLM 無限等待。
 - 若達上限，結果是 `incomplete`，不能算 pass。
-- 上限只是 fail-fast 保護，不是解法。達到上限時必須 review `gameplay.yaml` / `replay.md` 並分類 root cause；不得只把上限調高。
+- 上限只是 fail-fast 保護，不是解法。達到上限時必須 review `gamePlay.yaml` / `replay.md` 並分類 root cause；不得只把上限調高。
 
 ## Replay Review Criteria
 
@@ -127,7 +127,7 @@ Verdict:
 
 必須檢查：
 
-- `gameplay.yaml` 可被 `yaml.safe_load` 解析。
+- `gamePlay.yaml` 可被 `yaml.safe_load` 解析。
 - event `seq` 單調遞增，沒有重複或倒退。
 - 每個 AI 決策 event 有 `command`，並盡量有 public-safe `consideration`。
 - replay 是繁體中文。
@@ -156,7 +156,7 @@ AI-vs-AI replay test 只有在以下全部成立時才算 pass：
 
 - 對局能從 start 走到 game_over，或在設定上限內產生合理 `incomplete` 結果且沒有 crash。
 - P1 與 P2 AI 決策都經過 `skills_py/ai_player.py` / `skills_py/ai_adapters.py` / agent-server。
-- `gameplay.yaml`、`replay.md`、`review.md` 都存在且可讀。
+- `gamePlay.yaml`、`replay.md`、`review.md` 都存在且可讀。
 - replay / YAML 沒有 hidden-info leak。
 - 沒有 Python strategy fallback。
 - 沒有直接手改 state 推進正式對局。
@@ -178,7 +178,7 @@ AI-vs-AI replay test 只有在以下全部成立時才算 pass：
 
 下一步對應：
 
-- `AI prompt problem`：先把 `.opencode/agents/gcg-ai-player.md` 內仍有價值的策略遷移到 app-server player instructions，再調整 `skills_py/gcg_agent_server.py`。
+- `AI prompt problem`：優先調整 `agents/gcg-ai-player.md`、`agents/gcg-judge.md`、`agents/gcg-memory-selector.md`，或把 public-safe 可重用經驗整理到 `experience/lessons/*.yaml`；不要在 Python 加策略 fallback。
 - `Display problem`：改 `skills_py/gcg_display.py` 或 template。
 - `Runtime problem`：改 `skills_py/gcg_runtime.py` / `skills_py/game_engine.py`。
 - `Harness problem`：改 `tests/gcg_ai_vs_ai_replay_harness.py`。
@@ -205,4 +205,4 @@ GCG_AGENT_SERVER_URL=http://127.0.0.1:8890 GCG_AI_PROVIDER=agent-server python3 
 GCG_AGENT_SERVER_URL=http://127.0.0.1:8890 GCG_AI_PROVIDER=agent-server python3 tests/gcg_ai_vs_ai_replay_harness.py --ai-timeout-seconds 60
 ```
 
-`gcg_direction_harness.py` 驗證方向與合約。`gcg_ai_vs_ai_replay_harness.py` 會產生 AI-vs-AI `gameplay.yaml`、`replay.md`、`review.md`，並依本文件欄位做 replay review。
+`gcg_direction_harness.py` 驗證方向與合約。`gcg_ai_vs_ai_replay_harness.py` 會產生 AI-vs-AI `gamePlay.yaml`、`replay.md`、`review.md`，並依本文件欄位做 replay review。
