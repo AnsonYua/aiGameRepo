@@ -223,6 +223,12 @@ class StateStore:
         """
         self.state["players"][player_id]["resources"]["ex"] = amount
 
+    def deploy_ex_base(self, player_id):
+        """
+        Deploy the standard opening EX Base for one player.
+        """
+        self.state["players"][player_id]["base"] = self._build_ex_base()
+
     def peek_pending_choice(self):
         """
         Return the queue head pending choice, or None.
@@ -381,17 +387,23 @@ class StateStore:
                 "rested": 0,
                 "ex": 0,
             },
-            "base": {
-                "card_id": "EX-BASE",
-                "ap": 0,
-                "hp": 3,
-                "damage": 0,
-                "alive": True,
-                "status": None,
-            },
+            "base": None,
             "battle_area": [self._build_empty_slot(slot) for slot in range(6)],
             "trash": [],
             "removal": [],
+        }
+
+    def _build_ex_base(self):
+        """
+        Build a fresh EX Base state block.
+        """
+        return {
+            "card_id": "EX-BASE",
+            "ap": 0,
+            "hp": 3,
+            "damage": 0,
+            "alive": True,
+            "status": None,
         }
 
     def _build_empty_slot(self, slot):

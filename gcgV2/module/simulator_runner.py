@@ -8,6 +8,14 @@ It shows what the runner should own, and what it should delegate.
 import random
 
 
+class _NotReadyComponent:
+    def __getattr__(self, name):
+        raise NotImplementedError(
+            f"Provide a concrete implementation for '{name}' before using "
+            "non-opening runtime paths."
+        )
+
+
 class SimulatorRunner:
     """
     Outer controller for one AI vs AI game.
@@ -63,51 +71,28 @@ class SimulatorRunner:
 
         self.game_id = self.state_store.create_game_shell()
         self.gameplay_logger.open_game(self.game_id)
+        self.ensure_ai_ready_for_game()
         self._start_opening_sequence(
             first_player=first_player,
             decision_player=decision_player,
         )
         return self.game_id
 
-    def run(self, first_player=None, decision_player=None):
+    def prepare_next_step(self):
         """
-        Main loop for one full game.
+        Advance runtime-owned automatic work only when no player decision is
+        currently needed.
         """
-        self.start_game(
-            first_player=first_player,
-            decision_player=decision_player,
-        )
-        while not self.finished and self.step_count < self.max_steps:
-            self.step_once()
-
-        return self.build_result()
-
-    def step_once(self):
-        """
-        Advance the game by one outer-loop step.
-
-        The runner first lets runtime auto-resolve anything that does not need
-        player input. Only when runtime says a player decision is needed does
-        the runner call AI.
-        """
-        self.step_count += 1
-
-        self.runtime_core.advance_until_decision_or_stable()
-
-        if self.runtime_core.is_game_over():
-            self.finished = True
-            self.winner = self.runtime_core.get_winner()
+        if self.state_store.get_state().get("game_over"):
             return
 
         if self.state_store.peek_pending_choice() is not None:
-            self.handle_pending_choice()
             return
 
         if self.state_store.needs_action_window():
-            self.handle_player_action()
             return
 
-        self.finished = True
+        self.runtime_core.advance_until_decision_or_stable()
 
     def handle_pending_choice(self):
         """
@@ -123,15 +108,16 @@ class SimulatorRunner:
         if pending_choice is None:
             raise RuntimeError("handle_pending_choice called without a pending choice")
         player_id = pending_choice["player_id"]
-        viewer_state = self.viewer_state_builder.build(
+        viewer_bundle = self.viewer_state_builder.build_for_player(
             self.state_store,
             viewer_player=player_id,
         )
         raw_command = self.ai_player_client.decide(
+            game_id=self.game_id,
             player_id=player_id,
-            viewer_state=viewer_state,
+            viewer_bundle=viewer_bundle,
         )
-        parsed_command = self.command_parser.parse(raw_command, viewer_state)
+        parsed_command = self.command_parser.parse(raw_command, viewer_bundle)
         self.runtime_core.resolve_command(parsed_command)
 
     def handle_player_action(self):
@@ -144,16 +130,36 @@ class SimulatorRunner:
         - runner parses and sends it to runtime
         """
         player_id = self.state_store.get_priority_player()
-        viewer_state = self.viewer_state_builder.build(
+        viewer_bundle = self.viewer_state_builder.build_for_player(
             self.state_store,
             viewer_player=player_id,
         )
         raw_command = self.ai_player_client.decide(
+            game_id=self.game_id,
             player_id=player_id,
-            viewer_state=viewer_state,
+            viewer_bundle=viewer_bundle,
         )
-        parsed_command = self.command_parser.parse(raw_command, viewer_state)
+        parsed_command = self.command_parser.parse(raw_command, viewer_bundle)
         self.runtime_core.resolve_command(parsed_command)
+
+    def ensure_ai_ready_for_game(self):
+        """
+        Ensure player-isolated AI sessions exist before the first choice.
+
+        Opening pending choices like choose_turn_order should not pay session
+        creation cost on the critical path.
+        """
+        if self.game_id is None:
+            return
+
+        self.ai_player_client.ensure_player_session(
+            game_id=self.game_id,
+            player_id="P1",
+        )
+        self.ai_player_client.ensure_player_session(
+            game_id=self.game_id,
+            player_id="P2",
+        )
 
     def _start_opening_sequence(self, first_player=None, decision_player=None):
         """
@@ -198,6 +204,15 @@ class SimulatorRunner:
         self.step_count = 0
         self.finished = False
         self.winner = None
+
+    def sync_finish_state(self):
+        """
+        Sync runner-level finish flags from the current runtime state.
+        """
+        current_state = self.state_store.get_state()
+        if current_state.get("game_over"):
+            self.finished = True
+            self.winner = current_state.get("winner")
 
     def build_result(self):
         """
@@ -249,27 +264,117 @@ def bootstrap_production_runner():
         state_store=state_store,
     )
 
-    class _PlaceholderComponent:
-        def __getattr__(self, name):
-            raise NotImplementedError(
-                f"Provide a concrete implementation for '{name}' before using "
-                "non-opening runtime paths."
-            )
-
     runtime = RuntimeCore(
         state_store=state_store,
         card_database=card_database,
-        effect_interpreter=_PlaceholderComponent(),
-        runtime_validator=_PlaceholderComponent(),
-        primitive_executor=_PlaceholderComponent(),
-        rules_management=_PlaceholderComponent(),
-        trigger_system=_PlaceholderComponent(),
+        effect_interpreter=_NotReadyComponent(),
+        runtime_validator=_NotReadyComponent(),
+        primitive_executor=_NotReadyComponent(),
+        rules_management=_NotReadyComponent(),
+        trigger_system=_NotReadyComponent(),
         gameplay_logger=gameplay_logger,
     )
 
     return state_store, gameplay_logger, runtime
 
 
+class SimulatorLoopRunner:
+    """
+    Simulator loop runner for one full AI-vs-AI outer loop.
+
+    It owns the top-level control flow:
+    - advance runtime-owned automatic work
+    - detect which kind of decision is needed
+    - route pending choices and action windows to the correct AI
+    - stop on stable terminal state or step limit
+    """
+
+    def __init__(self, simulator_runner):
+        self.simulator_runner = simulator_runner
+        self.viewer_bundle = None
+
+    def _resolve_viewer_player(self):
+        """
+        Prefer the player who should see the latest decision-facing state.
+        """
+        pending_choice = self.simulator_runner.state_store.peek_pending_choice()
+        if pending_choice is not None:
+            return pending_choice["player_id"]
+
+        priority_player = self.simulator_runner.state_store.get_priority_player()
+        if priority_player is not None:
+            return priority_player
+
+        state_store = self.simulator_runner.state_store
+
+        opening_state = state_store.get_state().get("opening", {})
+        decision_player = opening_state.get("decision_player")
+        if decision_player is not None:
+            return decision_player
+
+        return "P1"
+
+    def run(self, viewer_player=None):
+        """
+        Run the outer simulator loop until the game finishes or hits step
+        limit, then expose the final viewer bundle.
+        """
+        while (
+            not self.simulator_runner.finished
+            and self.simulator_runner.step_count < self.simulator_runner.max_steps
+        ):
+            self.simulator_runner.step_count += 1
+            self.simulator_runner.prepare_next_step()
+            self.simulator_runner.sync_finish_state()
+
+            if self.simulator_runner.finished:
+                break
+
+            if self.simulator_runner.state_store.peek_pending_choice() is not None:
+                self.simulator_runner.handle_pending_choice()
+                continue
+
+            if self.simulator_runner.state_store.needs_action_window():
+                self.simulator_runner.handle_player_action()
+                continue
+
+            self.simulator_runner.finished = True
+            break
+
+        self.simulator_runner.sync_finish_state()
+
+        if viewer_player is None:
+            viewer_player = self._resolve_viewer_player()
+
+        self.viewer_bundle = self.simulator_runner.viewer_state_builder.build_for_player(
+            state_store=self.simulator_runner.state_store,
+            viewer_player=viewer_player,
+        )
+        return {
+            "result": self.simulator_runner.build_result(),
+            "viewer_bundle": self.viewer_bundle,
+        }
+
+
 if __name__ == "__main__":
+    from ai_player_client import AiPlayerClient
+    from simple_command_parser import SimpleCommandParser
+    from viewer_state_builder import ViewerStateBuilder
+
     state_store, gameplay_logger, runtime = bootstrap_production_runner()
-    game_id = runtime.start_game()
+    viewer_state_builder = ViewerStateBuilder()
+    ai_player_client = AiPlayerClient()
+    command_parser = SimpleCommandParser()
+    simulator_runner = SimulatorRunner(
+        state_store=state_store,
+        viewer_state_builder=viewer_state_builder,
+        ai_player_client=ai_player_client,
+        command_parser=command_parser,
+        runtime_core=runtime,
+        gameplay_logger=gameplay_logger,
+    )
+    simulator_runner.start_game()
+    simulator_loop_runner = SimulatorLoopRunner(
+        simulator_runner=simulator_runner,
+    )
+    simulator_loop_runner.run()

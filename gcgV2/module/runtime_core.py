@@ -64,7 +64,6 @@ class RuntimeCore:
             p2_deck_id=p2_deck_id,
         )
         self.gameplay_logger.open_game(game_id)
-        ##update pending choice state
         self.start_opening_sequence(
             first_player=first_player,
             decision_player=decision_player,
@@ -441,6 +440,8 @@ class RuntimeCore:
         """
         self.state_store.place_shields("P1", 6)
         self.state_store.place_shields("P2", 6)
+        self.state_store.deploy_ex_base("P1")
+        self.state_store.deploy_ex_base("P2")
         self.state_store.set_ex_resource(self.state_store.get_second_player(), 1)
         self.state_store.set_turn(1)
         self.state_store.set_phase("main")

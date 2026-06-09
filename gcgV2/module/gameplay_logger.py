@@ -54,6 +54,8 @@ class GameplayLogger:
         features = payload.get("features")
         if features is None:
             features = self.state_store.build_snapshot()
+        payload_without_features = dict(payload)
+        payload_without_features.pop("features", None)
 
         event = self._build_event(
             game_id=game_id,
@@ -64,7 +66,7 @@ class GameplayLogger:
             result={
                 "ok": True,
                 "reason": "",
-                "payload": payload,
+                "payload": payload_without_features,
             },
             features=features,
         )
