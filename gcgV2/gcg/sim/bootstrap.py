@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from .. import config
+from ..ai.hermes_player_client import HermesPlayerClient
 from ..ai.llm_client import LlmClient
 from ..ai.player_client import AiPlayerClient
 from ..ai.prompt_builder import PromptBuilder
@@ -81,6 +82,8 @@ def build_simulator(
         }
     elif players == "scripted":
         player_map = {"P1": ScriptedPlayer(), "P2": ScriptedPlayer()}
+    elif players == "hermes":
+        player_map = {"P1": HermesPlayerClient(timeout=60), "P2": HermesPlayerClient(timeout=60)}
     else:
         raise ValueError(f"unknown players mode: {players}")
 

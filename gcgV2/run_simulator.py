@@ -27,7 +27,7 @@ from gcg.sim.bootstrap import build_simulator  # noqa: E402
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run local gcgV2 AI-vs-AI simulator")
-    parser.add_argument("--players", choices=("llm", "scripted"), default="llm")
+    parser.add_argument("--players", choices=("llm", "scripted", "hermes"), default="llm")
     parser.add_argument("--interpreter", choices=("llm", "reference"), default="llm")
     parser.add_argument("--first-player", choices=("P1", "P2"))
     parser.add_argument("--decision-player", choices=("P1", "P2"))
