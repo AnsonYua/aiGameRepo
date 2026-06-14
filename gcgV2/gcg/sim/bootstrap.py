@@ -30,7 +30,7 @@ def build_simulator(
 ):
     """組裝 simulator。
 
-    players: "llm"（正式）或 "scripted"（測試/離線）
+    players: "llm"（正式）、"scripted"（測試/離線）或 "hermes"（Hermes Agent）
     interpreter: "llm"（正式）或 "reference"（測試/離線，僅 ST01）
     """
     output_root = output_root or config.output_root()
