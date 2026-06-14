@@ -83,7 +83,14 @@ def build_simulator(
     elif players == "scripted":
         player_map = {"P1": ScriptedPlayer(), "P2": ScriptedPlayer()}
     elif players == "hermes":
-        player_map = {"P1": HermesPlayerClient(timeout=60), "P2": HermesPlayerClient(timeout=60)}
+        player_map = {
+            "P1": HermesPlayerClient(
+                timeout=60, source_tag="gcg-p1", ai_trace_writer=ai_trace_writer,
+            ),
+            "P2": HermesPlayerClient(
+                timeout=60, source_tag="gcg-p2", ai_trace_writer=ai_trace_writer,
+            ),
+        }
     else:
         raise ValueError(f"unknown players mode: {players}")
 
