@@ -1,0 +1,10 @@
+# 來源：game_20260613_160545_499572 Turn 13-17 review
+# P2 在 T13 摧毀對手基地後手中持有 White Base 卻先部署 Guncannon，
+# 錯失 4 回合的 token 生成與盾牌抽牌效益，直到 T17 才醒悟部署基地。
+# 教訓：對手基地已毀且有盾牌時，部署基地卡的三重價值遠大於部署普通單位。
+id: deploy-base-for-tokens
+priority: 9
+description: '對手基地已毀且仍有盾牌時，若手牌中有基地卡，部署基地卡提供三重價值：① 基地本身作為防禦層吸收傷害保護盾牌；② [Deploy]從盾牌抽 1 張牌補手牌；③ [Activate/Main]每回合支付資源可生成 token 攻擊者，增加破盾攻擊次數。即使是低 AP 的 token 也能穩定破盾。若資源足夠部署，部署基地卡的長期價值（每回合 token + 盾牌保護 + 抽牌）通常高於部署一個等費普通單位。不要在只剩「增加場面壓力」的理由時跳過基地卡。'
+condition:
+  enemy_base_present: false
+  enemy_shields_min: 1

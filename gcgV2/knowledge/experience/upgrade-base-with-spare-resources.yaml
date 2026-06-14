@@ -1,0 +1,11 @@
+# 來源：game_20260613_160545_499572 Turn 3 review
+# P2 在 T3 有 2 活躍資源、手牌有 Asticassia (cost 1)，但空過。
+# 部署 Asticassia 可將 EX-Base(3HP) 升級為 5HP 基地，並觸發 [Deploy]抽 1 盾。
+# 教訓：資源有餘裕時部署基地卡提升基地 HP 並抽牌，幾乎總是正面價值。
+id: upgrade-base-with-spare-resources
+priority: 8
+description: '若我方基地已被摧毀且手中有基地卡，應優先考慮部署基地重建防禦層。部署基地提供：①新基地吸收傷害保護剩餘盾牌；②[Deploy]從盾牌抽 1 牌；③非 EX-Base 基地每回合可生成 token 增加攻擊次數。即使資源剛好只夠部署基地不做其他事，重建防禦層的生存價值也高於多部署一隻低費單位。但若本回合有機會摧毀對手基地或直擊獲勝，則優先求勝。'
+condition:
+  my_base_present: false
+  has_base_in_hand: true
+  turn_min: 2

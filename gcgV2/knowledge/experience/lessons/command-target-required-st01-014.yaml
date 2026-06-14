@@ -1,0 +1,21 @@
+id: command-target-required-st01-014
+source_game: game_20260607_214139_166237
+status: reviewed
+lesson_type: command_semantics
+confidence: medium
+summary: >
+  ST01-014 的卡片文字要求選擇 1 個敵方 Unit。
+  `play st01/ST01-014` 沒有指定目標，因此語意不完整；即使 runtime 曾接受，也不代表這是正確決策。
+applies_when:
+  - 可見手牌或可行指令中有 command card。
+  - 卡片文字包含 Choose / 選擇，且效果需要公開目標。
+  - proposed COMMAND 使用該 card 但沒有指定 target。
+bad_example: "targetless use/play ST01-014"
+better_example: "使用 ST01-014 時需附上當前公開、合法的敵方 Unit 目標欄位"
+player_instruction: >
+  若 command card 文字要求選擇目標，COMMAND 必須包含公開目標。
+  若目前 display 沒有列出可表達 target 的合法 command，避免輸出 targetless play/use。
+judge_instruction: >
+  若 proposed command 使用需要目標的 command card 但沒有指定目標，應 reject 並要求 player 修正。
+notes: >
+  此 lesson 不是 Python fallback。是否適用由 memory-selector / player / judge LLM 判斷。

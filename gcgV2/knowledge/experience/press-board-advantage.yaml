@@ -1,0 +1,9 @@
+# 來源：game_20260613_011112_503958 Turn 5-9
+# P2 有 2+ 活躍單位（Zowort, 無法攻擊玩家）但從未攻擊對手單位，錯失搶節奏機會。
+# 教訓：場上活躍單位應主動攻擊對手單位來奪取場面控制，而非閒置。
+id: press-board-advantage
+priority: 7
+description: '場上有活躍單位且有敵方單位可攻擊時，應主動攻擊交換，奪取場面控制。即使無法攻擊玩家的單位（如Zowort的「此單位不能選擇敵方玩家為攻擊目標」），仍可攻擊對手單位。讓活躍單位閒置等於浪費節奏優勢。'
+condition:
+  my_active_units_min: 1
+  enemy_units_min: 1

@@ -1,0 +1,14 @@
+# Priority：越高越重要。多個經驗檔案同時符合時，
+# attack_target 和 desperate_play 以 priority 最高者為準。
+# score_bonus 在所有符合的檔案間相加。
+id: command-chip-damage
+priority: 6
+description: '中後期敵方有場面：使用指令卡削血，即使無法保證擊殺。'
+condition:
+  turn_min: 4
+  enemy_units_min: 2
+  my_units_min: 2
+effect:
+  score_bonus:
+  - card_type: command
+    bonus: 8

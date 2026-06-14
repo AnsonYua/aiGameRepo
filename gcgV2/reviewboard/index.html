@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GCG Replay Review Board</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div class="brand-block">
+          <p class="eyebrow">GUNDAM CARD GAME</p>
+          <h1>Replay Review Board</h1>
+        </div>
+        <p class="topbar-message" id="topbarMessage">Loading replay data.</p>
+        <div class="step-meta">
+          <strong id="stepTitle">Loading replay...</strong>
+          <span id="stepSubtle"></span>
+        </div>
+      </header>
+
+      <section class="review-shell">
+        <aside class="event-panel">
+          <div class="event-card">
+            <div class="event-heading">
+              <span id="seqBadge">0 / 0</span>
+              <span id="phaseBadge">-</span>
+            </div>
+          </div>
+          <div class="timeline" id="timeline"></div>
+        </aside>
+
+        <section class="board" aria-label="Replay board">
+          <section class="player-zone opponent" data-player="p2">
+            <div class="player-info">
+              <span class="avatar"></span>
+              <strong>Opponent</strong>
+              <small id="p2Deck">Deck 0</small>
+            </div>
+            <div class="hand-row panel red-panel">
+              <h2>Opponent Hand <span id="p2HandCount">(0)</span></h2>
+              <div class="hand" id="p2Hand"></div>
+            </div>
+            <div class="side-stack">
+              <div class="deck-box">
+                <strong>Energy Deck</strong>
+                <div class="mini-deck red" id="p2EnergyDeck"></div>
+              </div>
+              <div class="deck-box">
+                <strong>Trash</strong>
+                <div class="trash" id="p2Trash">0</div>
+              </div>
+            </div>
+            <div class="base-strip red-panel">
+              <span class="vertical-label red">Opponent Base / Shield</span>
+              <div class="base-card" id="p2Base"></div>
+              <div class="shield-line">
+                <strong>Shield <span id="p2ShieldCount">(0)</span></strong>
+                <div class="shields" id="p2Shields"></div>
+              </div>
+              <div class="resource-line">
+                <strong>Resource</strong>
+                <span id="p2ResourceText">0 / 10</span>
+                <div class="resource-pips" id="p2Resources"></div>
+              </div>
+            </div>
+            <div class="battlefield red-panel">
+              <h2>Opponent Battlefield</h2>
+              <div class="slots" id="p2Slots"></div>
+            </div>
+          </section>
+
+          <section class="combat-area">
+            <span>Combat Area</span>
+            <small>Units in the Battlefield attack across this area</small>
+          </section>
+
+          <section class="player-zone self" data-player="p1">
+            <div class="battlefield blue-panel">
+              <span class="vertical-label blue">Your Battlefield</span>
+              <h2>Your Battlefield</h2>
+              <div class="slots" id="p1Slots"></div>
+            </div>
+            <div class="side-stack lower">
+              <div class="deck-box">
+                <strong>Energy Deck</strong>
+                <div class="mini-deck blue" id="p1EnergyDeck"></div>
+              </div>
+              <div class="deck-box">
+                <strong>Trash</strong>
+                <div class="trash" id="p1Trash">0</div>
+              </div>
+            </div>
+            <div class="base-strip blue-panel">
+              <span class="vertical-label blue">Your Base / Shield</span>
+              <div class="base-card" id="p1Base"></div>
+              <div class="shield-line">
+                <strong>Shield <span id="p1ShieldCount">(0)</span></strong>
+                <div class="shields" id="p1Shields"></div>
+              </div>
+              <div class="resource-line">
+                <strong>Resource</strong>
+                <span id="p1ResourceText">0 / 10</span>
+                <div class="resource-pips" id="p1Resources"></div>
+              </div>
+            </div>
+            <div class="hand-row panel blue-panel">
+              <h2>Your Hand <span id="p1HandCount">(0)</span></h2>
+              <div class="hand" id="p1Hand"></div>
+            </div>
+          </section>
+        </section>
+      </section>
+
+      <footer class="controls">
+        <button id="prevBtn" type="button">Previous</button>
+        <input id="stepSlider" type="range" min="0" max="0" value="0" />
+        <button id="nextBtn" type="button">Next</button>
+      </footer>
+    </main>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

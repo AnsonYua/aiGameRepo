@@ -1,0 +1,9 @@
+# 來源：game_20260613_160545_499572 Turn 9 (seq 160) review
+# P2 嘗試將 White Base (cardType: base) 部署到戰鬥區 slot 1，
+# 指令被拒絕：基地卡只能放到基地區，不能放到單位插槽。
+# 教訓：不同 cardType 有不同部署格式與目標區域。
+id: card-type-placement
+priority: 9
+description: '卡牌類型決定部署區域，不是費用或名稱。Base card 只能放到基地區，指令格式為 `play_card <card_id>`（無插槽）。Unit card 只能放到戰鬥區空插槽，指令格式為 `play_card <card_id> <slot>`（需插槽號碼）。若 legal_commands 中沒有包含該 card_id 的 `play_card` 指令，代表該卡在當前遊戲狀態下無法合法使用（基地已存活無法再部署基地、費用不足、等級不足等），不要自行組合指令。'
+condition:
+  turn_min: 1

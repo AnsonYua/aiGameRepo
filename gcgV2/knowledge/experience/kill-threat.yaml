@@ -1,0 +1,19 @@
+# Priority：越高越重要。多個經驗檔案同時符合時，
+# attack_target 和 desperate_play 以 priority 最高者為準。
+# score_bonus 在所有符合的檔案間相加。
+#
+# 註：此檔僅作 public-safe prompt/context 素材，不是 Python 策略 fallback。
+# 舊評分說明中的擊殺優先順序應遷移到 agent-server player instructions。
+# +18 command 加分和特定條件（橫置+受傷）才是真正的效果，
+# 讓 AI 偏好使用指令卡來尾刀。
+id: kill-threat
+priority: 9
+description: '敵方有虛弱的橫置單位：優先使用指令卡擊殺並攻擊尾刀。'
+condition:
+  enemy_rested_units_min: 1
+  enemy_damaged_units_min: 1
+  enemy_units_min: 1
+effect:
+  score_bonus:
+    card_type: command
+    bonus: 18

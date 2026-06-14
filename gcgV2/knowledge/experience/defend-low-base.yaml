@@ -1,0 +1,18 @@
+# Priority：越高越重要。多個經驗檔案同時符合時，
+# attack_target 和 desperate_play 以 priority 最高者為準。
+# score_bonus 在所有符合的檔案間相加。
+id: defend-low-base
+priority: 9
+description: 'Base ≤2 HP 且敵方有單位：優先部署阻擋者並擊殺敵方攻擊者。'
+condition:
+  my_base_hp_max: 2
+  my_units_max: 4
+  enemy_units_min: 1
+effect:
+  attack_target: kill
+  score_bonus:
+  - card_type: unit
+    bonus: 15
+  - card_type: command
+    bonus: 15
+  desperate_play: true

@@ -1,0 +1,12 @@
+# 來源：game_20260613_011112_503958 Turn 7（seq 73-77 P2, seq 78-82 P1）
+#        game_20260613_144509_606078 Turn 5（seq 63-65, End Phase 浪費）
+#        game_20260613_144509_606078 Turn 6（seq 78-80, 戰鬥Action Step 已無阻擋才使用）
+# 失誤：使用 ST01-014（本回合 AP-3）時機完全錯誤，效果零作用。
+# 教訓：本回合臨時 debuff 必須在還能影響戰鬥前使用。
+id: temp-debuff-before-attack
+priority: 10
+description: '「本回合結束前降低敵方AP」的卡片只在本回合的戰鬥中有用。❌ 絕對不要在 ① End Phase Action Step（已無戰鬥）、② 戰鬥Action Step且阻擋已結算或已無阻擋者、③ 主階段使用後直接讓過——使用。這三種情況效果都會在回合結束完全消失，等於無條件燒牌。✅ 正確時機：主階段即將宣告攻擊前 debuff 對手高攻單位或 Blocker，或戰鬥Action Step 對手尚未決定阻擋前干擾其阻擋判斷。'
+condition:
+  has_temp_debuff_in_hand: true
+  enemy_units_min: 1
+  my_units_min: 1

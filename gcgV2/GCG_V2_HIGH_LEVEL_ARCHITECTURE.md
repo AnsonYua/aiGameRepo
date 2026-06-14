@@ -62,7 +62,7 @@ Action window 也要獨立建模。Action step 由 standby player 先拿 priorit
 
 LLM 有三個入口，但都不改 state。
 
-Effect Preflight 讀 viewer state、卡文、候選物件與 lessons，產生可行動作與缺少資訊。AI Player 根據 public-safe viewer state 與 candidate actions，輸出單一步 runtime command。Effect Interpreter 把卡文、command、trigger context 轉成 `resolved intent`；若資訊不足，回傳 unresolved requirements，讓 runtime 建 pending choice。
+Effect Preflight 讀 viewer state、卡文、候選物件與 lessons，產生可行動作與缺少資訊。AI Player 根據 public-safe viewer state 與 candidate actions，輸出單一步 runtime command。Effect Interpreter 把卡文、command、trigger context 轉成 `resolved intent`；若資訊不足，回傳 unresolved requirements，讓 runtime 建 pending choice queue item。
 
 例子：卡文是「Choose 1 enemy Unit with 2 or less HP. Rest it.」Effect Interpreter 可以輸出 target filter：enemy Unit 且 HP <= 2，effect step：rest target。它不能自己選 target，也不能把 Unit rest。
 
@@ -98,7 +98,7 @@ Pending choice queue item 必須包含 choice id、owner、legal options、restr
 
 State 分三層：真實狀態是 source of truth，例如 zone、damage、resource active；衍生狀態由 continuous effects、duration effects、Pilot 修正與 battle context 算出；流程狀態包含 turn、phase、priority、battle、pending choice queue、trigger queue。
 
-Runtime 至少維護 `base_state`、`derived_state`、`turn_state`、`priority_state`、`action_window`、`battle_context`、`pending_choice` queue、`trigger_queue`、`continuous_effects` 與 `object_instance_id`。
+Runtime 至少維護 `base_state`、`derived_state`、`turn_state`、`priority_state`、`action_window`、`battle_context`、`pending_choice`（queue）、`trigger_queue`、`continuous_effects` 與 `object_instance_id`。
 
 `object_instance_id` 很重要。卡牌移到新 location 後是新物件，舊 target、duration effect、once-per-turn tracking 不應套到新物件。
 
@@ -110,7 +110,7 @@ Viewer State Builder 從真實 state 產生 public-safe viewer state。AI 可看
 
 `gamePlay.yaml` 是 canonical log，不是普通 replay。它至少包含 `schema_version`、`game_id`、`summary`、`events`。Event `seq` 必須單調遞增，且可被 `yaml.safe_load` 解析。
 
-Log 應記錄 AI command、resolved intent、validate 結果、execute 結果、rules management 結果、trigger enqueue / order / resolve、pending choice queue item 建立與完成、phase / battle / priority transition，以及 public-safe state delta。
+Log 應記錄 AI command、resolved intent、validate 結果、execute 結果、rules management 結果、trigger enqueue / order / resolve、pending choice queue item 建立與完成、phase / battle / priority transition，以及 public-safe state delta。`features` 應只保留在 event 外層，不要在 `result.payload` 再重複一份。
 
 Log 不寫 hidden hand identity、hidden deck order、hidden shield identity 或內部 prompt。涉及 hidden card 時，用 public-safe 文字。
 

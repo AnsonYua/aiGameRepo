@@ -1,0 +1,13 @@
+# 來源：game_20260613_160545_499572 Turn 4 (seq 61)
+# P1 將 ST01-012 (Hayato Kobayashi) 配對到無 Link 的 Demi Trainer，
+# 錯過了保留雙用途卡當 Command 使用（對 rested 單位造成 1 點傷害）的機會，
+# 也錯過同回合部署 Guntank (link: Hayato Kobayashi) 後配對成 Link 的選項。
+# 教訓：配對前先檢查有無 Link 可能，若無 Link 且駕駛員無 [When Paired]/[Attack]
+# 效果，配對的價值極低。
+id: avoid-pointless-non-link-pair
+priority: 10
+description: '場上有未配對單位且手牌有可配對卡時，若所有未配對單位的 Link 名單均與手牌駕駛員不符（無 Link 可能），且駕駛員無 [When Paired] 或 [Attack] 效果可用於該單位，則配對僅提供微幅 AP/HP 加成而無戰術價值。應優先檢查是否能先部署手牌中的 Link 對應單位再配對，或保留駕駛員等待未來更適合的目標。對雙用途卡（可當指令卡或駕駛員），也應比較指令效果是否在此局面有實際作用（例如能否擊殺或橫置敵方單位）。'
+condition:
+  has_unpaired_units: true
+  has_pairable_in_hand: true
+  has_matching_pilot_in_hand: false

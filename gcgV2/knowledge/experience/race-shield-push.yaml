@@ -1,0 +1,11 @@
+# 對手基地已毀後的搶攻原則。
+# 來源：game_20260613_000213_291206 turn 9 review —— P1 有 3 攻擊者對 5 盾 0 基地，
+# 卻分兵擊殺橫置單位，拖慢打穿節奏。
+#
+# 註：此檔僅作 public-safe prompt/context 素材，不是 Python 策略 fallback。
+id: race-shield-push
+priority: 10
+description: '對手基地已毀時，每次攻擊防禦層固定破 1 盾。先數回合：我方可攻擊單位數能在 1-2 回合內打穿對手剩餘盾牌時，全部攻擊防禦層通常優於分兵擊殺單位；每改打一隻單位就是把斬殺延後一次攻擊。擊殺單位只在能阻止對手反向斬殺我方時才優先。'
+condition:
+  enemy_base_present: false
+  my_units_min: 2

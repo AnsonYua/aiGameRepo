@@ -155,7 +155,7 @@ Primitive 應小而固定，例如 `move_card`、`deploy_card`、`pair_pilot`、
 
 `gameplay_logger` 負責寫 canonical `gamePlay.yaml`。這是 simulator 的主要輸出。
 
-它應記錄 AI command、interpreted intent、validation result、primitive delta、rules result、trigger events、pending choice queue item、phase change 與 game result。
+它應記錄 AI command、interpreted intent、validation result、primitive delta、rules result、trigger events、pending choice queue item、phase change 與 game result。`features` 只應存在 event 外層，不應在 `result.payload` 再重複內嵌。
 
 它不能寫 hidden raw state。
 

@@ -1,0 +1,9 @@
+# 來源：game_20260613_144509_606078 Turn 14（seq 275）
+# P1 將 Suletta Mercury（[Attack]時重置1資源）配對到 Zowort（不能攻擊玩家），
+# 浪費了攻擊觸發效果的價值。
+id: pair-attack-trigger-restriction
+priority: 8
+description: '手上駕駛員有 [Attack] 觸發效果時，避免配對到「不能攻擊玩家」的機體。[Attack]效果的價值來自於攻擊防禦層（破盾/推直擊）時產生的節奏優勢——配對到只能攻擊單位的機體等同把這個效果降級為「交換時才可能觸發」。若場上唯一的未配對機體有攻擊限制，保留駕駛員在手牌等待更好的目標，優於為了立刻的 AP/HP 加成而浪費效果。'
+condition:
+  has_pilot_in_hand: true
+  has_attack_restricted_unit: true

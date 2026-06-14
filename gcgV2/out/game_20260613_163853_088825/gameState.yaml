@@ -1,0 +1,327 @@
+game_id: game_20260613_163853_088825
+turn: 12
+phase: battle
+step: damage
+active_player: P1
+priority_player: null
+action_window:
+  active: false
+  origin: null
+  consecutive_passes: 0
+  last_action_player: null
+battle_context:
+  attacker_player: P1
+  attacker_slot: 1
+  defender_player: P2
+  target_kind: base
+  target_slot: null
+  blocker_slot: null
+pending_choice: []
+game_over: true
+winner: P1
+win_reason: player_damage
+p1:
+  hand_count: 6
+  deck_count: 33
+  resource_deck_count: 4
+  shields: 0
+  resources:
+    active: 6
+    rested: 0
+    ex: 0
+  base:
+    card_id: st01/ST01-016
+    ap: 0
+    hp: 5
+    damage: 0
+    alive: true
+    status: active
+  board:
+    units: 3
+    empty_slots: 3
+    rested_units: 2
+    damaged_units: 1
+    blockers: 0
+    slots:
+    - slot: 0
+      unit_id: st01/ST01-003
+      pilot_id: null
+      pilot_name: null
+      base_ap: 2
+      base_hp: 4
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 2
+      hp: 4
+      damage: 1
+      status: rested
+      keywords: []
+      link_names:
+      - Kai Shiden
+      is_link: false
+      is_token: false
+      turns_on_field: 3
+    - slot: 1
+      unit_id: st01/ST01-007
+      pilot_id: st01/ST01-011
+      pilot_name: Suletta Mercury
+      base_ap: 3
+      base_hp: 4
+      pilot_ap: 1
+      pilot_hp: 2
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 4
+      hp: 6
+      damage: 0
+      status: rested
+      keywords: []
+      link_names:
+      - Suletta Mercury
+      is_link: true
+      is_token: false
+      turns_on_field: 2
+    - slot: 2
+      unit_id: st01/ST01-005
+      pilot_id: null
+      pilot_name: null
+      base_ap: 2
+      base_hp: 2
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 2
+      hp: 2
+      damage: 0
+      status: active
+      keywords: []
+      link_names: []
+      is_link: false
+      is_token: false
+      turns_on_field: 3
+    - slot: 3
+      unit_id: null
+      pilot_id: null
+      pilot_name: null
+      base_ap: 0
+      base_hp: 0
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 0
+      hp: 0
+      damage: 0
+      status: null
+      keywords: []
+      link_names: []
+      is_link: false
+      is_token: false
+      turns_on_field: 0
+    - slot: 4
+      unit_id: null
+      pilot_id: null
+      pilot_name: null
+      base_ap: 0
+      base_hp: 0
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 0
+      hp: 0
+      damage: 0
+      status: null
+      keywords: []
+      link_names: []
+      is_link: false
+      is_token: false
+      turns_on_field: 0
+    - slot: 5
+      unit_id: null
+      pilot_id: null
+      pilot_name: null
+      base_ap: 0
+      base_hp: 0
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 0
+      hp: 0
+      damage: 0
+      status: null
+      keywords: []
+      link_names: []
+      is_link: false
+      is_token: false
+      turns_on_field: 0
+  trash:
+  - st01/ST01-005
+  - st01/ST01-005
+  - st01/ST01-008
+  - st01/ST01-004
+  - st01/ST01-004
+  - st01/ST01-014
+  removal: []
+p2:
+  hand_count: 2
+  deck_count: 33
+  resource_deck_count: 4
+  shields: 0
+  resources:
+    active: 2
+    rested: 4
+    ex: 0
+  base:
+    card_id: st01/ST01-015
+    ap: 0
+    hp: 5
+    damage: 6
+    alive: false
+    status: active
+  board:
+    units: 4
+    empty_slots: 2
+    rested_units: 3
+    damaged_units: 0
+    blockers: 0
+    slots:
+    - slot: 0
+      unit_id: st01/ST01-005
+      pilot_id: null
+      pilot_name: null
+      base_ap: 2
+      base_hp: 2
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 2
+      hp: 2
+      damage: 0
+      status: rested
+      keywords: []
+      link_names: []
+      is_link: false
+      is_token: false
+      turns_on_field: 4
+    - slot: 1
+      unit_id: st01/ST01-004
+      pilot_id: null
+      pilot_name: null
+      base_ap: 2
+      base_hp: 3
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 2
+      hp: 3
+      damage: 0
+      status: rested
+      keywords: []
+      link_names:
+      - Hayato Kobayashi
+      is_link: false
+      is_token: false
+      turns_on_field: 1
+    - slot: 2
+      unit_id: st01/ST01-007
+      pilot_id: st01/ST01-011
+      pilot_name: Suletta Mercury
+      base_ap: 3
+      base_hp: 4
+      pilot_ap: 1
+      pilot_hp: 2
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 4
+      hp: 6
+      damage: 0
+      status: rested
+      keywords: []
+      link_names:
+      - Suletta Mercury
+      is_link: true
+      is_token: false
+      turns_on_field: 2
+    - slot: 3
+      unit_id: null
+      pilot_id: null
+      pilot_name: null
+      base_ap: 0
+      base_hp: 0
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 0
+      hp: 0
+      damage: 0
+      status: null
+      keywords: []
+      link_names: []
+      is_link: false
+      is_token: false
+      turns_on_field: 0
+    - slot: 4
+      unit_id: st01/ST01-003
+      pilot_id: st01/ST01-010
+      pilot_name: Amuro Ray
+      base_ap: 2
+      base_hp: 4
+      pilot_ap: 2
+      pilot_hp: 1
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 4
+      hp: 5
+      damage: 0
+      status: active
+      keywords: []
+      link_names:
+      - Kai Shiden
+      is_link: false
+      is_token: false
+      turns_on_field: 0
+    - slot: 5
+      unit_id: null
+      pilot_id: null
+      pilot_name: null
+      base_ap: 0
+      base_hp: 0
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 0
+      hp: 0
+      damage: 0
+      status: null
+      keywords: []
+      link_names: []
+      is_link: false
+      is_token: false
+      turns_on_field: 0
+  trash:
+  - st01/ST01-009
+  - st01/ST01-013
+  - st01/ST01-002
+  - st01/ST01-007
+  - st01/ST01-009
+  - st01/ST01-009
+  - st01/ST01-015
+  - st01/ST01-003
+  - st01/ST01-008
+  removal: []
+opening:
+  decision_player: P2
+  first_player: P2
+  second_player: P1
+  mulligan_done:
+    P1: true
+    P2: true

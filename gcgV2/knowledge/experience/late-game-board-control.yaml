@@ -1,0 +1,20 @@
+# Priority：越高越重要。多個經驗檔案同時符合時，
+# attack_target 和 desperate_play 以 priority 最高者為準。
+# score_bonus 在所有符合的檔案間相加。
+#
+# 註：此檔僅作 public-safe prompt/context 素材，不是 Python 策略 fallback。
+# 舊評分說明中的擊殺優先順序應遷移到 agent-server player instructions。
+# 真正的效果是卡片類型加分（+10 command, +5 unit）。
+id: late-game-board-control
+priority: 7
+description: '後期場面已建立：擊殺敵方單位以減輕其攻勢壓力。'
+condition:
+  turn_min: 8
+  my_units_min: 3
+  enemy_units_min: 2
+effect:
+  score_bonus:
+  - card_type: command
+    bonus: 10
+  - card_type: unit
+    bonus: 5

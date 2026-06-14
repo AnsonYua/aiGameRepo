@@ -1,0 +1,11 @@
+# 來源：game_20260613_163853_088825 T6 review
+# P2 以 Zowort（cost 2, Blocker, AP3/HP2）阻擋 P1 的 GM（cost 1, AP2/HP2），
+# 結果雙方同歸於盡。P2 當時有 6 盾，讓 GM 通過只損 1 盾。
+# 教訓：盾牌充裕時，讓小攻擊打盾比用 Blocker 交換划算。
+id: preserve-blocker-with-shields
+priority: 9
+description: '基地已毀且盾牌充裕（≥3）時，讓盾牌吸收小攻擊（AP≤3）通常優於使用 Blocker 阻擋。每 1 面盾牌就是一次免費的傷害吸收，Blocker 是可重複使用的防禦資產。讓盾牌吸收小攻擊：損失 1 面盾牌（可替代資源），保留 Blocker（不可替代資產）。使用 Blocker 阻擋小攻擊：雙方單位都可能毀滅，您失去場面控制力。保留 Blocker 用於：(a) 對手高 AP 攻擊手（AP ≥ 4），或 (b) 盾牌所剩無幾（≤1）需要保命的時刻。評估阻擋前先看自己還有多少盾牌——盾牌超過 3 面時，小攻擊不值得用 Blocker 換。'
+condition:
+  my_base_present: false
+  my_shields_min: 3
+  my_blocker_count_min: 1

@@ -1,0 +1,11 @@
+# 來源：game_20260614_124140_337599 Turn 5 review
+# P2 在 T5 主階段有 5 資源，手上有 Gundam Aerial Bit (cost 2, 3/4)、
+# Suletta Mercury (cost 1, Link, [Attack] 重置資源)、Gundam (cost 3, 3/4, [During Pair] 全體 AP+1)
+# 與 Guncannon (cost 2, 2/4, 無效果)。P2 選擇部署 Guncannon（最弱選項）到 slot 0，
+# 然後將 Hayato（ST01-012，無 Link 匹配）配對上去，浪費了 slot 與駕駛員。
+# 教訓：部署前先比較所有選項，最強組合優先。
+id: deploy-strongest-first
+priority: 11
+description: '在主要階段部署單位時，不要先部署弱單位再用弱單位佔 slot。若手牌中有多個可部署選項（包含 Pilot 與其對應的 Link Unit），先比較所有選項的：①AP（攻擊力越高越好）、②HP（生存性）、③Link 潛力（部署+配對後本回合即可攻擊）、④特殊效果（全局增益如 [During Pair] 全體 AP+1、部署效果、即時殺傷）。優先將飛行甲板 slot 留給最強或最具協同效應的組合；先部署弱單位會佔用 slot 並排擠更強部署。若已有單位在場上但未配對，不要為「配對而配對」——若該單位非 Link 且配對後無協同效應，保留 Pilot 給未來更強單位優於浪費在弱單位上。'
+condition:
+  my_empty_slots_min: 1

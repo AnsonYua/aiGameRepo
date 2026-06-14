@@ -1,0 +1,14 @@
+# Priority：越高越重要。多個經驗檔案同時符合時，
+# attack_target 和 desperate_play 以 priority 最高者為準。
+# score_bonus 在所有符合的檔案間相加。
+id: pilot-link-focus
+priority: 7
+description: '場上有可配對的 Link Unit 時，優先部署駕駛員以獲得加成。'
+condition:
+  my_units_min: 1
+  my_units_max: 5
+  has_link_units: true
+effect:
+  score_bonus:
+    card_type: pilot
+    bonus: 15

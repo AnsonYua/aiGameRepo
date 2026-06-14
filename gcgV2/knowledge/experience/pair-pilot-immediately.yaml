@@ -1,0 +1,9 @@
+# 來源：game_20260613_011112_503958 Turn 11-13
+# P2 有 Gundam MA Form（未配對）在場，Turn 12 拿到 Amuro Ray 後等到 Turn 13 才配對。
+# 若 Turn 12 立即配對：MA Form Link 效果每回合抽 1 ＋ Amuro [When Paired] 橫置對手 ≤5HP 單位。
+# 教訓：Link Unit 與對應 Pilot 同時存在時應立即配對，不要拖延。
+id: pair-pilot-immediately
+priority: 9
+description: '場上有未配對的 Link Unit 且手牌有對應駕駛員時，應立即配對。配對後可同時獲得兩層效果：(a) 駕駛員的[When Paired]效果（如 Amuro Ray＝橫置對手HP5以下單位）；(b) Link Unit 的[When Paired]效果（如 Gundam MA Form＝每回合抽1）。多等一回合就是白白損失一次效果觸發。'
+condition:
+  has_matching_pilot_in_hand: true

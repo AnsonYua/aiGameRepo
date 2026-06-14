@@ -66,6 +66,7 @@ events:
 `result`
 - 這次事件成功與否
 - 如果有真正 state 變動，應該記在 `state_changes`
+- `result.payload` 可以放補充欄位，但不應再重複內嵌一份 `features`
 
 `features`
 - 當下 public-safe snapshot
@@ -78,6 +79,7 @@ events:
 
 ```text
 agent_server_init
+opening_environment_ready
 game_started
 mulligan_resolved
 turn_started
@@ -93,33 +95,146 @@ attack_resolved
 game_over
 ```
 
-## 4. Example: `game_started`
+## 4. Example: `opening_environment_ready`
 
 ```yaml
 - seq: 1
   ts: "2026-06-08T02:10:33+08:00"
-  turn: 1
+  turn: 0
   phase: "pre-game"
-  step: null
-  actor: null
+  step: "opening"
+  actor: "system"
   viewer: "P1"
-  event_type: "game_started"
+  event_type: "opening_environment_ready"
   public: true
-  message: "對局開始，P1 為先手。"
+  message: "初始環境設置完成，等待開局決策。"
   result:
     ok: true
     reason: ""
-    state_changes:
-      - type: "create_game"
-        first_player: "P1"
+    payload:
+      message: "初始環境設置完成，等待開局決策。"
   features:
-    turn: 1
+    game_id: "game_20260608_021028_537485"
+    turn: 0
     phase: "pre-game"
-    step: null
-    active_player: "P1"
-    priority: "P1"
+    step: "opening"
+    active_player: null
+    priority_player: null
     current_attacker: null
     pending_choice: []
+    game_over: false
+    winner: null
+    p1:
+      hand_count: 0
+      resources:
+        active: 0
+        rested: 0
+        ex: 0
+      deck_count: 50
+      resource_deck_count: 10
+      shields: 0
+      base:
+        card_id: "EX-BASE"
+        ap: 0
+        hp: 3
+        damage: 0
+        alive: true
+        status: null
+      board:
+        units: 0
+        empty_slots: 6
+        rested_units: 0
+        damaged_units: 0
+        blockers: 0
+        slots:
+          - slot: 0
+            unit_id: null
+            pilot_id: null
+            ap: 0
+            hp: 0
+            damage: 0
+            status: null
+            keywords: []
+            link: false
+            turns_on_field: 0
+    p2:
+      hand_count: 0
+      resources:
+        active: 0
+        rested: 0
+        ex: 0
+      deck_count: 50
+      resource_deck_count: 10
+      shields: 0
+      base:
+        card_id: "EX-BASE"
+        ap: 0
+        hp: 3
+        damage: 0
+        alive: true
+        status: null
+      board:
+        units: 0
+        empty_slots: 6
+        rested_units: 0
+        damaged_units: 0
+        blockers: 0
+        slots:
+          - slot: 0
+            unit_id: null
+            pilot_id: null
+            ap: 0
+            hp: 0
+            damage: 0
+            status: null
+            keywords: []
+            link: false
+            turns_on_field: 0
+    opening:
+      decision_player: null
+      first_player: null
+      second_player: null
+      mulligan_done:
+        P1: false
+        P2: false
+```
+
+## 5. Example: `game_started`
+
+```yaml
+- seq: 3
+  ts: "2026-06-08T02:10:36+08:00"
+  turn: 0
+  phase: "pre-game"
+  step: "opening"
+  actor: "system"
+  viewer: "P1"
+  event_type: "game_started"
+  public: true
+  message: "先後攻已確定，P1 為先攻，雙方已完成起手抽牌。"
+  result:
+    ok: true
+    reason: ""
+    payload:
+      message: "先後攻已確定，P1 為先攻，雙方已完成起手抽牌。"
+      first_player: "P1"
+  features:
+    game_id: "game_20260608_021028_537485"
+    turn: 0
+    phase: "pre-game"
+    step: "opening"
+    active_player: "P1"
+    priority_player: "P1"
+    current_attacker: null
+    pending_choice:
+      - type: "mulligan"
+        player_id: "P1"
+        message: "請決定是否保留起手牌"
+        options:
+          - id: "keep"
+            label: "保留"
+          - id: "redraw"
+            label: "重抽"
     game_over: false
     winner: null
     p1:

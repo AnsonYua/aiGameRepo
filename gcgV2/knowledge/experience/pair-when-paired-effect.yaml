@@ -1,0 +1,9 @@
+# 來源：game_20260613_144509_606078 turn 13 review
+# P2 有 Aerial PS6（未配對，有 [When Paired] AP-3）在場，
+# 手牌有 ST01-012（雙用途 Pilot+Command），選了指令而非配對。
+id: pair-when-paired-effect
+priority: 9
+description: '場上有未配對單位且該單位有 [When Paired] 效果（如 AP-3、橫置對手單位）時，即使手牌中的駕駛員不是 Link 配對，配對的價值也遠大於單純使用指令卡。原因：配對觸發單位的 [When Paired] 效果提供即時控場，同時給予永久 AP/HP 加成，且配對後仍可執行其他行動。而指令效果只有一次性且不一定夠擊殺。此原則在對手有大型威脅時尤其重要。'
+condition:
+  has_unpaired_units: true
+  has_pairable_in_hand: true

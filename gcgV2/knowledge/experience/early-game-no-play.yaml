@@ -1,0 +1,15 @@
+# Priority：越高越重要。多個經驗檔案同時符合時，
+# attack_target 和 desperate_play 以 priority 最高者為準。
+# score_bonus 在所有符合的檔案間相加。
+id: early-game-no-play
+priority: 10
+description: '前期（回合 1-3）：若有空格，部署單位 — 不要讓過。'
+condition:
+  turn_max: 3
+  my_empty_slots_min: 1
+  my_units_max: 1
+effect:
+  score_bonus:
+  - card_type: unit
+    bonus: 25
+  desperate_play: true

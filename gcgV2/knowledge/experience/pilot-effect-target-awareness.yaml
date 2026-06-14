@@ -1,0 +1,10 @@
+# 來源：game_20260613_144509_606078 turn 7-9
+# P2 多次配對 Amuro Ray 到非 Link 單位（Guntank、Guncannon、Aerial），
+# 其中 2 次 [When Paired] 效果因對手場上沒有 ≤5HP 的活躍單位而落空。
+id: pilot-effect-target-awareness
+priority: 8
+description: '駕駛員配對前先檢查 [When Paired] 效果是否有合法目標（如 Amuro Ray 需要對手有 ≤5HP 的活躍單位）。若效果無目標且配對對象非 Link 機體，保留駕駛員等待更好機會（Link 機體或有目標時機）通常優於立即配對。即使有 AP/HP 加成，浪費一次[When Paired]觸發可能就是浪費一次節奏反轉機會。'
+condition:
+  has_unpaired_units: true
+  has_matching_pilot_in_hand: false
+  enemy_active_units_max: 1

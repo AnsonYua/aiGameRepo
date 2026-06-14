@@ -1,0 +1,13 @@
+# 來源：game_20260613_163853_088825 T5 review
+# P2 基地已毀，對手基地剩 1HP，手牌有 Gundam Aerial (cost 2, link: Suletta) + Suletta Mercury (cost 1)，
+# 但選擇部署 Zowort（Blocker）錯過當回合斬殺。
+# 教訓：基地已毀時，部署防守只能拖延；摧毀對手基地才能逆轉。
+id: baseless-lethal-link
+priority: 11
+description: '我方基地已毀但對手基地仍存在且 HP 極低（≤2）時，不要只依賴既有場上活躍單位的攻擊力判斷能否斬殺。檢查手牌中是否有可部署後立即攻擊的 Link Unit（Unit + 對應 Pilot 都未部署）。若有且資源足夠，部署 + 配對後 Link 單位本回合即可攻擊。把部署後的 Link AP 加入本回合總輸出計算——若總和 ≥ 對手基地剩餘 HP，則以部署 Link 並摧毀對手基地為最優先行動，優於部署防守型單位。理由：我方已無基地，每回合盾牌都在消耗；摧毀對手基地移除其防禦層，是唯一能將壓力轉回對手的逆轉手段。部署 Blocker 只能延緩敗北，不能改變戰局。'
+condition:
+  my_base_present: false
+  enemy_base_present: true
+  enemy_base_hp_max: 2
+  has_pilot_in_hand: true
+  has_pairable_in_hand: true

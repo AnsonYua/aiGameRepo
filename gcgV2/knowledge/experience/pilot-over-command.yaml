@@ -1,0 +1,12 @@
+# Priority：越高越重要。多個經驗檔案同時符合時，
+# attack_target 和 desperate_play 以 priority 最高者為準。
+# score_bonus 在所有符合的檔案間相加。
+id: pilot-over-command
+priority: 8
+description: '場上有未配對單位且手牌有雙用途 [Pilot] 卡時，配對提供三層價值：（a）永久 AP/HP 加成；（b）若該單位有 [When Paired] 效果（如 AP-3、橫置等），配對後立即觸發一次控場效果；（c）配對後仍可進行其他行動。使用指令效果只有一次性，且若傷害不足擊殺等於浪費潛在駕駛員價值。除非指令能直接擊殺關鍵威脅且配對無任何即時效益，否則配對優於指令使用。'
+condition:
+  has_unpaired_units: true
+effect:
+  score_bonus:
+  - card_type: pilot
+    bonus: 12
