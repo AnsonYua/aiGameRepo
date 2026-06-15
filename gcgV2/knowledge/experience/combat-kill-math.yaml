@@ -1,0 +1,11 @@
+# 來源：game_20260615_143909_766682 Turn 4 review
+# P1 用 1/1 ST01-008 Demi Trainer 攻擊對手 rested 2/2 ST01-005 GM，
+# 理由說可以「擊殺」，但實際只造成 1 傷、自己被反殺，對手沒死。
+# 教訓：攻擊單位前必須計算擊殺數學。
+id: combat-kill-math
+priority: 9
+description: '宣告攻擊敵方單位前，先確認數學：我方的 AP ≥ 目標的剩餘 HP。如果 AP < remaining HP，該攻擊無法擊殺目標。低 AP 單位攻擊高 HP 目標通常只是無償送死，除非：①目標是必須解除的 active Blocker，交換後不會讓 lethal 路徑變差；②目標有特殊效果必須在結算前移除。安全檢查：攻擊前看 `attack_annotations` 欄位中的 damage_preview 確認傷害量，以及目標的 remaining_hp 確認不會白送。如果只是「想消耗對手場面」，用低 AP 撞高 HP rested unit 的消耗全由我方承擔。'
+condition:
+  my_units_min: 1
+  enemy_units_min: 1
+  turn_min: 3

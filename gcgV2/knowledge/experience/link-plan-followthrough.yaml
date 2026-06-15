@@ -1,0 +1,14 @@
+# 來源：game_20260615_012734_690878 Turn 8 review
+# P2 的 reasoning 兩次說「部署 Aerial 後配對 Suletta 達成 Link，本回合加入攻擊」，
+# 但連續部署兩張 ST01-007 把資源用光，沒有配對 Suletta，最後兩隻剛部署的 Aerial
+# 因召喚失調不能攻擊。
+# 教訓：如果 CONSIDER 的核心計畫是「部署 Link Unit + 配對 Pilot 讓它本回合可攻擊」，
+# 下一步的 COMMAND 必須優先完成 pair，不能先把資源花在第二個部署。
+id: link-plan-followthrough
+priority: 10
+description: '當 CONSIDER 的核心戰術計畫依賴「部署 Link Unit → 配對對應 Pilot → 本回合即可攻擊」時，下一步的 COMMAND 必須是 pair，不是第二個 deploy。部署 Link Unit 前要預先計算：部署用的 cost + 配對用的 cost（Pilot 的 cost）。若部署後剩餘 active resources 不足以支付 Pilot 的 cost（=Pilot 的 cost 值，通常是 1），則該單位本回合無法完成 Link、不能攻擊——不要把這個單位當作本回合 lethal 的一部份。若資源足夠，部署 Link Unit 後立即執行 pair 指令完成 Link，讓該單位本回合獲得攻擊能力。若先把剩餘資源花在部署第二個單位，可能導致資源不足無法配對，Link Unit 只能閒置到下回合。完整的 In-Turn Link 流程：①確認資源足夠部署 Unit + 配對 Pilot → ②部署 Link Unit → ③配對對應的 Link Pilot → ④Link Unit 本回合即可攻擊。缺少 pair 步驟等同浪費部署機會。'
+condition:
+  has_unpaired_units: true
+  has_matching_pilot_in_hand: true
+  has_pairable_in_hand: true
+  turn_min: 3

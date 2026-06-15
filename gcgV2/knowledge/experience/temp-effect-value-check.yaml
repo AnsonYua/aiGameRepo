@@ -1,0 +1,13 @@
+# 來源：game_20260615_012734_690878 Turn 9-10 review
+#        game_20260615_100131_591410 Turn 8,9 review
+# Turn 9: P1 讓 P2 的 ST01-007 本回合 AP-3，但 P2 本回合不會攻擊，效果零作用。
+# Turn 10: P2 使用 ST01-012，reason 說「有機會清掉一隻單位」但它只對高 HP rested 單位
+# 造成 1 傷，沒有接近擊殺。
+# Turn 8 P2 發動基地效果「本回合 Link AP+1」，但所有 Link 單位已 rested 不能攻擊。
+# Turn 9 P1 也發動基地效果「為了下回合】，但本回合吃不到的 buff 沒有戰術價值。
+# 教訓：本回合臨時效果（debuff 與 buff 都一樣）必須在能影響本回合戰鬥時才有價值。
+id: temp-effect-value-check
+priority: 9
+description: '"本回合"臨時效果（包括 debuff AP-3、buff AP+1、小額傷害）必須在該回合內能影響實際攻防時才有戰術價值。使用前先確認：①本方有 active Link 單位本回合還能攻擊嗎？②對手是否有 active 單位即將攻擊或阻擋？③小額傷害（1-2 damage）能否擊殺或讓後續攻擊補刀？如果所有可受益的單位都已 rested 且本回合不會再戰鬥，則該效果等同白燒牌。不要把「本回合」buff 當成下回合投資——回合結束時效果消失，rested 單位下回合重置時已經沒有加成。同理，小額傷害不能因為目標是 rested 就假設有價值——rested 的高 HP 單位受 1 傷後仍存活且下回合恢復 active。'
+condition:
+  has_temp_debuff_in_hand: true

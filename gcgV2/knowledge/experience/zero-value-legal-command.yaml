@@ -1,0 +1,10 @@
+# 來源：game_20260615_100131_591410 Turn 11 review
+# P1 Turn 11 使用 ST01-013 治療，但場上沒有受傷單位；AI 自己在選 target 時承認
+# 「無實際效益，但必須強制選擇」。
+# 教訓：legal_commands 中有 command 不代表應該使用它。如果沒有合法目標或效果零作用，
+# pass 保留資源是更優選擇。
+id: zero-value-legal-command
+priority: 8
+description: 'legal_commands 清單中有某條 command 不代表應該執行它。如果使用該 command 後：①沒有實際效果（如治療卡沒有任何受傷目標）、②無法改變盤面或手牌結構、③消耗資源但零收益——這條 command 等同於白燒牌。更好的選擇是 `pass` 保留手牌與資源給未來回合。特別是治療/回復卡片：檢查場上是否有 injured 單位（damage > 0），若沒有則治療卡零價值。保留這張手牌下回合可能有機會使用；打出去只是減少一張可用手牌。不要為了「合法」而使用。'
+condition:
+  turn_min: 3

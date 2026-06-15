@@ -12,7 +12,7 @@ import yaml
 
 
 DEFAULT_REPLAY = Path(
-    "/Users/hello/Desktop/cardAI/gcgV2/out/game_20260614_141722_112076/gamePlay.yaml"
+    "/Users/hello/Desktop/cardAI/gcgV2/out/game_20260615_012734_690878/gamePlay.yaml"
 )
 
 
@@ -24,7 +24,7 @@ class ReviewBoardHandler(SimpleHTTPRequestHandler):
         if parsed.path == "/api/replay":
             self._send_replay()
             return
-        if parsed.path == "/":
+        if parsed.path in ("/", "/mobile"):
             self.path = "/index.html"
         super().do_GET()
 

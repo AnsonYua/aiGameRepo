@@ -1,0 +1,304 @@
+game_id: game_20260614_182730_959632
+turn: 4
+phase: main
+step: null
+active_player: P2
+priority_player: P2
+action_window:
+  active: false
+  origin: null
+  consecutive_passes: 0
+  last_action_player: null
+battle_context: null
+pending_choice: []
+game_over: false
+winner: null
+win_reason: null
+p1:
+  hand_count: 5
+  deck_count: 37
+  resource_deck_count: 8
+  shields: 6
+  resources:
+    active: 0
+    rested: 2
+    ex: 0
+  base:
+    card_id: EX-BASE
+    ap: 0
+    hp: 3
+    damage: 2
+    alive: true
+    status: active
+  board:
+    units: 1
+    empty_slots: 5
+    rested_units: 1
+    damaged_units: 0
+    blockers: 1
+    slots:
+    - slot: 0
+      unit_id: st01/ST01-008
+      pilot_id: null
+      pilot_name: null
+      base_ap: 1
+      base_hp: 1
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 1
+      hp: 1
+      damage: 0
+      status: rested
+      keywords:
+      - Blocker
+      link_names: []
+      is_link: false
+      is_token: false
+      turns_on_field: 1
+    - slot: 1
+      unit_id: null
+      pilot_id: null
+      pilot_name: null
+      base_ap: 0
+      base_hp: 0
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 0
+      hp: 0
+      damage: 0
+      status: null
+      keywords: []
+      link_names: []
+      is_link: false
+      is_token: false
+      turns_on_field: 0
+    - slot: 2
+      unit_id: null
+      pilot_id: null
+      pilot_name: null
+      base_ap: 0
+      base_hp: 0
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 0
+      hp: 0
+      damage: 0
+      status: null
+      keywords: []
+      link_names: []
+      is_link: false
+      is_token: false
+      turns_on_field: 0
+    - slot: 3
+      unit_id: null
+      pilot_id: null
+      pilot_name: null
+      base_ap: 0
+      base_hp: 0
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 0
+      hp: 0
+      damage: 0
+      status: null
+      keywords: []
+      link_names: []
+      is_link: false
+      is_token: false
+      turns_on_field: 0
+    - slot: 4
+      unit_id: null
+      pilot_id: null
+      pilot_name: null
+      base_ap: 0
+      base_hp: 0
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 0
+      hp: 0
+      damage: 0
+      status: null
+      keywords: []
+      link_names: []
+      is_link: false
+      is_token: false
+      turns_on_field: 0
+    - slot: 5
+      unit_id: null
+      pilot_id: null
+      pilot_name: null
+      base_ap: 0
+      base_hp: 0
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 0
+      hp: 0
+      damage: 0
+      status: null
+      keywords: []
+      link_names: []
+      is_link: false
+      is_token: false
+      turns_on_field: 0
+  trash:
+  - st01/ST01-009
+  removal: []
+p2:
+  hand_count: 5
+  deck_count: 37
+  resource_deck_count: 8
+  shields: 6
+  resources:
+    active: 2
+    rested: 0
+    ex: 0
+  base:
+    card_id: EX-BASE
+    ap: 0
+    hp: 3
+    damage: 1
+    alive: true
+    status: active
+  board:
+    units: 1
+    empty_slots: 5
+    rested_units: 1
+    damaged_units: 0
+    blockers: 0
+    slots:
+    - slot: 0
+      unit_id: st01/ST01-005
+      pilot_id: null
+      pilot_name: null
+      base_ap: 2
+      base_hp: 2
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 2
+      hp: 2
+      damage: 0
+      status: rested
+      keywords: []
+      link_names: []
+      is_link: false
+      is_token: false
+      turns_on_field: 1
+    - slot: 1
+      unit_id: null
+      pilot_id: null
+      pilot_name: null
+      base_ap: 0
+      base_hp: 0
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 0
+      hp: 0
+      damage: 0
+      status: null
+      keywords: []
+      link_names: []
+      is_link: false
+      is_token: false
+      turns_on_field: 0
+    - slot: 2
+      unit_id: null
+      pilot_id: null
+      pilot_name: null
+      base_ap: 0
+      base_hp: 0
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 0
+      hp: 0
+      damage: 0
+      status: null
+      keywords: []
+      link_names: []
+      is_link: false
+      is_token: false
+      turns_on_field: 0
+    - slot: 3
+      unit_id: null
+      pilot_id: null
+      pilot_name: null
+      base_ap: 0
+      base_hp: 0
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 0
+      hp: 0
+      damage: 0
+      status: null
+      keywords: []
+      link_names: []
+      is_link: false
+      is_token: false
+      turns_on_field: 0
+    - slot: 4
+      unit_id: null
+      pilot_id: null
+      pilot_name: null
+      base_ap: 0
+      base_hp: 0
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 0
+      hp: 0
+      damage: 0
+      status: null
+      keywords: []
+      link_names: []
+      is_link: false
+      is_token: false
+      turns_on_field: 0
+    - slot: 5
+      unit_id: null
+      pilot_id: null
+      pilot_name: null
+      base_ap: 0
+      base_hp: 0
+      pilot_ap: 0
+      pilot_hp: 0
+      temp_ap_mod: 0
+      cont_ap_mod: 0
+      ap: 0
+      hp: 0
+      damage: 0
+      status: null
+      keywords: []
+      link_names: []
+      is_link: false
+      is_token: false
+      turns_on_field: 0
+  trash:
+  - st01/ST01-005
+  removal: []
+opening:
+  decision_player: P1
+  first_player: P1
+  second_player: P2
+  mulligan_done:
+    P1: true
+    P2: true

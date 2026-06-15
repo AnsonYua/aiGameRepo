@@ -1,0 +1,12 @@
+# 來源：game_20260615_012734_690878 Turn 12 review
+# P2 部署 ST01-002 到 slot 2 後立刻嘗試用它攻擊對手基地，但合法清單沒有
+# attack my_slot_2 opponent_base——因為該單位剛部署、沒有達成 Link 不能攻擊。
+# 之後在結束階段 CONSIDER 還說「active ST01-002 可直擊獲勝」，但實際不能攻擊。
+# 教訓：active 不等於 can attack。攻擊判斷必須以 legal_commands 為唯一依據。
+id: active-neq-canattack
+priority: 11
+description: '計算 lethal 總攻擊力或選擇攻擊目標時，不能只看單位 status 是否為 active。剛部署且未達成 Link 的單位、有「不能攻擊玩家」限制的單位、或被其他效果限制的單位，即使 status 是 active，legal_commands 中也不會有對應的 attack my_slot_X ... 指令。注意區分：legal_commands 清單中的 attack my_slot_X ... 是唯一可執行的攻擊選項；若某單位的 status 是 active 但它對應的 slot 沒有出現在任何 attack 指令中，代表該單位本回合不能攻擊。CONSIDER 如果說「某 active 單位可直擊獲勝」但該 slot 沒有 attack 指令在 legal_commands 清單中，這是 hallucination——不要輸出這個結論，改為評估其他合法選項或 pass。'
+condition:
+  my_active_units_min: 1
+  has_unpaired_units: true
+  turn_min: 4

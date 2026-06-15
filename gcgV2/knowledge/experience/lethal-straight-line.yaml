@@ -1,0 +1,14 @@
+# 來源：game_20260615_100131_591410 Turn 12 review
+# P2 對手無基地、2 盾、無 active blocker，自己 4 個 active 單位。
+# 第一刀用 6AP Link Unit 打對手 rested 的 Gundam Aerial（4HP），而不是直接打盾。
+# 本局因為剩餘攻擊者足夠所以仍贏，但若對手有更多盾或我方攻擊者更少，
+# 浪費一次攻擊在 rested unit 上會導致 lethal 失敗。
+# 教訓：能用「破盾→破盾→直擊」贏的回合，除非擋路的 active blocker 會阻止 lethal，
+# 否則不要先殺 rested unit。
+id: lethal-straight-line
+priority: 11
+description: '當本回合有足夠攻擊次數和攻擊力完成「破所有盾→直擊玩家獲勝」時，攻擊目標順序應優先於 lethal line：打盾→打盾→直擊。不要在中間插入打 rested unit、清場、或非必要的交換。rested unit 不會阻擋，不會干擾 lethal 計算；每浪費一次攻擊在 rested unit 上，就少破一盾、讓對手多一個回合生存。例外情況：如果對手有 active Blocker 且你的攻擊次數不足以繞過 Blocker（打盾需要穿透 Blocker），可以先解除 Blocker；否則一律走最短 lethal 路徑。'
+condition:
+  my_active_units_min: 2
+  enemy_shields_min: 1
+  turn_min: 6

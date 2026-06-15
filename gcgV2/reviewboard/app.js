@@ -4,6 +4,13 @@ const state = {
   index: 0,
 };
 
+const isMobileBoard = window.location.pathname.replace(/\/+$/, "") === "/mobile";
+document.body.classList.toggle("mobile-board", isMobileBoard);
+if (isMobileBoard) {
+  document.getElementById("prevBtn")?.setAttribute("aria-label", "Menu");
+  document.getElementById("nextBtn")?.setAttribute("aria-label", "Game log");
+}
+
 const ids = [
   "stepTitle",
   "stepSubtle",
@@ -167,6 +174,7 @@ function renderBase(playerId, player) {
     const empty = document.createElement("div");
     empty.className = "base-stats";
     empty.textContent = "Base: none";
+    empty.dataset.mobileHp = "-";
     container.appendChild(empty);
     return;
   }
@@ -178,14 +186,20 @@ function renderBase(playerId, player) {
   stats.className = "base-stats";
   const remaining = Math.max(0, visibleCount(base.hp) - visibleCount(base.damage));
   stats.textContent = `AP|HP ${base.ap ?? 0}|${remaining}`;
+  stats.dataset.mobileHp = String(remaining);
   container.appendChild(stats);
 }
 
 function renderDecks(playerId, player) {
   setText(`${playerId}Deck`, `Deck ${visibleCount(player.deck_count)}`);
   const energy = document.getElementById(`${playerId}EnergyDeck`);
-  energy.title = `${visibleCount(player.resource_deck_count)} cards`;
-  setText(`${playerId}Trash`, visibleCount(player.trash?.length));
+  const resourceDeckCount = visibleCount(player.resource_deck_count);
+  energy.title = `${resourceDeckCount} cards`;
+  energy.dataset.count = String(resourceDeckCount);
+  const trashCount = visibleCount(player.trash?.length);
+  const trash = document.getElementById(`${playerId}Trash`);
+  trash.textContent = trashCount;
+  trash.dataset.trashCount = String(trashCount);
 }
 
 function renderSlots(playerId, player) {
@@ -245,12 +259,13 @@ function renderSlots(playerId, player) {
 }
 
 function renderPlayer(playerId, player = {}) {
-  renderHand(playerId, player);
-  renderShields(playerId, player);
-  renderResources(playerId, player);
-  renderBase(playerId, player);
-  renderDecks(playerId, player);
-  renderSlots(playerId, player);
+  const visiblePlayer = player || {};
+  renderHand(playerId, visiblePlayer);
+  renderShields(playerId, visiblePlayer);
+  renderResources(playerId, visiblePlayer);
+  renderBase(playerId, visiblePlayer);
+  renderDecks(playerId, visiblePlayer);
+  renderSlots(playerId, visiblePlayer);
 }
 
 function renderTimeline() {
@@ -284,11 +299,56 @@ function render() {
   renderPlayer("p1", features.p1);
   renderPlayer("p2", features.p2);
   renderTimeline();
+  document.body.classList.add("replay-ready");
 }
 
 function setIndex(nextIndex) {
   state.index = clamp(nextIndex, 0, Math.max(0, state.events.length - 1));
   render();
+}
+
+function mobileEventScore(event) {
+  const features = event?.features || {};
+  return ["p1", "p2"].reduce(
+    (score, playerId) => {
+      const player = features[playerId] || {};
+      const handCount = handCardIds(player).length || visibleCount(player.hand_count);
+      const filledSlots = (player.board?.slots || []).filter((slot) => slot.unit_id).length;
+      const resources = player.resources || {};
+      const resourceCount = visibleCount(resources.active) + visibleCount(resources.rested) + visibleCount(resources.ex);
+      const shieldCount = visibleCount(player.shields ?? player.shield_count);
+      return {
+        bases: score.bases + ((player.base || {}).card_id ? 1 : 0),
+        filledSlots: score.filledSlots + filledSlots,
+        hands: score.hands + handCount,
+        resources: score.resources + resourceCount,
+        shields: score.shields + shieldCount,
+      };
+    },
+    { bases: 0, filledSlots: 0, hands: 0, resources: 0, shields: 0 },
+  );
+}
+
+function mobileInitialIndex() {
+  const denseIndex = state.events.findIndex((event) => {
+    const score = mobileEventScore(event);
+    return score.filledSlots >= 5 && score.bases >= 2 && score.resources >= 4;
+  });
+  if (denseIndex >= 0) return denseIndex;
+
+  const boardIndex = state.events.findIndex((event) => {
+    const score = mobileEventScore(event);
+    return score.filledSlots >= 2 && score.bases >= 2 && score.resources >= 2;
+  });
+  if (boardIndex >= 0) return boardIndex;
+
+  return Math.max(
+    0,
+    state.events.findIndex((event) => {
+      const score = mobileEventScore(event);
+      return score.hands > 0 || score.shields > 0;
+    }),
+  );
 }
 
 async function init() {
@@ -299,7 +359,8 @@ async function init() {
   }
   state.replay = replay;
   state.events = Array.isArray(replay.events) ? replay.events : [];
-  setIndex(0);
+  const initialIndex = isMobileBoard ? mobileInitialIndex() : 0;
+  setIndex(initialIndex);
 }
 
 el.prevBtn.addEventListener("click", () => setIndex(state.index - 1));
