@@ -1,11 +1,14 @@
 # 來源：game_20260615_012734_690878 Turn 12 review
+#        game_20260615_160955_622809 Turn 7 review
 # P2 部署 ST01-002 到 slot 2 後立刻嘗試用它攻擊對手基地，但合法清單沒有
 # attack my_slot_2 opponent_base——因為該單位剛部署、沒有達成 Link 不能攻擊。
 # 之後在結束階段 CONSIDER 還說「active ST01-002 可直擊獲勝」，但實際不能攻擊。
-# 教訓：active 不等於 can attack。攻擊判斷必須以 legal_commands 為唯一依據。
+# P1 Turn 7 部署 GM 後說「有一隻 active GM 可攻擊」，但剛部署不能攻擊；
+# 同時把 Suletta 配對到已 rested 的 Guntank 上，沒有 Link、沒有當回合攻擊價值。
+# 教訓：active 不等於 can attack。非 Link Pilot 配到已 rested 單位通常無攻擊價值。
 id: active-neq-canattack
 priority: 11
-description: '計算 lethal 總攻擊力或選擇攻擊目標時，不能只看單位 status 是否為 active。剛部署且未達成 Link 的單位、有「不能攻擊玩家」限制的單位、或被其他效果限制的單位，即使 status 是 active，legal_commands 中也不會有對應的 attack my_slot_X ... 指令。注意區分：legal_commands 清單中的 attack my_slot_X ... 是唯一可執行的攻擊選項；若某單位的 status 是 active 但它對應的 slot 沒有出現在任何 attack 指令中，代表該單位本回合不能攻擊。CONSIDER 如果說「某 active 單位可直擊獲勝」但該 slot 沒有 attack 指令在 legal_commands 清單中，這是 hallucination——不要輸出這個結論，改為評估其他合法選項或 pass。'
+description: '計算 lethal 總攻擊力或選擇攻擊目標時，不能只看單位 status 是否為 active。以下情況即使 status 是 active 也不能攻擊：①剛部署且未達成 Link 的單位；②有「不能攻擊玩家」限制的單位；③legal_commands 中沒有對應 attack my_slot_X 指令的單位。注意區分：legal_commands 清單中的 attack my_slot_X 是唯一可執行的攻擊選項。若某單位是 active 但沒有 attack 指令對應其 slot，該單位本回合不能攻擊。另外：非 Link Pilot 配對到已 rested 的單位，該單位本回合已不能攻擊，配對不會解除 rested 狀態。除非是防守數值加成（HP/AP 緊急需要），否則保留 Pilot 給未來有 Link 或能攻擊的單位更有價值。'
 condition:
   my_active_units_min: 1
   has_unpaired_units: true

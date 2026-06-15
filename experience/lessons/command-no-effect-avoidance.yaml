@@ -1,0 +1,26 @@
+id: command-no-effect-avoidance
+source_game: game_20260613_000213_291206
+status: reviewed
+lesson_type: card_effect_evaluation
+confidence: high
+summary: >
+  使用指令卡前，先確認該卡在當前目標上是否有實際正面效果。
+  若效果被浪費（例如對滿血單位使用回復、對已 0 AP 的單位使用 AP-3），
+  則該資源完全浪費，不如保留或改用其他行動。
+applies_when:
+  - 可行指令包含 command card，且該 command card 的效果需要選擇目標。
+  - 所有合法目標都無法被該 command card 產生正面效益（已滿血、AP 已 0 或更低）。
+bad_example: "回合 5 對滿血 Zowort 使用 ST01-013（回復 3），浪費 1 資源。"
+better_pattern: >
+  若 command card 所有合法目標都無法產生正面效益，應保留資源，
+  改為部署單位、配對駕駛員或 pass。
+player_instruction: >
+  任何 command card 在選擇目標前，先確認目標能否受益。
+  回復卡只用在已受傷單位，AP 減免只用在 AP > 0 且此回合有威脅的目標。
+  若沒有好目標，該 command 應保留。
+judge_instruction: >
+  若 proposed COMMAND 使用 command card 但效果沒有正面影響（治滿血、減 0 AP），
+  應 reject 並要求 player 重新決策。
+notes: >
+  ST01-013 回復 3 與 ST01-014 AP-3 都是典型容易浪費的卡片。
+  此 lesson 並非禁止使用這些卡片，而是要求在有實際效益時才使用。
