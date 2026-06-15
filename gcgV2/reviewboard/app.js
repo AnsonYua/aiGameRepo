@@ -17,6 +17,7 @@ const ids = [
   "topbarMessage",
   "seqBadge",
   "phaseBadge",
+  "combatMessage",
   "timeline",
   "prevBtn",
   "nextBtn",
@@ -289,6 +290,7 @@ function render() {
   el.stepTitle.textContent = `Turn ${event.turn ?? "-"} · ${phase}`;
   el.stepSubtle.textContent = `${event.event_type || "event"} · actor ${event.actor || "-"}`;
   el.topbarMessage.textContent = event.message || "";
+  el.combatMessage.textContent = event.message || "Units in the Battlefield attack across this area";
   el.seqBadge.textContent = `${state.index + 1} / ${state.events.length}`;
   el.phaseBadge.textContent = phase;
   el.stepSlider.max = String(Math.max(0, state.events.length - 1));

@@ -781,28 +781,32 @@ body.mobile-board {
   --mobile-panel: rgba(9, 16, 25, 0.92);
   --mobile-red: #ee2d32;
   --mobile-blue: #1484ff;
-  --hand-card-width: 48px;
-  --slot-width: 76px;
-  --slot-height: 132px;
-  --slot-card-width: 74px;
-  height: auto;
-  min-height: 100%;
+  --mobile-controls-height: 46px;
+  --mobile-side-width: clamp(64px, 14vw, 118px);
+  --mobile-gap: clamp(4px, 0.8dvh, 8px);
+  --hand-card-width: clamp(36px, 10vw, 70px);
+  --slot-width: clamp(58px, 15vw, 118px);
+  --slot-height: 100%;
+  --slot-card-width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
   color: #eef6ff;
   background:
     radial-gradient(circle at 15% 20%, rgba(18, 74, 121, 0.24), transparent 32%),
     linear-gradient(180deg, #07111d 0%, var(--mobile-bg) 100%);
-  overflow: auto;
+  overflow: hidden;
 }
 
 body.mobile-board .app {
   display: grid;
-  width: min(100vw, 540px);
+  grid-template-rows: minmax(0, 1fr) auto;
+  width: 100vw;
   min-height: 100dvh;
-  height: auto;
+  height: 100dvh;
   margin: 0 auto;
   padding: 4px;
   background: #03070d;
-  overflow: visible;
+  overflow: hidden;
 }
 
 body.mobile-board .topbar,
@@ -814,12 +818,13 @@ body.mobile-board .review-shell {
   display: block;
   position: relative;
   min-height: 0;
+  height: 100%;
   padding: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  overflow: visible;
+  overflow: hidden;
 }
 
 body.mobile-board:not(.replay-ready) .board {
@@ -842,11 +847,19 @@ body.mobile-board:not(.replay-ready) .review-shell::before {
 
 body.mobile-board .board {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 76px;
-  grid-template-rows: 146px 68px 188px 48px 188px 72px 146px;
-  gap: 8px 6px;
+  grid-template-columns: minmax(0, 1fr) var(--mobile-side-width);
+  grid-template-rows:
+    minmax(96px, 1.05fr)
+    minmax(92px, 0.72fr)
+    minmax(112px, 1.5fr)
+    minmax(34px, 0.34fr)
+    minmax(112px, 1.5fr)
+    minmax(92px, 0.72fr)
+    minmax(96px, 1.05fr);
+  gap: var(--mobile-gap) clamp(4px, 1vw, 6px);
+  height: 100%;
   min-height: 0;
-  overflow: visible;
+  overflow: hidden;
 }
 
 body.mobile-board .topbar,
@@ -873,8 +886,8 @@ body.mobile-board .player-info {
 
 body.mobile-board .hand-row {
   min-width: 0;
-  padding: 14px 12px 10px;
-  overflow: visible;
+  padding: clamp(8px, 1.4dvh, 14px) clamp(8px, 2vw, 12px);
+  overflow: hidden;
   border-color: rgba(20, 132, 255, 0.72);
   background: linear-gradient(180deg, rgba(4, 35, 70, 0.98), rgba(2, 20, 36, 0.98));
 }
@@ -908,9 +921,10 @@ body.mobile-board .blue-panel h2 {
 
 body.mobile-board .hand {
   justify-content: center;
-  gap: 7px;
-  margin-top: 8px;
-  min-height: 88px;
+  gap: clamp(4px, 1.3vw, 9px);
+  margin-top: clamp(4px, 0.8dvh, 8px);
+  height: calc(100% - 18px);
+  min-height: 0;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
@@ -924,9 +938,9 @@ body.mobile-board .hand::-webkit-scrollbar {
 
 body.mobile-board .hand .card-img,
 body.mobile-board .hand .card-back {
-  width: clamp(34px, calc((100vw - 128px) / 7), var(--hand-card-width));
+  width: min(var(--hand-card-width), calc((100vw - var(--mobile-side-width) - 80px) / 7));
   max-width: none;
-  height: 88px;
+  height: 100%;
   object-fit: cover;
   object-position: center top;
 }
@@ -952,10 +966,11 @@ body.mobile-board .mini-deck::before {
 
 body.mobile-board .base-strip {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) 122px;
-  gap: 8px;
-  padding: 7px;
-  overflow: visible;
+  grid-template-columns: clamp(76px, 12vw, 104px) minmax(0, 1fr) clamp(148px, 24vw, 220px);
+  gap: clamp(10px, 1.6vw, 18px);
+  align-items: center;
+  padding: 5px 14px;
+  overflow: hidden;
 }
 
 body.mobile-board .opponent .base-strip {
@@ -974,21 +989,21 @@ body.mobile-board .vertical-label {
 
 body.mobile-board .base-card {
   display: grid;
-  grid-template-columns: 34px 22px;
-  grid-template-rows: 12px 36px;
+  grid-template-columns: 40px 26px;
+  grid-template-rows: 14px 42px;
   align-items: end;
-  gap: 1px 3px;
-  align-self: start;
-  width: 59px;
-  height: 49px;
+  gap: 2px 4px;
+  align-self: center;
+  width: 70px;
+  height: 58px;
 }
 
 body.mobile-board .base-card::before {
   content: "BASE";
   grid-column: 1 / 3;
-  text-align: center;
+  text-align: left;
   color: #d7e3f0;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 900;
   line-height: 1;
 }
@@ -996,8 +1011,8 @@ body.mobile-board .base-card::before {
 body.mobile-board .base-image {
   grid-column: 1;
   grid-row: 2;
-  width: 34px;
-  height: 36px;
+  width: 40px;
+  height: 42px;
   object-fit: cover;
 }
 
@@ -1006,8 +1021,8 @@ body.mobile-board .base-stats {
   grid-row: 2;
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 20px;
+  width: 26px;
+  height: 24px;
   padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.86);
   border-radius: 4px;
@@ -1023,68 +1038,85 @@ body.mobile-board .base-stats {
 body.mobile-board .base-stats::after {
   content: attr(data-mobile-hp);
   color: #fff;
-  font-size: 15px;
+  font-size: 17px;
   line-height: 1;
 }
 
 body.mobile-board .shield-line {
   align-self: center;
-  gap: 7px;
+  gap: 8px;
   color: #f4f7fb;
-  font-size: 10px;
+  font-size: 14px;
   overflow: hidden;
 }
 
 body.mobile-board .shields {
   flex-wrap: nowrap;
-  gap: 5px;
+  gap: clamp(5px, 0.9vw, 9px);
   overflow: hidden;
 }
 
 body.mobile-board .shield {
-  width: 20px;
-  height: 28px;
+  width: clamp(22px, 2.6vw, 34px);
+  height: clamp(32px, 3.4vw, 42px);
   background: rgba(19, 24, 33, 0.92);
 }
 
 body.mobile-board .resource-line {
   align-self: center;
   justify-items: center;
-  gap: 4px;
+  gap: 6px;
   color: #f4f7fb;
-  font-size: 10px;
+  font-size: 14px;
   min-width: 0;
 }
 
 body.mobile-board .resource-line span {
-  font-size: 20px;
+  font-size: clamp(24px, 3.4vw, 36px);
 }
 
 body.mobile-board .resource-pips {
   flex-wrap: nowrap;
   max-width: 100%;
-  gap: 2px;
+  gap: clamp(3px, 0.35vw, 5px);
   overflow: hidden;
 }
 
 body.mobile-board .pip {
-  width: 10px;
-  height: 10px;
+  width: clamp(13px, 1.1vw, 16px);
+  height: clamp(13px, 1.1vw, 16px);
   border-width: 1px;
-  background: #060a11;
+  border-color: #516074;
+  color: #516074;
+  background: #050910;
   font-size: 0;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 body.mobile-board .pip.active {
+  border-color: rgba(255, 255, 255, 0.82);
   background: var(--mobile-blue);
+  box-shadow: 0 0 0 1px rgba(20, 132, 255, 0.36);
 }
 
 body.mobile-board .pip.rested {
+  border-color: rgba(255, 255, 255, 0.88);
   background: var(--mobile-red);
+  box-shadow: 0 0 0 1px rgba(238, 45, 50, 0.38);
+}
+
+body.mobile-board .pip.rested::after {
+  width: 18px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+body.mobile-board .pip.ex {
+  border-color: rgba(255, 255, 255, 0.82);
 }
 
 body.mobile-board .battlefield {
-  padding: 10px 10px 26px;
+  padding: clamp(7px, 1.2dvh, 10px) clamp(7px, 1.8vw, 12px) clamp(20px, 3dvh, 28px);
 }
 
 body.mobile-board .opponent .battlefield {
@@ -1097,7 +1129,7 @@ body.mobile-board .opponent .battlefield {
 body.mobile-board .self .battlefield {
   grid-column: 1 / 3;
   grid-row: 5;
-  padding-left: 10px;
+  padding-left: clamp(7px, 1.8vw, 12px);
   border-color: rgba(20, 132, 255, 0.68);
   background: linear-gradient(180deg, rgba(3, 29, 56, 0.98), rgba(3, 13, 24, 0.98));
 }
@@ -1109,15 +1141,16 @@ body.mobile-board .battlefield h2::after {
 body.mobile-board .slots {
   align-items: stretch;
   justify-content: space-between;
-  gap: 9px;
-  margin-top: 12px;
-  min-height: 132px;
+  gap: clamp(5px, 1.6vw, 12px);
+  margin-top: clamp(6px, 1dvh, 12px);
+  height: calc(100% - 32px);
+  min-height: 0;
 }
 
 body.mobile-board .slot {
-  width: min(var(--slot-width), calc((100vw - 42px) / 6));
-  max-width: 76px;
-  height: 132px;
+  width: min(var(--slot-width), calc((100vw - 64px) / 6));
+  max-width: none;
+  height: 100%;
   border-color: rgba(174, 185, 201, 0.54);
   border-radius: 5px;
   background: rgba(7, 10, 17, 0.62);
@@ -1214,14 +1247,23 @@ body.mobile-board .combat-area {
 }
 
 body.mobile-board .combat-area span {
-  font-size: 16px;
-  line-height: 1;
+  display: none;
 }
 
 body.mobile-board .combat-area small {
   display: block;
+  width: min(94vw, 720px);
+  max-height: 2.24em;
+  overflow: hidden;
   color: #cdd7e4;
-  font-size: 10px;
+  font-size: clamp(10px, 1vw, 14px);
+  font-weight: 700;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+  text-align: center;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: normal;
 }
 
 body.mobile-board .side-stack {
@@ -1240,17 +1282,44 @@ body.mobile-board .lower {
 }
 
 body.mobile-board .deck-box {
-  align-content: center;
-  gap: 8px;
-  padding: 7px 5px;
+  display: grid;
+  grid-template-rows: 14px minmax(0, 1fr);
+  align-items: center;
+  align-content: stretch;
+  gap: 4px;
+  padding: 7px 6px 8px;
   color: #eef4ff;
-  font-size: 10px;
+  font-size: clamp(9px, 0.9vw, 11px);
+  line-height: 1;
+}
+
+body.mobile-board .deck-box strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: #dce8f7;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.mobile-board .deck-box strong {
+  font-size: 0;
+}
+
+body.mobile-board .deck-box strong::before {
+  content: "ENERGY";
+  font-size: clamp(10px, 1vw, 12px);
+}
+
+body.mobile-board .deck-box:nth-child(2) strong::before {
+  content: "TRASH";
 }
 
 body.mobile-board .mini-deck {
   position: relative;
-  width: 40px;
-  height: 64px;
+  align-self: center;
+  width: clamp(32px, 3.4vw, 40px);
+  height: min(56px, 100%);
   box-shadow: 2px 2px 0 #2d3440, 4px 4px 0 #171d27;
 }
 
@@ -1258,24 +1327,25 @@ body.mobile-board .mini-deck::after,
 body.mobile-board .trash::after {
   content: attr(data-count);
   position: absolute;
-  right: -8px;
-  bottom: -7px;
+  right: -6px;
+  bottom: -5px;
   display: grid;
   place-items: center;
-  min-width: 19px;
-  height: 19px;
+  min-width: 18px;
+  height: 18px;
   border: 1px solid rgba(255, 255, 255, 0.45);
   border-radius: 4px;
   background: #06080c;
   color: #fff;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
 }
 
 body.mobile-board .trash {
   position: relative;
-  width: 44px;
-  height: 42px;
+  align-self: center;
+  width: clamp(38px, 4vw, 48px);
+  height: min(44px, 100%);
   border: 0;
   color: transparent;
   background: transparent;
@@ -1296,9 +1366,10 @@ body.mobile-board .trash::after {
 }
 
 body.mobile-board .controls {
-  grid-template-columns: 48px minmax(0, 1fr) 174px 118px;
-  gap: 10px;
-  margin-top: 6px;
+  grid-template-columns: 48px minmax(0, 1fr) minmax(132px, 174px) minmax(94px, 118px);
+  gap: clamp(6px, 1.4vw, 10px);
+  height: var(--mobile-controls-height);
+  margin-top: 0;
   padding: 4px;
   border: 0;
   background: transparent;
@@ -1357,14 +1428,13 @@ body:not(.mobile-board) .mobile-main-action {
 
 @media (max-width: 430px) {
   body.mobile-board {
+    --mobile-side-width: 64px;
+    --mobile-controls-height: 44px;
     --hand-card-width: 42px;
     --slot-width: 60px;
-    --slot-height: 104px;
   }
 
   body.mobile-board .board {
-    grid-template-columns: minmax(0, 1fr) 64px;
-    grid-template-rows: 126px 58px 158px 44px 158px 62px 126px;
     gap: 6px 5px;
   }
 
@@ -1376,11 +1446,7 @@ body:not(.mobile-board) .mobile-main-action {
   body.mobile-board .hand .card-img,
   body.mobile-board .hand .card-back {
     width: clamp(33px, calc((100vw - 116px) / 7), var(--hand-card-width));
-    height: 70px;
-  }
-
-  body.mobile-board .hand {
-    min-height: 70px;
+    height: 100%;
   }
 
   body.mobile-board .base-strip {
@@ -1421,14 +1487,6 @@ body:not(.mobile-board) .mobile-main-action {
   body.mobile-board .pip {
     width: 9px;
     height: 9px;
-  }
-
-  body.mobile-board .slot {
-    height: 104px;
-  }
-
-  body.mobile-board .slots {
-    min-height: 104px;
   }
 
   body.mobile-board .side-stack {
