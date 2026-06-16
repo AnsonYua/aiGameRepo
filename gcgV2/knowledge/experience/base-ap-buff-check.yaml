@@ -1,0 +1,11 @@
+# 來源：game_20260615_222520_072204〜game_20260616_121339_281791 (反覆出現)
+# ST01-016 (White Base) 的 [Activate/Main] 全體 Link AP+1 效果多次在 Link 單位已 rested
+# 且本回合無法再攻擊時被啟動，完全浪費。
+# 最近一次：game_20260616_121339_281791 T9 P1，理由說「活化 Link Unit」但效果只是 AP+1，
+# 不是解除 rested。目標已 rested 的 Link 單位沒有即時攻擊價值。
+id: base-ap-buff-check
+priority: 9
+description: 'ST01-016（White Base）的 [Activate/Main] 效果：免費橫置基地 → 全體我方 Link 單位本回合 AP+1。使用前必須檢查：場上是否有 at least 1 個 Link 單位是 active（未攻擊）且本回合還能攻擊？如果所有 Link 單位都已 rested 或本回合不會再攻擊，AP+1 效果在回合結束時消失——沒有實質戰術價值。保留基地 active 狀態到下回合，讓它可以在對手攻擊時吸收 1 次傷害。不要「因為免費就開」，不要「為下回合鋪墊」，不要「先啟動基地效果」——它的 AP+1 不是 cross-turn buff。如果場上有 active Link 單位準備攻擊，先攻擊再啟動基地也可以避免 AP+1 給已 rested 的單位白加。'
+condition:
+  my_base_present: true
+  turn_min: 4

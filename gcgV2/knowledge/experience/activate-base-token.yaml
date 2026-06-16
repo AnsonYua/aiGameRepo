@@ -1,0 +1,12 @@
+# 來源：game_20260615_012734_690878〜212503_052285 review (5 games)
+# ST01-015 (White Base) 的 conditional token deploy 能力在 5 局中從未被 AI 使用過。
+# AI 將 `activate_effect base` 等同於 ST01-016 的免費 AP+1，忽略了 ST01-015
+# 可以花 2 資源部署 token 增加攻擊次數和破盾效率。
+# Runtime 已修復：token 有 White Base Team trait、滿場時自動隱藏指令、扣費前檢查空格；ST01-016 無 Link Unit 時也會隱藏/拒絕啟動。
+# 教訓：`activate_effect base` 的效果取決於當前基地卡，並非只有 AP+1。
+id: activate-base-token
+priority: 8
+description: '`activate_effect base` 的效果取決於當前已部署的基地卡，確認你基地的 card_id。ST01-015（White Base）的 [Activate/Main][每回合1次](2) 效果：不需橫置基地，花 2 資源，依當前我方戰鬥區機體數量配置 token→0 機體：Gundam (3/3, [WB隊])、1 機體：Guncannon (2/2, [WB隊])、2+ 機體：GunTank (1/1, [WB隊])。token 可攻擊、可阻擋、增加破盾次數；如果戰鬥區已滿，legal_commands 不會出現這個指令。ST01-016（Asticassia School of Technology, Earth House）的 [Activate/Main] 不花資源但需橫置基地，效果是全體我方 Link Unit 本回合 AP+1。只有在我方已有 Link Unit，且本回合準備攻擊或 +1 AP 會改變破基地、破盾、擊殺/交換線時才值得啟動；不要把它當成免費必按。評估時對比：ST01-015 生 token 是增加攻擊者/阻擋者數量，ST01-016 是放大既有 Link Unit 的本回合輸出，兩者價值來源不同。部署 token 後該單位本回合不能攻擊（召喚失調），但下回合可正常使用。'
+condition:
+  my_base_present: true
+  turn_min: 3

@@ -3,6 +3,7 @@
 import unittest
 
 from helpers import TestStack
+from gcg.engine.effect_engine import new_effect_run
 
 
 class EffectFlowTest(unittest.TestCase):
@@ -259,6 +260,34 @@ class EffectFlowTest(unittest.TestCase):
         self.assertEqual(resources["rested"], 0)
         self.assertEqual(resources["active"], 5)
 
+    def test_set_active_accepts_bound_resource_target(self):
+        stack = self.stack
+        stack.start_midgame(active_player="P1")
+        resources = stack.state.get_player_state("P1")["resources"]
+        resources["active"] = 4
+        resources["rested"] = 1
+        spec = {
+            "target_requirements": [{
+                "name": "t1",
+                "controller": "self",
+                "card_type": "resource",
+                "count": 1,
+            }],
+            "primitive_steps": [{"primitive": "setActive", "target": "$t1"}],
+        }
+        run = new_effect_run(spec, "P1", "st01/ST01-011", source_slot=0)
+        requirement = stack.runtime.effect_engine.next_unbound_requirement(run)
+        options = stack.runtime.effect_engine.enumerate_targets(requirement, run)
+        self.assertEqual(options[0]["id"], "self_resource")
+        stack.runtime.effect_engine.bind_target(run, options[0])
+
+        events, messages = stack.runtime.effect_engine.execute(run)
+
+        self.assertEqual(resources["rested"], 0)
+        self.assertEqual(resources["active"], 5)
+        self.assertEqual(events, [{"type": "resource_activated", "player": "P1"}])
+        self.assertEqual(messages, ["P1 將 1 個資源設為 active。"])
+
     # ------------------------------------------------------------------
     # Base：部署、[Deploy] 盾牌進手、[Activate/Main] token 部署
     # ------------------------------------------------------------------
@@ -289,6 +318,49 @@ class EffectFlowTest(unittest.TestCase):
         # once per turn：不再出現
         self.assertNotIn("activate_effect base", stack.enumerator.legal_commands("P1"))
 
+    def test_st01_015_activate_token_depends_on_unit_count(self):
+        cases = [
+            (0, "st01/T-001", 3, 3),
+            (1, "st01/T-002", 2, 2),
+            (2, "st01/T-003", 1, 1),
+        ]
+        for unit_count, expected_id, expected_ap, expected_hp in cases:
+            with self.subTest(unit_count=unit_count):
+                stack = TestStack()
+                stack.start_midgame(active_player="P1")
+                p1 = stack.state.get_player_state("P1")
+                p1["base"] = None
+                stack.set_hand("P1", ["st01/ST01-015"])
+                stack.runtime.resolve_command(stack.parse("play_card st01/ST01-015", "P1"))
+                for slot_index in range(unit_count):
+                    stack.put_unit("P1", "st01/ST01-005", slot_index)
+
+                stack.runtime.resolve_command(stack.parse("activate_effect base", "P1"))
+
+                slot = stack.state.get_slot("P1", unit_count)
+                self.assertEqual(slot["unit_id"], expected_id)
+                self.assertTrue(slot["is_token"])
+                self.assertEqual(slot["ap"], expected_ap)
+                self.assertEqual(slot["hp"], expected_hp)
+                traits = stack.card_database.get(expected_id)["traits"]
+                self.assertIn("White Base Team", traits)
+
+    def test_st01_015_activate_not_legal_when_board_full(self):
+        stack = self.stack
+        stack.start_midgame(active_player="P1")
+        p1 = stack.state.get_player_state("P1")
+        p1["base"] = None
+        stack.set_hand("P1", ["st01/ST01-015"])
+        stack.runtime.resolve_command(stack.parse("play_card st01/ST01-015", "P1"))
+        for slot_index in range(6):
+            stack.put_unit("P1", "st01/ST01-005", slot_index)
+        resources_before = dict(p1["resources"])
+
+        self.assertNotIn("activate_effect base", stack.enumerator.legal_commands("P1"))
+        with self.assertRaisesRegex(ValueError, "沒有空欄位"):
+            stack.runtime.resolve_command(stack.parse("activate_effect base", "P1"))
+        self.assertEqual(p1["resources"], resources_before)
+
     def test_base_burst_deploys_base(self):
         stack = self.stack
         stack.start_midgame(active_player="P1")
@@ -306,6 +378,39 @@ class EffectFlowTest(unittest.TestCase):
         self.assertEqual(base["card_id"], "st01/ST01-016")
         # 連鎖 [Deploy]：再從盾牌補 1 張進手（5 - 1 = 4）
         self.assertEqual(len(p2["shield"]), 4)
+
+    def test_st01_016_activate_not_legal_without_link_unit(self):
+        stack = self.stack
+        stack.start_midgame(active_player="P1")
+        p1 = stack.state.get_player_state("P1")
+        p1["base"] = None
+        stack.set_hand("P1", ["st01/ST01-016"])
+        stack.runtime.resolve_command(stack.parse("play_card st01/ST01-016", "P1"))
+        base = stack.state.get_base("P1")
+
+        self.assertNotIn("activate_effect base", stack.enumerator.legal_commands("P1"))
+        with self.assertRaisesRegex(ValueError, "沒有 Link Unit"):
+            stack.runtime.resolve_command(stack.parse("activate_effect base", "P1"))
+        self.assertEqual(base["status"], "active")
+
+    def test_st01_016_activate_boosts_link_units(self):
+        stack = self.stack
+        stack.start_midgame(active_player="P1")
+        p1 = stack.state.get_player_state("P1")
+        p1["base"] = None
+        stack.set_hand("P1", ["st01/ST01-016"])
+        stack.runtime.resolve_command(stack.parse("play_card st01/ST01-016", "P1"))
+        linked_slot = stack.put_unit("P1", "st01/ST01-005", 0)
+        linked_slot["is_link"] = True
+        unlinked_slot = stack.put_unit("P1", "st01/ST01-005", 1)
+
+        self.assertIn("activate_effect base", stack.enumerator.legal_commands("P1"))
+        stack.runtime.resolve_command(stack.parse("activate_effect base", "P1"))
+
+        self.assertEqual(linked_slot["ap"], 3)
+        self.assertEqual(linked_slot["temp_ap_mod"], 1)
+        self.assertEqual(unlinked_slot["ap"], 2)
+        self.assertEqual(stack.state.get_base("P1")["status"], "rested")
 
     # ------------------------------------------------------------------
     # 勝負：直擊玩家

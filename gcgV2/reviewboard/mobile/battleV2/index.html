@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GCG Human vs AI Battle V2</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/styles.css?v=20260615-mobile-fill" />
+    <link rel="stylesheet" href="/mobile/battleV2/battleV2.css" />
+  </head>
+  <body class="mobile-board battle-v2 replay-ready">
+    <main class="app">
+      <section class="review-shell">
+        <section class="board" aria-label="Human vs AI battle board">
+          <section class="player-zone opponent" data-player="p2">
+            <div class="hand-row panel red-panel">
+              <h2>Opponent Hand <span id="p2HandCount">(0)</span></h2>
+              <div class="hand" id="p2Hand"></div>
+            </div>
+            <div class="side-stack">
+              <div class="deck-box">
+                <strong>Energy Deck</strong>
+                <div class="mini-deck red" id="p2EnergyDeck"></div>
+              </div>
+              <div class="deck-box">
+                <strong>Trash</strong>
+                <div class="trash" id="p2Trash">0</div>
+              </div>
+            </div>
+            <div class="base-strip red-panel">
+              <div class="base-card" id="p2Base"></div>
+              <div class="shield-line">
+                <strong>Shield <span id="p2ShieldCount">(0)</span></strong>
+                <div class="shields" id="p2Shields"></div>
+              </div>
+              <div class="resource-line">
+                <strong>Resource</strong>
+                <span id="p2ResourceText">0 / 10</span>
+                <div class="resource-pips" id="p2Resources"></div>
+              </div>
+            </div>
+            <div class="battlefield red-panel">
+              <h2>Opponent Battlefield</h2>
+              <div class="slots" id="p2Slots"></div>
+            </div>
+          </section>
+
+          <section class="combat-area">
+            <span>Combat Area</span>
+            <small id="combatMessage">點擊開始對戰。</small>
+          </section>
+
+          <section class="player-zone self" data-player="p1">
+            <div class="battlefield blue-panel">
+              <h2>Your Battlefield</h2>
+              <div class="slots" id="p1Slots"></div>
+            </div>
+            <div class="side-stack lower">
+              <div class="deck-box">
+                <strong>Energy Deck</strong>
+                <div class="mini-deck blue" id="p1EnergyDeck"></div>
+              </div>
+              <div class="deck-box">
+                <strong>Trash</strong>
+                <div class="trash" id="p1Trash">0</div>
+              </div>
+            </div>
+            <div class="base-strip blue-panel">
+              <button class="base-card battle-click-zone" id="p1Base" type="button"></button>
+              <div class="shield-line">
+                <strong>Shield <span id="p1ShieldCount">(0)</span></strong>
+                <div class="shields" id="p1Shields"></div>
+              </div>
+              <div class="resource-line">
+                <strong>Resource</strong>
+                <span id="p1ResourceText">0 / 10</span>
+                <div class="resource-pips" id="p1Resources"></div>
+              </div>
+            </div>
+            <div class="hand-row panel blue-panel">
+              <h2>Your Hand <span id="p1HandCount">(0)</span></h2>
+              <div class="hand" id="p1Hand"></div>
+            </div>
+          </section>
+        </section>
+      </section>
+
+      <footer class="controls">
+        <button id="menuBtn" type="button" aria-label="Menu">Menu</button>
+        <div class="battle-v2-status" id="statusMessage">準備開始</div>
+        <button class="mobile-main-action" id="endTurnBtn" type="button">End Turn</button>
+        <button id="logBtn" type="button">Game Log</button>
+      </footer>
+
+      <section class="battle-v2-start" id="startScreen">
+        <button class="battle-v2-start-button" id="startBtn" type="button">開始對戰</button>
+      </section>
+
+      <section class="battle-v2-overlay" id="actionsPanel" hidden></section>
+      <section class="battle-v2-error" id="errorBox" hidden></section>
+    </main>
+    <script src="/mobile/battleV2/battleV2.js" type="module"></script>
+  </body>
+</html>

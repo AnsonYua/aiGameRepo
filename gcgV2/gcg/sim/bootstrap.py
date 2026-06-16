@@ -85,10 +85,12 @@ def build_simulator(
     elif players == "hermes":
         player_map = {
             "P1": HermesPlayerClient(
-                timeout=60, source_tag="gcg-p1", ai_trace_writer=ai_trace_writer,
+                wrapper="gcg-player-p1", timeout=60, source_tag="gcg-p1",
+                ai_trace_writer=ai_trace_writer,
             ),
             "P2": HermesPlayerClient(
-                timeout=60, source_tag="gcg-p2", ai_trace_writer=ai_trace_writer,
+                wrapper="gcg-player-p2", timeout=60, source_tag="gcg-p2",
+                ai_trace_writer=ai_trace_writer,
             ),
         }
     else:

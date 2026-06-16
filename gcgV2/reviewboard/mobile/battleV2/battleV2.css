@@ -1,0 +1,167 @@
+body.battle-v2 .app [hidden] {
+  display: none !important;
+}
+
+body.battle-v2 .battle-click-zone {
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+body.battle-v2 .hand-card-button,
+body.battle-v2 .slot-button {
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+body.battle-v2 .hand-card-button:disabled,
+body.battle-v2 .slot-button:disabled,
+body.battle-v2 .battle-click-zone:disabled {
+  cursor: default;
+}
+
+body.battle-v2 .selectable {
+  outline: 2px solid rgba(255, 197, 26, 0.92);
+  outline-offset: 2px;
+}
+
+body.battle-v2 .selected {
+  outline: 3px solid #ffc51a;
+  outline-offset: 2px;
+}
+
+body.battle-v2 .targetable {
+  outline: 3px solid #35e3ff;
+  outline-offset: 2px;
+}
+
+body.battle-v2 .battle-v2-start {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(3, 7, 13, 0.82);
+}
+
+body.battle-v2 .battle-v2-start-button {
+  min-width: min(320px, 72vw);
+  min-height: 54px;
+  border: 1px solid rgba(255, 197, 26, 0.9);
+  border-radius: 6px;
+  color: #111;
+  background: linear-gradient(180deg, #ffc51a, #e59b00);
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+body.battle-v2 .battle-v2-overlay {
+  position: fixed;
+  left: 8px;
+  right: 8px;
+  bottom: calc(var(--mobile-controls-height) + 10px);
+  z-index: 18;
+  display: grid;
+  gap: 8px;
+  max-height: 32dvh;
+  padding: 8px;
+  border: 1px solid var(--mobile-line);
+  border-radius: 5px;
+  background: rgba(7, 12, 20, 0.94);
+  overflow: auto;
+}
+
+body.battle-v2 .battle-v2-prompt {
+  color: #eef6ff;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-align: center;
+}
+
+body.battle-v2 .battle-v2-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+body.battle-v2 .battle-v2-option,
+body.battle-v2 .battle-v2-secondary {
+  min-height: 40px;
+  border: 1px solid rgba(195, 209, 226, 0.5);
+  border-radius: 5px;
+  padding: 0 10px;
+  color: #f8fbff;
+  background: rgba(11, 20, 31, 0.94);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+body.battle-v2 .battle-v2-secondary,
+body.battle-v2 #endTurnBtn {
+  border-color: rgba(255, 191, 16, 0.9);
+  color: #111;
+  background: linear-gradient(180deg, #ffc51a, #e59b00);
+}
+
+body.battle-v2 .battle-v2-status {
+  min-width: 0;
+  overflow: hidden;
+  color: #dce8f7;
+  font-size: 12px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.battle-v2 #menuBtn {
+  color: transparent;
+  font-size: 0;
+}
+
+body.battle-v2 #menuBtn::before {
+  content: "\2630";
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+}
+
+body.battle-v2 #logBtn {
+  font-size: 0;
+}
+
+body.battle-v2 #logBtn::before {
+  content: "\25A3  GAME LOG";
+  color: #fff;
+  font-size: 12px;
+}
+
+body.battle-v2 .battle-v2-error {
+  position: fixed;
+  left: 8px;
+  right: 8px;
+  bottom: calc(var(--mobile-controls-height) + 10px);
+  z-index: 19;
+  padding: 10px;
+  border: 1px solid rgba(238, 45, 50, 0.72);
+  border-radius: 5px;
+  color: #ffe3e5;
+  background: rgba(64, 7, 14, 0.96);
+  font-weight: 900;
+}
+
+body.battle-v2 .card-back,
+body.battle-v2 .card-img {
+  pointer-events: none;
+}

@@ -1,15 +1,28 @@
 # 來源：game_20260615_012734_690878 Turn 9-10 review
 #        game_20260615_100131_591410 Turn 8,9 review
 #        game_20260615_160955_622809 Turn 8,9 review
+#        game_20260615_212503_052285 Turn 7 review
 # Turn 9: P1 讓 P2 的 ST01-007 本回合 AP-3，但 P2 本回合不會攻擊，效果零作用。
 # Turn 10: P2 使用 ST01-012，reason 說「有機會清掉一隻單位」但它只對高 HP rested 單位
 # 造成 1 傷，沒有接近擊殺。
 # Turn 8 P2 發動基地效果「本回合 Link AP+1」，但所有 Link 單位已 rested 不能攻擊。
 # Turn 9 P1 也發動基地效果「為了下回合」，但本回合吃不到的 buff 沒有戰術價值。
 # Turn 8 P1 用 ST01-014 Burst AP-3 打在 Zowort（不能攻擊玩家）上，而非 active Guntank。
-# 教訓：debuff 目標要選本回合會造成傷害的單位，不要浪費在非威脅上。
+# Turn 7: P2 對攻擊者用 ST01-014 AP-3，但防守單位只剩 1HP，debuff 後敵方 AP=1 >= 1，
+# 防守單位仍會死，debuff 完全沒改變結果。
+# 教訓：debuff 必須能改變戰鬥結果才有價值；不能改變結果就不應使用。
 id: temp-effect-value-check
 priority: 9
-description: '"本回合"臨時效果（包括 debuff AP-3、buff AP+1、小額傷害）必須在該回合內能影響實際攻防時才有戰術價值。使用前先確認：①本方有 active 單位本回合還能攻擊嗎（基地 AP+1 只給這回合能攻擊的單位才有用）？②對手是否有 active 單位即將攻擊或阻擋？③小額傷害（1-2 damage）能否擊殺或讓後續攻擊補刀？如果所有可受益的單位都已 rested 且本回合不會再戰鬥，則該效果等同白燒牌。不要把「本回合」buff 當成下回合投資——回合結束時效果消失。針對 debuff（AP-3）：目標選擇優先級從高到低：①本回合能攻擊玩家/盾牌的 active 單位；②能攻擊我方的 active Blocker；③能影響關鍵交換的 rested 單位。不要打「不能攻擊玩家」的單位（如 Zowort）除非它的 Blocker 能力正在阻擋你的 lethal。同理，小額傷害不能因為目標是 rested 就假設有價值——rested 的高 HP 單位受 1 傷後仍存活且下回合恢復 active。'
+description: '"本回合"臨時效果必須在該回合內能影響實際攻防時才有戰術價值。⏱ 關鍵 timing：ST01-014 最佳使用時機是 battle/action step（對手攻擊宣告後、阻擋/傷害前）。在 main phase 使用 ST01-014 前必須確認：本回合我方會攻擊嗎？對手會阻擋嗎？會有 combat 交換嗎？如果 main phase 使用後直接 pass 或不進入戰鬥，AP-3 等於白燒——效果在回合結束消失。
+
+🟢 ST01-014 (AP-3) 三種正確用法（全部在 battle/action step 最有價值）：
+① 防守救單位/基地：對手已宣告攻擊 → action step 用 ST01-014 debuff **正在攻擊的那個 attacker** → 敵 AP < 我方 HP → 單位/基地存活。
+② 攻擊保單位：我方攻擊敵方 rested 單位 → action step 用 ST01-014 debuff **被攻擊的 target** → 減少反傷 → 攻擊者存活。
+③ 破 blocker：對手 active Blocker 會擋住 lethal → main phase 先 debuff **該 Blocker** AP 再攻擊。
+
+🎯 目標選擇鐵則：在 action step，ST01-014 必須選**正在參與本次戰鬥的單位**（attacker 或 target/blocker）。不要選一個跟當前 combat 無關的 active 單位——降它的 AP 不會改變這次戰鬥的結果。
+
+❌ 錯誤用法：main phase 用 ST01-014 後 pass（沒有後續 combat）、打 Zowort（不能攻擊玩家）、打 rested 單位（本回合不會攻擊）、說「降低下回合威脅」或「為下回合做準備」（效果本回合結束消失）。
+計算公式：debuff 後敵 AP < 我方單位 HP → 值得用；debuff 後敵 AP ≥ 我方 HP → 仍會死，不用。'
 condition:
   has_temp_debuff_in_hand: true

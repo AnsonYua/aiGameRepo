@@ -1,0 +1,11 @@
+# 來源：game_20260615_225410_071382 Turn 11 review
+# P1 Turn 11 seq 228 已用 ST01-007 攻擊防禦層，seq 238 才配對 ST01-011 Suletta 到該單位，
+# CONSIDER 說「讓它本回合即可攻擊」，但該單位已經攻擊完變 rested，配對後不能再攻擊。
+# 教訓：Link 配對讓本回合可攻擊的前提是「配對在攻擊之前完成」。
+id: link-pair-before-attack
+priority: 9
+description: 'Link Pilot 配對讓單位本回合可攻擊的前提是：配對必須在該單位攻擊之前完成。順序：①部署 Link Unit → ②配對 Link Pilot → ③攻擊。如果該單位已經攻擊並變成 rested，再配對 Link Pilot 也不會讓它本回合能再次攻擊——rested 不會被配對解除。如果 CONSIDER 的理由是「讓它本回合即可攻擊」，必須在攻擊前做完 pair。已攻擊/rested 後才配對，只算下回合投資——此時 Link 的「本回合可攻擊」價值已喪失，配對只剩 AP/HP 加成和 [When Paired] 效果（如果還沒過期）。'
+condition:
+  has_unpaired_units: true
+  has_pairable_in_hand: true
+  turn_min: 3

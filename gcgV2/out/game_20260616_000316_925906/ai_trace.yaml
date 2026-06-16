@@ -1,0 +1,829 @@
+game_id: game_20260616_000316_925906
+traces:
+- ts: '2026-06-16T00:03:51+08:00'
+  game_id: game_20260616_000316_925906
+  player_id: P2
+  request_type: gcg_mulligan_decision
+  system_prompt: <embedded in user prompt>
+  prompt:
+    request_type: gcg_mulligan_decision
+    game_id: game_20260616_000316_925906
+    player_id: P2
+    decision_type: pending_choice
+    instructions:
+    - 你必須從 `legal_commands` 清單中逐字複製 1 條作為 `COMMAND:`，不可自行發明指令、card_id、slot 或 target。若想用的指令不在清單中，代表當前規則下無法執行（例如單位剛部署、資源不足、目標不合法等）——不要假設、不要拼湊、不要自己發明。
+    - '請只輸出兩行：第一行 `CONSIDER: <公開安全的短理由>`，第二行 `COMMAND: <合法指令>`。'
+    - CONSIDER 必須使用繁體中文，只能描述公開安全的局勢、節奏、攻防或交換考量。
+    - CONSIDER 不得提到對手隱藏手牌、牌庫內容、盾牌內容或任何隱藏資訊。
+    - '`card_reference` 提供相關卡牌的實際效果文字；評估卡牌價值時必須依照效果文字，不要猜測效果。'
+    - 你正在決定是否保留起手牌。
+    - 若起手缺乏前期可部署的 Unit，傾向重抽。
+    legal_commands:
+    - choose keep
+    - choose redraw
+    viewer_state:
+      game_id: game_20260616_000316_925906
+      viewer_player: P2
+      opponent_player: P1
+      turn: 0
+      phase: pre-game
+      step: opening
+      active_player: P2
+      priority_player: P2
+      battle_context: null
+      game_over: false
+      winner: null
+      decision_type: pending_choice
+      players:
+        P2:
+          player_id: P2
+          hand_count: 5
+          hand:
+          - st01/ST01-005
+          - st01/ST01-002
+          - st01/ST01-012
+          - st01/ST01-013
+          - st01/ST01-001
+          deck_count: 45
+          resource_deck_count: 10
+          shield_count: 0
+          resources:
+            active: 0
+            rested: 0
+            ex: 0
+          base:
+            present: false
+            card_id: null
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+          battle_area:
+          - slot: 0
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 1
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 2
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 3
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 4
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 5
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          board_summary:
+            units: 0
+            empty_slots: 6
+            rested_units: 0
+            damaged_units: 0
+            blockers: 0
+          trash: []
+          removal: []
+        P1:
+          player_id: P1
+          hand_count: 5
+          hand: []
+          deck_count: 45
+          resource_deck_count: 10
+          shield_count: 0
+          resources:
+            active: 0
+            rested: 0
+            ex: 0
+          base:
+            present: false
+            card_id: null
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+          battle_area:
+          - slot: 0
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 1
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 2
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 3
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 4
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 5
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          board_summary:
+            units: 0
+            empty_slots: 6
+            rested_units: 0
+            damaged_units: 0
+            blockers: 0
+          trash: []
+          removal: []
+      pending_choice:
+        visible: true
+        waiting_player: P2
+        type: mulligan
+        message: 請決定是否保留起手牌
+        options:
+        - id: keep
+          label: 保留
+        - id: redraw
+          label: 重抽
+    viewer_markdown: "# 對局資訊\n- 你是：P2\n- 回合：0\n- 階段：pre-game / opening\n- 當前優先權：P2\n\
+      - 當前行動玩家：P2\n\n# 我方\n- 手牌：5 張\n- 手牌內容：`st01/ST01-005`, `st01/ST01-002`, `st01/ST01-012`,\
+      \ `st01/ST01-013`, `st01/ST01-001`\n- 牌組：45 張\n- 資源牌組：10 張\n- 盾牌：0 剩餘\n- 基地：無\n\
+      - 資源：active 0 / rested 0 / ex 0\n- 廢棄區：無\n\n# 對手\n- 手牌：5 張\n- 牌組：45 張\n- 資源牌組：10\
+      \ 張\n- 盾牌：0 剩餘\n- 基地：無\n- 資源：active 0 / rested 0 / ex 0\n- 廢棄區：無\n\n# 戰鬥區\n\
+      - 我方 0 號位：空\n- 我方 1 號位：空\n- 我方 2 號位：空\n- 我方 3 號位：空\n- 我方 4 號位：空\n- 我方 5 號位：空\n\
+      - 對手 0 號位：空\n- 對手 1 號位：空\n- 對手 2 號位：空\n- 對手 3 號位：空\n- 對手 4 號位：空\n- 對手 5 號位：空\n\
+      \n# 當前決策\n- 你需要：請決定是否保留起手牌\n- options：\n  - `keep` | 保留\n  - `redraw` | 重抽"
+    output_contract:
+      format: two_line_consider_and_command
+      examples:
+      - 'CONSIDER: 起手節奏穩定，保留前期發展空間。
+
+        COMMAND: choose keep'
+      - 'CONSIDER: 起手偏慢且前期展開不足，選擇重抽。
+
+        COMMAND: choose redraw'
+    card_reference:
+      st01/ST01-005:
+        name: GM
+        type: unit
+        level: 2
+        cost: 1
+        ap: 2
+        hp: 2
+        link: []
+        effects: []
+      st01/ST01-002:
+        name: Gundam(MA Form)
+        type: unit
+        level: 5
+        cost: 3
+        ap: 4
+        hp: 3
+        link:
+        - Amuro Ray
+        effects:
+        - '[When Paired (White Base Team) pilot]Draw 1.'
+      st01/ST01-012:
+        name: Thoroughly Damaged
+        type: command
+        level: 2
+        cost: 1
+        ap: 0
+        hp: 1
+        link: []
+        effects:
+        - '[Main]Choose 1 rested enemy Unit. Deal 1 damage to it.'
+        - '[Pilot][Hayato Kobayashi]'
+      st01/ST01-013:
+        name: Kai's Resolve
+        type: command
+        level: 3
+        cost: 1
+        ap: 1
+        hp: 0
+        link: []
+        effects:
+        - '[Main]Choose 1 friendly Unit. It recovers 3 HP.'
+        - '[Pilot][Kai Shiden]'
+      st01/ST01-001:
+        name: Gundam
+        type: unit
+        level: 4
+        cost: 3
+        ap: 3
+        hp: 4
+        link:
+        - Amuro Ray
+        effects:
+        - <Repair 2> (At the end of your turn, this Unit recovers the specified number
+          of HP.)
+        - '[During Pair]During your turn, all your Units get AP+1.'
+    rule_excerpts:
+    - cr_id: CR-1.8
+      text: 調度時可重抽一次：整手洗回牌庫後重抽 5 張。
+    - cr_id: CR-1.2
+      text: 後手玩家起始擁有 1 個 EX Resource。
+    experience_summaries:
+    - id: early-game-no-play
+      summary: 前期（回合 1-3）：若有空格，部署單位 — 不要讓過。
+      source: /Users/hello/Desktop/cardAI/gcgV2/knowledge/experience/early-game-no-play.yaml
+    - id: early-game-rush
+      summary: 前期：積極部署單位，在對手站穩陣腳前搶佔場面。
+      source: /Users/hello/Desktop/cardAI/gcgV2/knowledge/experience/early-game-rush.yaml
+    - id: pilot-over-command
+      summary: 場上有未配對單位且手牌有雙用途 [Pilot] 卡時，配對提供三層價值：（a）永久 AP/HP 加成；（b）若該單位有 [When Paired]
+        效果（如 AP-3、橫置等），配對後立即觸發一次控場效果；（c）配對後仍可進行其他行動。使用指令效果只有一次性，且若傷害不足擊殺等於浪費潛在駕駛員價值。除非指令能直接擊殺關鍵威脅且配對無任何即時效益，否則配對優於指令使用。
+      source: /Users/hello/Desktop/cardAI/gcgV2/knowledge/experience/pilot-over-command.yaml
+  raw_reply: 'Warning: Unknown toolsets: none
+
+    CONSIDER: 起手有 3 張低費單位（Gundam、Gundam(MA Form)、GM），節奏順暢可用於前期展開，無需冒險重抽。
+
+    COMMAND: choose keep'
+  normalized_reply: 'CONSIDER: 起手有 3 張低費單位（Gundam、Gundam(MA Form)、GM），節奏順暢可用於前期展開，無需冒險重抽。
+
+    COMMAND: choose keep'
+- ts: '2026-06-16T00:04:43+08:00'
+  game_id: game_20260616_000316_925906
+  player_id: P2
+  request_type: gcg_main_decision
+  system_prompt: <embedded in user prompt>
+  prompt:
+    request_type: gcg_main_decision
+    game_id: game_20260616_000316_925906
+    player_id: P2
+    decision_type: action
+    instructions:
+    - 你必須從 `legal_commands` 清單中逐字複製 1 條作為 `COMMAND:`，不可自行發明指令、card_id、slot 或 target。若想用的指令不在清單中，代表當前規則下無法執行（例如單位剛部署、資源不足、目標不合法等）——不要假設、不要拼湊、不要自己發明。
+    - '請只輸出兩行：第一行 `CONSIDER: <公開安全的短理由>`，第二行 `COMMAND: <合法指令>`。'
+    - CONSIDER 必須使用繁體中文，只能描述公開安全的局勢、節奏、攻防或交換考量。
+    - CONSIDER 不得提到對手隱藏手牌、牌庫內容、盾牌內容或任何隱藏資訊。
+    - '`card_reference` 提供相關卡牌的實際效果文字；評估卡牌價值時必須依照效果文字，不要猜測效果。'
+    - 你正在 Main 階段做 1 個行動決策。
+    - '`legal_commands` 內的指令是完整的可執行清單：不在其中的攻擊、部署、配對或使用都無法執行。即使某單位狀態為 active，若其 `attack`
+      指令不在清單中，代表該單位本回合無法攻擊（可能剛部署、不是 Link、或被其他效果限制）。若想用的指令不在清單中，選其他合法指令或 `pass`。'
+    - '`pass` 代表結束主要階段。'
+    legal_commands:
+    - pass
+    viewer_state:
+      game_id: game_20260616_000316_925906
+      viewer_player: P2
+      opponent_player: P1
+      turn: 1
+      phase: main
+      step: null
+      active_player: P2
+      priority_player: P2
+      battle_context: null
+      game_over: false
+      winner: null
+      decision_type: action
+      players:
+        P2:
+          player_id: P2
+          hand_count: 6
+          hand:
+          - st01/ST01-005
+          - st01/ST01-002
+          - st01/ST01-012
+          - st01/ST01-013
+          - st01/ST01-001
+          - st01/ST01-013
+          deck_count: 38
+          resource_deck_count: 9
+          shield_count: 6
+          resources:
+            active: 1
+            rested: 0
+            ex: 0
+          base:
+            present: true
+            card_id: EX-BASE
+            ap: 0
+            hp: 3
+            damage: 0
+            remaining_hp: 3
+            status: active
+          battle_area:
+          - slot: 0
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 1
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 2
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 3
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 4
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 5
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          board_summary:
+            units: 0
+            empty_slots: 6
+            rested_units: 0
+            damaged_units: 0
+            blockers: 0
+          trash: []
+          removal: []
+        P1:
+          player_id: P1
+          hand_count: 5
+          hand: []
+          deck_count: 39
+          resource_deck_count: 10
+          shield_count: 6
+          resources:
+            active: 0
+            rested: 0
+            ex: 1
+          base:
+            present: true
+            card_id: EX-BASE
+            ap: 0
+            hp: 3
+            damage: 0
+            remaining_hp: 3
+            status: active
+          battle_area:
+          - slot: 0
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 1
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 2
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 3
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 4
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          - slot: 5
+            empty: true
+            unit_id: null
+            pilot_id: null
+            is_link: false
+            ap: 0
+            hp: 0
+            damage: 0
+            remaining_hp: 0
+            status: null
+            keywords: []
+            turns_on_field: 0
+          board_summary:
+            units: 0
+            empty_slots: 6
+            rested_units: 0
+            damaged_units: 0
+            blockers: 0
+          trash: []
+          removal: []
+      pending_choice:
+        visible: false
+        waiting_player: null
+        type: null
+        message: null
+        options: []
+    viewer_markdown: '# 對局資訊
+
+      - 你是：P2
+
+      - 回合：1
+
+      - 階段：main / 無
+
+      - 當前優先權：P2
+
+      - 當前行動玩家：P2
+
+
+      # 我方
+
+      - 手牌：6 張
+
+      - 手牌內容：`st01/ST01-005`, `st01/ST01-002`, `st01/ST01-012`, `st01/ST01-013`, `st01/ST01-001`,
+      `st01/ST01-013`
+
+      - 牌組：38 張
+
+      - 資源牌組：9 張
+
+      - 盾牌：6 剩餘
+
+      - 基地：EX-BASE | AP|HP：0|3
+
+      - 資源：active 1 / rested 0 / ex 0
+
+      - 廢棄區：無
+
+
+      # 對手
+
+      - 手牌：5 張
+
+      - 牌組：39 張
+
+      - 資源牌組：10 張
+
+      - 盾牌：6 剩餘
+
+      - 基地：EX-BASE | AP|HP：0|3
+
+      - 資源：active 0 / rested 0 / ex 1
+
+      - 廢棄區：無
+
+
+      # 戰鬥區
+
+      - 我方 0 號位：空
+
+      - 我方 1 號位：空
+
+      - 我方 2 號位：空
+
+      - 我方 3 號位：空
+
+      - 我方 4 號位：空
+
+      - 我方 5 號位：空
+
+      - 對手 0 號位：空
+
+      - 對手 1 號位：空
+
+      - 對手 2 號位：空
+
+      - 對手 3 號位：空
+
+      - 對手 4 號位：空
+
+      - 對手 5 號位：空
+
+
+      # 當前決策
+
+      - 你需要：一般行動（合法指令見 legal_commands）'
+    output_contract:
+      format: two_line_consider_and_command
+      examples:
+      - 'CONSIDER: 前期先補上場面，讓下回合有攻擊者可用。
+
+        COMMAND: play_card st01/ST01-008 0'
+      - 'CONSIDER: 推進對手防禦層，壓低盾牌數。
+
+        COMMAND: attack my_slot_0 opponent_base'
+      - 'CONSIDER: 對手防禦層已空，直擊玩家立即獲勝。
+
+        COMMAND: attack my_slot_0 opponent_base'
+      - 'CONSIDER: 暫時沒有更高價值的合法行動。
+
+        COMMAND: pass'
+    card_reference:
+      st01/ST01-005:
+        name: GM
+        type: unit
+        level: 2
+        cost: 1
+        ap: 2
+        hp: 2
+        link: []
+        effects: []
+      st01/ST01-002:
+        name: Gundam(MA Form)
+        type: unit
+        level: 5
+        cost: 3
+        ap: 4
+        hp: 3
+        link:
+        - Amuro Ray
+        effects:
+        - '[When Paired (White Base Team) pilot]Draw 1.'
+      st01/ST01-012:
+        name: Thoroughly Damaged
+        type: command
+        level: 2
+        cost: 1
+        ap: 0
+        hp: 1
+        link: []
+        effects:
+        - '[Main]Choose 1 rested enemy Unit. Deal 1 damage to it.'
+        - '[Pilot][Hayato Kobayashi]'
+      st01/ST01-013:
+        name: Kai's Resolve
+        type: command
+        level: 3
+        cost: 1
+        ap: 1
+        hp: 0
+        link: []
+        effects:
+        - '[Main]Choose 1 friendly Unit. It recovers 3 HP.'
+        - '[Pilot][Kai Shiden]'
+      st01/ST01-001:
+        name: Gundam
+        type: unit
+        level: 4
+        cost: 3
+        ap: 3
+        hp: 4
+        link:
+        - Amuro Ray
+        effects:
+        - <Repair 2> (At the end of your turn, this Unit recovers the specified number
+          of HP.)
+        - '[During Pair]During your turn, all your Units get AP+1.'
+    rule_excerpts:
+    - cr_id: CR-2.7
+      text: Main 階段可部署 Unit、配對 Pilot、使用 Command 卡、部署基地與宣告攻擊。
+    - cr_id: CR-3.1
+      text: Level = active + rested + ex 資源總數。
+    - cr_id: CR-5.1
+      text: 攻擊目標只能是對手玩家（防禦層）或 rested 的敵方 Unit。
+    - cr_id: CR-4.1
+      text: 攻擊防禦層時，傷害順序為 Base → 盾牌 → 玩家。
+    - cr_id: CR-7.4
+      text: Base 破壞不等於敗北；但對手盾牌也為 0 時，攻擊防禦層的傷害會直擊玩家。
+    - cr_id: CR-9.1
+      text: 敗北條件：盾牌為 0 且戰鬥傷害直擊玩家時，該玩家立即敗北。
+    - cr_id: CR-5.2
+      text: Unit 部署當回合不能攻擊，除非與對應 Pilot 達成 Link。
+    - cr_id: CR-4.4
+      text: Start 階段：該回合玩家的所有 Unit 恢復 active（橫置→重置）。橫置效果只在施加者的回合內持續；Rest 對手 Unit 後若不在同回合內進攻，該效果就沒有戰術價值。
+    strategy_notes:
+    - 先檢查斬殺：(a) 若對手盾牌為 0 且沒有基地，任何一次成功的 `attack ... opponent_base` 都會直擊玩家並立即獲勝；此時直擊玩家優先於擊殺單位、清場或部署。(b)
+      若對手基地仍存在但 HP 極低（≤2），攻擊並摧毀基地移除其防禦層：之後每次攻擊防禦層都固定穿越到盾牌，建立穩定推進。摧毀低 HP 基地的戰略價值遠大於擊殺橫置單位；溢出傷害不會穿透到盾牌仍是值得的。
+    - 計算「本回合能否摧毀對手基地」時，不只算場上已有活躍單位的攻擊力。若手牌中有 Link Unit + 對應 Pilot 且資源足夠，部署+配對 Link
+      後該單位本回合即可攻擊——把這個攻擊力也加入本回合總輸出計算。若總和 ≥ 對手基地剩餘 HP，部署 Link 組合並攻擊基地是最優策略；不要只因為場上沒有活躍單位就放棄斬殺念頭。
+    - 部署單位到 slot 前，先比較手牌中所有可部署選項的：AP（攻擊力）、HP、Link 潛力、特殊效果。不要先部署弱單位再用弱單位佔 slot——每個
+      slot 是有限的資源，先部署最強或最具協同效應的選項（如 Link Unit + Pilot、或 [During Pair] 提供全局增益的單位）。先部署弱單位會排擠更強組合的上場機會，且配對駕駛員給無
+      Link 單位往往是浪費。
+    - 部署 Link Unit 後不要立刻結束主要階段。完整的 In-Turn Link 流程：①部署 Link Unit → ②配對對應的 Link Pilot（`pair`
+      指令，記得檢查 `pair_annotations`）→ ③Link Unit 本回合即可攻擊 → ④攻擊對手足夠後再結束主要階段。缺少任何一步都會讓該
+      unit 本回合無法攻擊。若資源足夠，永遠優先完成 Link 組合再考慮結束回合。
+    - 前期優先建立場面；對手防禦層薄時優先推進傷害。
+    - 若已有可攻擊的單位，不要無限制地只做部署。
+    - 若基地壓力高，優先部署有 Blocker 的單位。
+    - 手牌管理：不要因為資源（active cards）足夠就把手牌中的威脅一次出完。保留手牌作為後續回合的補充與應變空間；若場上已有足夠場面壓力，保留額外威脅優於全部打出，避免對手清除場面後無後續卡牌可部署。手牌所剩無幾且無法在本回合獲勝時，優先保留手牌備用。
+    - Pilot 配對能提升 AP/HP 並可能達成 Link（部署當回合可攻擊）。配對前先看 `pair_annotations`：同一張 Pilot 通常優先配對到標示為
+      Link 配對的機體，而不是任意機體。
+    - 攻擊目標只能選 rested 的敵方單位或對手防禦層；active 的敵方單位不能被指定，legal_commands 之外的攻擊都不合法。
+    - 對手場上有 active 的 <Blocker> 單位時，你的攻擊可能被改向到該 Blocker；宣告攻擊前先評估被阻擋後的交換結果。但 Blocker
+      每次阻擋需橫置且一次只能改向一隻攻擊者：若你的攻擊力足以擊殺該 Blocker（AP ≥ 其剩餘 HP），即使同歸於盡通常也是有利交換，之後其他攻擊者就能直接打防禦層。
+    - Main 階段若沒有其他有價值的行動（無可部署、無可配對、無可用 Command），讓 active 攻擊者整回合閒置通常劣於攻擊；選 `pass` 前要先確認每一個攻擊選項都真的不利，而不是只因對手有
+      Blocker 就放棄進攻。
+    - 若 legal_commands 中有 `activate_effect base`，那通常是免費價值（例如生成 token），優先評估而不是直接 pass。對手基地已毀時，部署手中基地卡可取得：①新基地吸收傷害保護盾牌；②[Deploy]從盾牌抽1牌；③[Activate]每回合生成
+      token 增加破盾攻擊次數。
+    - 若我方基地已被摧毀且手中有基地卡，部署基地是最優先生存行動，優先於部署任何同費單位。沒有基地時盾牌直接暴露於每次攻擊，傷害先破盾再傷玩家；部署基地提供
+      HP5 防禦層吸收傷害保護盾牌，[Deploy]抽 1 盾補充手牌，且非 EX-Base 基地每回合可生成 token。不要為了多部署一隻單位而延後基地部署。
+    - 使用 [Deploy] 或 Command 效果前，先確認效果能產生的實際戰術利益。橫置(Rest)效果只持續到對手回合的 Start 階段（對手 Unit
+      會恢復 active），Rest 後若不在同回合內攻擊讓該 Unit 無法阻擋，則 Rest 等同無效。AP 減少效果若寫明「本回合」則只在當前回合有效——你在自己回合讓對手
+      Unit AP-3，對手 Unit 在你的回合不會攻擊或阻擋，該效果在對手回合開始時消失，完全沒有戰術價值。不要為了觸發效果而觸發：若效果無法在同回合內改變實質戰局（阻擋、攻擊、交換），保留資源優於浪費。
+    - 同一張卡同時出現 `pair`（當 Pilot 配對）與 `play_card`（當 Command 使用）時，先比較兩種用法的價值再選：配對提供永久
+      AP/HP 加成，多半優於一次沒有實際作用的效果。
+    - 駕駛員的[When Paired]效果是戰術資產：配對前先看該效果是否能在對手場上找到合法目標（例如 Amuro Ray 需要 ≤5HP 的活躍單位）。若目前沒有目標或目標存活價值低，保留駕駛員等待更好的配對機會（Link
+      機體或有目標可用的時機）通常優於立即配對到沒有 Link 的單位上。
+    - 配對駕駛員前，先評估駕駛員的效果與目標機體的攻擊能力是否 synergy：若駕駛員有 [Attack] 觸發效果（攻擊時獲得某種增益），配對到「不能攻擊玩家」的機體會大幅降低該效果的價值。AP/HP加成雖好，但浪費駕駛員效果得不償失。
+    - 優先考慮能攻擊對手的機體部署和保留：若場上唯一的未配對機體有「不能攻擊玩家」限制，慎重將 Pilot 配到其上，尤其當該 Pilot 的價值來自攻擊觸發效果時。
+    - '`play_card` 指令的格式依卡牌類型不同：基地卡(Base) → `play_card <card_id>`（無插槽）；單位卡(Unit) →
+      `play_card <card_id> <slot>`（需插槽號碼）；指令卡(Command) → `play_card <card_id>`（無插槽）。同一種
+      `play_card` 格式不能跨區域使用。若 legal_commands 沒有包含某張 card_id 的 `play_card` 指令，代表當前狀態下無法合法使用該卡。'
+    experience_summaries:
+    - id: deploy-strongest-first
+      summary: 在主要階段部署單位時，不要先部署弱單位再用弱單位佔 slot。若手牌中有多個可部署選項（包含 Pilot 與其對應的 Link Unit），先比較所有選項的：①AP（攻擊力越高越好）、②HP（生存性）、③Link
+        潛力（部署+配對後本回合即可攻擊）、④特殊效果（全局增益如 [During Pair] 全體 AP+1、部署效果、即時殺傷）。優先將飛行甲板 slot
+        留給最強或最具協同效應的組合；先部署弱單位會佔用 slot 並排擠更強部署。若已有單位在場上但未配對，不要為「配對而配對」——若該單位非 Link
+        且配對後無協同效應，保留 Pilot 給未來更強單位優於浪費在弱單位上。
+      source: /Users/hello/Desktop/cardAI/gcgV2/knowledge/experience/deploy-strongest-first.yaml
+    - id: early-game-no-play
+      summary: 前期（回合 1-3）：若有空格，部署單位 — 不要讓過。
+      source: /Users/hello/Desktop/cardAI/gcgV2/knowledge/experience/early-game-no-play.yaml
+    - id: card-type-placement
+      summary: 卡牌類型決定部署區域，不是費用或名稱。Base card 只能放到基地區，指令格式為 `play_card <card_id>`（無插槽）。Unit
+        card 只能放到戰鬥區空插槽，指令格式為 `play_card <card_id> <slot>`（需插槽號碼）。若 legal_commands
+        中沒有包含該 card_id 的 `play_card` 指令，代表該卡在當前遊戲狀態下無法合法使用（基地已存活無法再部署基地、費用不足、等級不足等），不要自行組合指令。
+      source: /Users/hello/Desktop/cardAI/gcgV2/knowledge/experience/card-type-placement.yaml
+    - id: early-game-rush
+      summary: 前期：積極部署單位，在對手站穩陣腳前搶佔場面。
+      source: /Users/hello/Desktop/cardAI/gcgV2/knowledge/experience/early-game-rush.yaml
+  raw_reply: 'Warning: Unknown toolsets: none
+
+    CONSIDER: 首回合僅有1點資源，無法部署任何單位，也無法使用指令卡，只能直接結束主要階段。
+
+    COMMAND: pass'
+  normalized_reply: 'CONSIDER: 首回合僅有1點資源，無法部署任何單位，也無法使用指令卡，只能直接結束主要階段。
+
+    COMMAND: pass'

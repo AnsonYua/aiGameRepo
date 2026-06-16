@@ -3,8 +3,9 @@
 Interface matches AiPlayerClient exactly:
     HermesPlayerClient.decide(game_id, player_id, prompt_payload) -> str
 
-Hermes sees only viewer_state + legal_commands from prompt_payload.
-It has zero tools, no memory, no file access.
+Hermes sees viewer_state + legal_commands from prompt_payload.
+Has memory tool for saving public-safe tactical lessons.
+P1/P2 use separate profiles for memory isolation.
 """
 
 from __future__ import annotations
@@ -64,9 +65,8 @@ class HermesPlayerClient:
         argv = [
             self.wrapper,
             "chat", "-q", hermes_prompt,
-            "-t", "none",
+            "-t", "memory",
             "-s", "gcg-strategy",
-            "--max-turns", "1",
             "--source", self.source_tag,
             "-Q",
         ]
@@ -136,12 +136,29 @@ class HermesPlayerClient:
 
     @staticmethod
     def _normalize(raw: str) -> str:
-        """Keep only CONSIDER:/REASON:/COMMAND: lines."""
+        """Keep only the last CONSIDER:/REASON: and last COMMAND: lines.
+
+        Multi-turn may produce draft commands; only the final pair matters.
+        """
         lines = [line.strip() for line in raw.splitlines() if line.strip()]
         structured = [
             line for line in lines
             if line.lower().startswith(("consider:", "reason:", "command:"))
         ]
-        if any(line.lower().startswith("command:") for line in structured):
-            return "\n".join(structured)
-        return lines[0] if lines else ""
+        # Find last COMMAND
+        last_cmd_idx = None
+        for i in range(len(structured) - 1, -1, -1):
+            if structured[i].lower().startswith("command:"):
+                last_cmd_idx = i
+                break
+        if last_cmd_idx is None:
+            return lines[0] if lines else ""
+        # Find last CONSIDER/REASON before that COMMAND
+        last_consider = ""
+        for i in range(last_cmd_idx - 1, -1, -1):
+            if structured[i].lower().startswith(("consider:", "reason:")):
+                last_consider = structured[i]
+                break
+        if last_consider:
+            return f"{last_consider}\n{structured[last_cmd_idx]}"
+        return structured[last_cmd_idx]

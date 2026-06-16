@@ -1072,7 +1072,7 @@ body.mobile-board .resource-line {
 }
 
 body.mobile-board .resource-line span {
-  font-size: clamp(24px, 3.4vw, 36px);
+  font-size: clamp(18px, 2.6vw, 30px);
 }
 
 body.mobile-board .resource-pips {
@@ -1113,6 +1113,16 @@ body.mobile-board .pip.rested::after {
 
 body.mobile-board .pip.ex {
   border-color: rgba(255, 255, 255, 0.82);
+  color: #fff;
+  background: #8b5cf6;
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.4);
+  margin-left: clamp(4px, 0.45vw, 7px);
+}
+
+body.mobile-board .pip.ex::before {
+  content: "EX";
+  font-size: 6px;
+  line-height: 1;
 }
 
 body.mobile-board .battlefield {

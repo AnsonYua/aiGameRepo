@@ -128,6 +128,16 @@ _SPECS = {
             "primitive": "modifyAP", "target": "$t1", "amount": -3, "duration": "this_turn",
         }],
     ),
+    # ST01-014 also works during battle/action step as [Action]
+    ("ST01-014", "ACTION"): _spec(
+        "ST01-014", "ACTION",
+        target_requirements=[{
+            "name": "t1", "controller": "opponent", "card_type": "unit", "count": 1,
+        }],
+        primitive_steps=[{
+            "primitive": "modifyAP", "target": "$t1", "amount": -3, "duration": "this_turn",
+        }],
+    ),
     # ST01-014：[Burst]Activate this card's [Main].
     ("ST01-014", "BURST_CONDITION"): _spec(
         "ST01-014", "BURST_CONDITION",

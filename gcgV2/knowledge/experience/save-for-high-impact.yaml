@@ -1,0 +1,14 @@
+# 來源：多局觀察 — AI 傾向先 deploy 低 cost 卡（GM、Demi Trainer）而唔優先儲資源 deploy 高 impact card
+# ST01-001（Gundam，3費，During Pair 全局 AP+1）、ST01-006（Aerial PS6，4費，When Paired AP-3）、
+# ST01-007（Gundam Aerial，3費 3/4，Link Suletta → 4/6 + [Attack] 資源活化）、
+# ST01-002（Gundam MA Form，3費 5/3，Link Amuro）
+# 效果遠大於填滿 slot 嘅低 cost 白板。AI 經常在早期回合 fill slot with cheap units，
+# 等到抽到強卡時已經冇 slot 或冇資源配對。
+# 教訓：高 impact Link card 的價值遠大於低 cost filler——不要急於填 slot。
+id: save-for-high-impact
+priority: 10
+description: '高 cost Link Unit（ST01-001 Gundam 3費、ST01-006 Gundam Aerial PS6 4費、ST01-002 Gundam MA Form 3費）的效果遠大於低 cost 填充單位（ST01-005 GM 1費 2/2、ST01-008 Demi Trainer 1費 1/1）。早期回合不要急於把所有資源花在低 cost 單位填 slot。保留資源的好處：①幾回合後抽到高 impact Link Unit + Pilot 時有足夠資源部署+配對；②slot 留給高 impact 單位而不是被低 cost filler 佔用；③高 cost Link 的效果（全局 AP+1、全體強化、AP-3 debuff）可以逆轉整局。優先級：高 impact Link combo（deploy+pair 總 cost）> 中 cost 有 effect 單位（ST01-004 Guntank with rest、ST01-009 Zowort Blocker）> 低 cost filler。不是說永遠不部署低 cost——如果對手有 pressure 需要防守，適時 deploy 是正確的——但在沒有急迫威脅時，儲資源比填 slot 更有價值。'
+condition:
+  my_empty_slots_min: 3
+  turn_min: 2
+  turn_max: 5

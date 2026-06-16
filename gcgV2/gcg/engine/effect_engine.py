@@ -259,10 +259,11 @@ class EffectEngine:
 
     def _op_setActive(self, step, run, events, messages):
         target = step.get("target")
-        if target == "self_resource":
-            if self.state.set_one_resource_active(run["controller"]):
-                events.append({"type": "resource_activated", "player": run["controller"]})
-                messages.append(f"{run['controller']} 將 1 個資源設為 active。")
+        resource_player = self._resolve_resource_target_player(target, run)
+        if resource_player is not None:
+            if self.state.set_one_resource_active(resource_player):
+                events.append({"type": "resource_activated", "player": resource_player})
+                messages.append(f"{resource_player} 將 1 個資源設為 active。")
             return
         for player_id, slot_index in self._resolve_unit_targets(target, run):
             slot = self.state.get_slot(player_id, slot_index)
@@ -487,6 +488,17 @@ class EffectEngine:
                 if slot.get("is_link")
             ]
         raise EffectExecutionError(f"unsupported target ref: {target}")
+
+    def _resolve_resource_target_player(self, target, run):
+        if target == "self_resource":
+            return run["controller"]
+        if isinstance(target, str) and target.startswith("$"):
+            binding = run["bindings"].get(target[1:])
+            if binding is None:
+                raise EffectExecutionError(f"unbound target reference: {target}")
+            if binding.get("slot") is None and binding.get("id") == "self_resource":
+                return binding["player"]
+        return None
 
     def _source_slot(self, run):
         if run.get("source_slot") is None:

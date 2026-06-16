@@ -15,6 +15,7 @@ _CARD_ID_PATTERN = re.compile(r"\b(?:st\d+/)?(?:[A-Z]{2}\d{2}-\d{3}|T-\d{3})\b")
 _ATTACK_COMMAND_PATTERN = re.compile(r"^attack my_slot_(\d+) (?:opponent_base|opponent_slot_(\d+))$")
 _BLOCK_COMMAND_PATTERN = re.compile(r"^block my_slot_(\d+)$")
 _PAIR_COMMAND_PATTERN = re.compile(r"^pair (\S+) my_slot_(\d+)$")
+_PLAY_CARD_COMMAND_PATTERN = re.compile(r"^play_card (\S+)(?: (\d+))?$")
 
 
 _BASE_INSTRUCTIONS = [
@@ -56,15 +57,16 @@ _STRATEGY_NOTES = {
         "部署 Link Unit 後不要立刻結束主要階段。完整的 In-Turn Link 流程：①部署 Link Unit → ②配對對應的 Link Pilot（`pair` 指令，記得檢查 `pair_annotations`）→ ③Link Unit 本回合即可攻擊 → ④攻擊對手足夠後再結束主要階段。缺少任何一步都會讓該 unit 本回合無法攻擊。若資源足夠，永遠優先完成 Link 組合再考慮結束回合。",
         "前期優先建立場面；對手防禦層薄時優先推進傷害。",
         "若已有可攻擊的單位，不要無限制地只做部署。",
+        "低費不是最高優先級。部署前先比較所有 `play_card` 選項的本回合價值與下回合威脅：高 AP/HP、Link 潛力、可立即 follow-up pair、能摧毀基地或建立 lethal 的單位，通常優於只是因為費用低就先下的弱單位。",
         "若基地壓力高，優先部署有 Blocker 的單位。",
         "手牌管理：不要因為資源（active cards）足夠就把手牌中的威脅一次出完。保留手牌作為後續回合的補充與應變空間；若場上已有足夠場面壓力，保留額外威脅優於全部打出，避免對手清除場面後無後續卡牌可部署。手牌所剩無幾且無法在本回合獲勝時，優先保留手牌備用。",
         "Pilot 配對能提升 AP/HP 並可能達成 Link（部署當回合可攻擊）。配對前先看 `pair_annotations`：同一張 Pilot 通常優先配對到標示為 Link 配對的機體，而不是任意機體。",
         "攻擊目標只能選 rested 的敵方單位或對手防禦層；active 的敵方單位不能被指定，legal_commands 之外的攻擊都不合法。",
         "對手場上有 active 的 <Blocker> 單位時，你的攻擊可能被改向到該 Blocker；宣告攻擊前先評估被阻擋後的交換結果。但 Blocker 每次阻擋需橫置且一次只能改向一隻攻擊者：若你的攻擊力足以擊殺該 Blocker（AP ≥ 其剩餘 HP），即使同歸於盡通常也是有利交換，之後其他攻擊者就能直接打防禦層。",
         "Main 階段若沒有其他有價值的行動（無可部署、無可配對、無可用 Command），讓 active 攻擊者整回合閒置通常劣於攻擊；選 `pass` 前要先確認每一個攻擊選項都真的不利，而不是只因對手有 Blocker 就放棄進攻。",
-        "若 legal_commands 中有 `activate_effect base`，那通常是免費價值（例如生成 token），優先評估而不是直接 pass。對手基地已毀時，部署手中基地卡可取得：①新基地吸收傷害保護盾牌；②[Deploy]從盾牌抽1牌；③[Activate]每回合生成 token 增加破盾攻擊次數。",
+        "若 legal_commands 中有 `activate_effect base`，先確認你基地的 card_id。ST01-015（White Base）效果是花 2 資源生成 token（0 單位→3/3 Gundam、1→2/2 Guncannon、2+→1/1 GunTank），有戰術價值但不是免費；ST01-016（White Base）效果是免費橫置基地讓全體 Link 單位本回合 AP+1，但若你的 Link 單位已 rested 且本回合無法再攻擊，AP+1 沒有實質戰術價值——保留基地 active 狀態到下回合防守更優。不要看到 `activate_effect base` 就預設使用。",
         "若我方基地已被摧毀且手中有基地卡，部署基地是最優先生存行動，優先於部署任何同費單位。沒有基地時盾牌直接暴露於每次攻擊，傷害先破盾再傷玩家；部署基地提供 HP5 防禦層吸收傷害保護盾牌，[Deploy]抽 1 盾補充手牌，且非 EX-Base 基地每回合可生成 token。不要為了多部署一隻單位而延後基地部署。",
-        "使用 [Deploy] 或 Command 效果前，先確認效果能產生的實際戰術利益。橫置(Rest)效果只持續到對手回合的 Start 階段（對手 Unit 會恢復 active），Rest 後若不在同回合內攻擊讓該 Unit 無法阻擋，則 Rest 等同無效。AP 減少效果若寫明「本回合」則只在當前回合有效——你在自己回合讓對手 Unit AP-3，對手 Unit 在你的回合不會攻擊或阻擋，該效果在對手回合開始時消失，完全沒有戰術價值。不要為了觸發效果而觸發：若效果無法在同回合內改變實質戰局（阻擋、攻擊、交換），保留資源優於浪費。",
+        "使用 [Deploy] 或 Command 效果前，先確認效果能產生的實際戰術利益。橫置(Rest)效果只持續到對手回合的 Start 階段（對手 Unit 會恢復 active），Rest 後若不在同回合內攻擊讓該 Unit 無法阻擋，則 Rest 等同無效。AP 減少效果若寫明「本回合」則只在當前回合有效：正確用途是同回合內改變阻擋、反傷、單位存活或 lethal race，例如 ST01-014 先讓敵方 Blocker/被攻擊單位 AP-3，使我方攻擊者不會被反傷擊破；或在對手攻擊的 Action timing 讓攻擊者 AP-3，保住我方基地/單位。若 AP-3 不能改變本回合戰鬥結果，或只是說「降低下回合威脅」，則效果會在回合結束消失，保留資源優於浪費。",
         "同一張卡同時出現 `pair`（當 Pilot 配對）與 `play_card`（當 Command 使用）時，先比較兩種用法的價值再選：配對提供永久 AP/HP 加成，多半優於一次沒有實際作用的效果。",
         "駕駛員的[When Paired]效果是戰術資產：配對前先看該效果是否能在對手場上找到合法目標（例如 Amuro Ray 需要 ≤5HP 的活躍單位）。若目前沒有目標或目標存活價值低，保留駕駛員等待更好的配對機會（Link 機體或有目標可用的時機）通常優於立即配對到沒有 Link 的單位上。",
         "配對駕駛員前，先評估駕駛員的效果與目標機體的攻擊能力是否 synergy：若駕駛員有 [Attack] 觸發效果（攻擊時獲得某種增益），配對到「不能攻擊玩家」的機體會大幅降低該效果的價值。AP/HP加成雖好，但浪費駕駛員效果得不償失。",
@@ -122,6 +124,9 @@ class PromptBuilder:
         strategy_notes = _STRATEGY_NOTES.get(kind)
         if strategy_notes:
             payload["strategy_notes"] = strategy_notes
+        play_annotations = self._annotate_plays(legal_commands, viewer_state)
+        if play_annotations:
+            payload["play_annotations"] = play_annotations
         attack_annotations = self._annotate_attacks(legal_commands, viewer_state)
         if attack_annotations:
             payload["attack_annotations"] = attack_annotations
@@ -131,10 +136,10 @@ class PromptBuilder:
         pair_annotations = self._annotate_pairs(legal_commands, viewer_state)
         if pair_annotations:
             payload["pair_annotations"] = pair_annotations
-        if attack_annotations or block_annotations or pair_annotations:
+        if play_annotations or attack_annotations or block_annotations or pair_annotations:
             payload["instructions"].append(
-                "`attack_annotations` / `block_annotations` / `pair_annotations` 是 runtime "
-                "依規則計算的結果預覽，內容是事實；評估攻擊、阻擋或配對時以它為準，不要自行心算或猜測 Link 名單。"
+                "`play_annotations` / `attack_annotations` / `block_annotations` / `pair_annotations` 是 runtime "
+                "依規則計算的結果預覽，內容是事實；評估部署、攻擊、阻擋或配對時以它為準，不要自行心算或猜測 Link 名單。"
             )
         lessons = self._lessons_for_decision(kind, viewer_state)
         if lessons:
@@ -192,7 +197,7 @@ class PromptBuilder:
                 "CONSIDER: 起手偏慢且前期展開不足，選擇重抽。\nCOMMAND: choose redraw",
             ],
             "main": [
-                "CONSIDER: 前期先補上場面，讓下回合有攻擊者可用。\nCOMMAND: play_card st01/ST01-008 0",
+                "CONSIDER: 比較所有合法部署後，選擇本回合或下回合壓力最高的單位。\nCOMMAND: play_card st01/ST01-001 0",
                 "CONSIDER: 推進對手防禦層，壓低盾牌數。\nCOMMAND: attack my_slot_0 opponent_base",
                 "CONSIDER: 對手防禦層已空，直擊玩家立即獲勝。\nCOMMAND: attack my_slot_0 opponent_base",
                 "CONSIDER: 暫時沒有更高價值的合法行動。\nCOMMAND: pass",
@@ -257,6 +262,71 @@ class PromptBuilder:
     # ------------------------------------------------------------------
     # 攻擊 / 阻擋結果預覽（純規則計算的事實，不做策略評價）
     # ------------------------------------------------------------------
+
+    def _annotate_plays(self, legal_commands, viewer_state):
+        """為 play_card 指令標注卡種、數值與 Link 潛力。
+
+        這只提供 runtime 可見的卡面事實，不評分、不替模型選牌。
+        """
+        if self.card_db is None:
+            return {}
+        players = viewer_state.get("players") or {}
+        my_block = players.get(viewer_state.get("viewer_player")) or {}
+        hand_names = self._card_names_for_ids(my_block.get("hand") or [])
+
+        annotations = {}
+        for command in legal_commands:
+            match = _PLAY_CARD_COMMAND_PATTERN.match(command)
+            if not match:
+                continue
+            card_id = match.group(1)
+            card = self.card_db.get(card_id)
+            if card is None:
+                continue
+            card_type = card.get("cardType")
+            cost = card.get("cost")
+            if card_type == "unit":
+                ap = card.get("ap")
+                hp = card.get("hp")
+                link_names = list(card.get("link") or [])
+                if link_names:
+                    matching = [name for name in link_names if name in hand_names]
+                    if matching:
+                        link_text = (
+                            f"Link Unit；對應 Pilot 目前在手牌中：{', '.join(matching)}。"
+                            "部署後若下一步 legal_commands 出現對應 pair，完成 Link 可讓它本回合攻擊。"
+                        )
+                    else:
+                        link_text = (
+                            f"Link Unit；Link 名單：{', '.join(link_names)}。"
+                            "目前未看到對應 Pilot 在手牌中，部署後通常要等未來配對才解除召喚失調。"
+                        )
+                else:
+                    link_text = "非 Link Unit；剛部署本回合通常不能攻擊。"
+                annotations[command] = (
+                    f"部署 Unit：cost {cost}，AP/HP {ap}/{hp}。{link_text}"
+                )
+            elif card_type == "base":
+                annotations[command] = (
+                    f"部署 Base：cost {cost}；建立或重建基地防禦層，依卡面效果可能有 Deploy 或 Activate 價值。"
+                )
+            elif card_type == "command":
+                annotations[command] = (
+                    f"使用 Command：cost {cost}；確認效果在本回合能產生實際收益再使用。"
+                )
+        return annotations
+
+    def _card_names_for_ids(self, card_ids):
+        names = set()
+        for card_id in card_ids:
+            card = self.card_db.get(card_id)
+            if card and card.get("name"):
+                names.add(card["name"])
+            if self.rules_index is not None:
+                designation = self.rules_index.pilot_designation(card_id)
+                if designation and designation.get("name"):
+                    names.add(designation["name"])
+        return names
 
     def _annotate_attacks(self, legal_commands, viewer_state):
         """為每條 attack 指令附上 runtime 規則計算的結果預覽。

@@ -85,6 +85,9 @@ class GameplayYamlWriter:
     def get_gameplay_path(self, game_id):
         return str(self.output_root / game_id / "gamePlay.yaml")
 
+    def get_document(self, game_id):
+        return self._document(game_id)
+
     def _document(self, game_id):
         if game_id not in self._documents:
             path = Path(self.get_gameplay_path(game_id))

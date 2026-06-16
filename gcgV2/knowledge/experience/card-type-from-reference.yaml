@@ -1,0 +1,13 @@
+# 來源：game_20260615_212503_052285 Turn 16 review
+#        game_20260615_222520_072204 Turn 6 review
+# P2 Turn 16 trace 顯示 AI 理由說「ST01-013 基地卡，可部署後抽盾、提供 5HP」
+# 但 card_reference 明確寫 ST01-013 是 Kai's Resolve（type=command，效果=回復 3HP）。
+# P2 Turn 6 使用 `play_card st01/ST01-013` 作為命令卡治療，但理由寫「作為 Pilot 使用」。
+# ST01-013 是 Command 治療卡（`play_card` 使用），同時帶有 pilot_designation 可作為 Kai Shiden 駕駛員（`pair` 指令使用）。
+# 兩種用法完全不同：治療需受傷目標，駕駛員是永久 AP/HP 加成。不要混淆 card_reference.type。
+# 教訓：不能從 card_id 猜卡種，必須看 card_reference.type。
+id: card-type-from-reference
+priority: 10
+description: '判斷一張 card 的類型（Unit / Pilot / Base / Command）時，不要從 card_id 或 card_name 猜測。必須以 prompt 中的 card_reference.type 或 card_reference.cardType 為唯一依據。常見容易猜錯的卡：ST01-013（Kai"s Resolve）是 Command 治療卡，不是 Base、也不是 Pilot——它可透過 play_card 作為命令使用（需受傷目標才有效），也可透過 pair 指令作為 Kai Shiden 駕駛員使用（永久 AP/HP 加成）。兩種用法完全不同，不要混為一談。治療卡不能部署、不能抽盾、不提供 HP 上限——它只有在目標已受傷時才有價值。每次 decision 前都先看 card_reference 確認 type 和 effect text，不要用 card_id 做假設。'
+condition:
+  turn_min: 3

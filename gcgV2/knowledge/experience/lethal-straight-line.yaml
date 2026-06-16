@@ -1,13 +1,13 @@
 # 來源：game_20260615_100131_591410 Turn 12 review
+#        game_20260616_003813_253177 Turn 11 review
 # P2 對手無基地、2 盾、無 active blocker，自己 4 個 active 單位。
 # 第一刀用 6AP Link Unit 打對手 rested 的 Gundam Aerial（4HP），而不是直接打盾。
-# 本局因為剩餘攻擊者足夠所以仍贏，但若對手有更多盾或我方攻擊者更少，
-# 浪費一次攻擊在 rested unit 上會導致 lethal 失敗。
-# 教訓：能用「破盾→破盾→直擊」贏的回合，除非擋路的 active blocker 會阻止 lethal，
-# 否則不要先殺 rested unit。
+# P1 Turn 11 已摧毀對手基地、對手剩 1 盾，但在攻擊破盾前先 deploy ST01-004 和基地，
+# 拖慢了 lethal 線。
+# 教訓：能用「破盾→破盾→直擊」贏的回合，不要插入不必要動作。
 id: lethal-straight-line
 priority: 11
-description: '當本回合有足夠攻擊次數和攻擊力完成「破所有盾→直擊玩家獲勝」時，攻擊目標順序應優先於 lethal line：打盾→打盾→直擊。不要在中間插入打 rested unit、清場、或非必要的交換。rested unit 不會阻擋，不會干擾 lethal 計算；每浪費一次攻擊在 rested unit 上，就少破一盾、讓對手多一個回合生存。例外情況：如果對手有 active Blocker 且你的攻擊次數不足以繞過 Blocker（打盾需要穿透 Blocker），可以先解除 Blocker；否則一律走最短 lethal 路徑。'
+description: '當本回合有足夠攻擊次數和攻擊力完成「破所有盾→直擊玩家獲勝」時，攻擊目標順序應優先於 lethal line：打盾→打盾→直擊。不要在中間插入打 rested unit、清場、非必要的部署、基地部署、或配對。這些動作雖然合法，但每浪費一個主要階段動作在非 lethal 活動上就多一個風險：對手可能抽到反制、burst 效果可能逆轉。如果攻擊和 deploy 都合法，先完成所有攻擊破盾、確定對手死了，再回頭做部署——到了下回合多餘部署仍有機會。例外：如果對手有 active Blocker 且你的攻擊次數不足以繞過它，可以先解除 Blocker；否則一律走最短 lethal 路徑。'
 condition:
   my_active_units_min: 2
   enemy_shields_min: 1

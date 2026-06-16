@@ -1,7 +1,13 @@
-# 來源：game_20260615_012734_690878 Turn 8 review
+# 來源：game_20260615_012734_690878 Turn 8 review（壞案例）
 # P2 的 reasoning 兩次說「部署 Aerial 後配對 Suletta 達成 Link，本回合加入攻擊」，
 # 但連續部署兩張 ST01-007 把資源用光，沒有配對 Suletta，最後兩隻剛部署的 Aerial
 # 因召喚失調不能攻擊。
+# ✅ game_20260615_222520_072204 Turn 7（好案例）：P1 部署 ST01-007 → 配對 Suletta → 攻盾
+#    seq 119-121，完整 In-Turn Link。
+# ✅ game_20260615_222520_072204 Turn 6（好案例）：P2 部署 ST01-007 → 配對 Suletta → 打爆基地
+#    seq 81-83。
+# ✅ game_20260616_000221_055354 Turn 12（好案例）：P1 部署 ST01-004 橫置對手 → 配對 Kai Shiden (ST01-012) 達成 Link → 本回合立即攻盾
+#    seq 279-284。先利用 [Deploy] rest 效果再配對攻擊，節奏完美。
 # 教訓：如果 CONSIDER 的核心計畫是「部署 Link Unit + 配對 Pilot 讓它本回合可攻擊」，
 # 下一步的 COMMAND 必須優先完成 pair，不能先把資源花在第二個部署。
 id: link-plan-followthrough

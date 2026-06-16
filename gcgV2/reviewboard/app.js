@@ -147,18 +147,18 @@ function renderResources(playerId, player) {
   const active = visibleCount(resources.active);
   const rested = visibleCount(resources.rested);
   const ex = visibleCount(resources.ex);
-  const total = active + rested + ex;
-  setText(`${playerId}ResourceText`, `${total} / 10`);
+  const normal = active + rested;
+  setText(`${playerId}ResourceText`, ex ? `${normal}/10 + EX ${ex}/5` : `${normal} / 10`);
 
   const container = document.getElementById(`${playerId}Resources`);
   container.replaceChildren();
   const pips = [
     ...Array(active).fill("active"),
     ...Array(rested).fill("rested"),
+    ...Array(Math.max(0, 10 - normal)).fill("empty"),
     ...Array(ex).fill("ex"),
-    ...Array(Math.max(0, 10 - total)).fill("empty"),
   ];
-  for (const kind of pips.slice(0, 10)) {
+  for (const kind of pips.slice(0, 15)) {
     const pip = document.createElement("span");
     pip.className = `pip ${kind}`;
     pip.title = kind === "active" ? "active resource" : kind === "rested" ? "rested resource" : kind === "ex" ? "EX resource" : "empty resource";

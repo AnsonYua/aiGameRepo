@@ -1,0 +1,12 @@
+# 來源：game_20260615_225410_071382 Turn 10 review
+# P2 Turn 10 已結束攻擊，本回合沒有更多戰鬥，仍使用 ST01-014 對 P1 active ST01-007 AP-3，
+# CONSIDER 說「可降低威脅，保護我方基地及單位」。
+# 但 AP-3 效果只到本回合結束，對手下回合開始時消失。
+# 教訓：until end of turn debuff 不是防守工具——對手在你的回合不會攻擊。
+# 在本方回合使用 AP-3「為保護基地」是完全無效的。
+id: debuff-not-defense
+priority: 9
+description: '"本回合"或"until end of turn"的 debuff 效果（如 ST01-014 AP-3、ST01-006 [When Paired] AP-3）在本方回合使用時，不能當成防守工具。原因：這些效果在你回合結束時消失，而對手只會在他們的回合攻擊——那時 debuff 早已不存在。有效的用法：①在你的回合攻擊敵方單位前使用，降低反傷或讓擊殺更容易；②對手有 active Blocker 會阻擋時使用，降低其 AP；③對手的 [Attack] 觸發效果會在你的回合觸發時使用（幾乎不存在）。❌ 無效的用法：說「降低威脅保護基地」「為下回合防守」——debuff 不會跨回合保留。如果要防守，部署 Blocker 或留資源給 Action 卡（如時點更準確的 [Action] 效果）。'
+condition:
+  has_temp_debuff_in_hand: true
+  turn_min: 3

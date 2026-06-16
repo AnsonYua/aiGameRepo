@@ -2,6 +2,7 @@
 import argparse
 import copy
 import json
+import os
 import re
 from datetime import datetime
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -9,6 +10,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import yaml
+
+from humanVsAI.battle_session import HumanVsAiBattleSession
 
 
 DEFAULT_REPLAY = Path(
@@ -18,6 +21,8 @@ DEFAULT_REPLAY = Path(
 
 class ReviewBoardHandler(SimpleHTTPRequestHandler):
     replay_path = DEFAULT_REPLAY
+    battle_session = None
+    battle_v2_session = None
 
     def end_headers(self):
         self.send_header("Cache-Control", "no-store, max-age=0")
@@ -28,28 +33,73 @@ class ReviewBoardHandler(SimpleHTTPRequestHandler):
         if parsed.path == "/api/replay":
             self._send_replay()
             return
+        if parsed.path == "/api/battle/state":
+            self._send_json(self.battle_session.state())
+            return
+        if parsed.path == "/api/battleV2/state":
+            self._send_json(self.battle_v2_session.state())
+            return
+        if parsed.path == "/mobile/battle":
+            self.path = "/mobile/battle/index.html"
+            return super().do_GET()
+        if parsed.path == "/mobile/battleV2":
+            self.path = "/mobile/battleV2/index.html"
+            return super().do_GET()
         if parsed.path in ("/", "/mobile"):
             self.path = "/index.html"
         super().do_GET()
+
+    def do_POST(self):
+        parsed = urlparse(self.path)
+        if parsed.path == "/api/battle/start":
+            self._send_json(self.battle_session.start())
+            return
+        if parsed.path == "/api/battle/reset":
+            self._send_json(self.battle_session.reset())
+            return
+        if parsed.path == "/api/battle/command":
+            payload = self._read_json_body()
+            self._send_json(self.battle_session.submit_command(payload.get("command")))
+            return
+        if parsed.path == "/api/battleV2/start":
+            self._send_json(self.battle_v2_session.start())
+            return
+        if parsed.path == "/api/battleV2/reset":
+            self._send_json(self.battle_v2_session.reset())
+            return
+        if parsed.path == "/api/battleV2/command":
+            payload = self._read_json_body()
+            self._send_json(self.battle_v2_session.submit_command(payload.get("command")))
+            return
+        self.send_error(404, "Not found")
 
     def _send_replay(self):
         try:
             with self.replay_path.open("r", encoding="utf-8") as handle:
                 payload = yaml.safe_load(handle) or {}
             payload = enrich_review_hands(payload, self.replay_path)
-            body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+            self._send_json(payload)
         except Exception as exc:
-            body = json.dumps({"error": str(exc)}, ensure_ascii=False).encode("utf-8")
-            self.send_response(500)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+            self._send_json({"error": str(exc)}, status=500)
+
+    def _read_json_body(self):
+        length = int(self.headers.get("Content-Length") or 0)
+        if length <= 0:
+            return {}
+        raw = self.rfile.read(length)
+        try:
+            payload = json.loads(raw.decode("utf-8"))
+        except json.JSONDecodeError:
+            return {}
+        return payload if isinstance(payload, dict) else {}
+
+    def _send_json(self, payload, status=200):
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
 
 def parse_ts(value):
@@ -221,14 +271,34 @@ def enrich_review_hands(payload, replay_path):
     return enriched
 
 
+def env_flag_enabled(name):
+    value = os.getenv(name)
+    if value is None:
+        return False
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def main():
     parser = argparse.ArgumentParser(description="Serve the GCG replay review board.")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=5178)
     parser.add_argument("--replay", type=Path, default=DEFAULT_REPLAY)
+    parser.add_argument(
+        "--battle-ai-auto-pass-no-move",
+        action="store_true",
+        help="P2 AI 無合法操作時跳過 Hermes 自動讓過",
+    )
     args = parser.parse_args()
 
     ReviewBoardHandler.replay_path = args.replay.expanduser().resolve()
+    ReviewBoardHandler.battle_session = HumanVsAiBattleSession()
+    battle_v2_auto_pass = (
+        args.battle_ai_auto_pass_no_move
+        or env_flag_enabled("GCG_BATTLE_AI_AUTO_PASS_NO_MOVE")
+    )
+    ReviewBoardHandler.battle_v2_session = HumanVsAiBattleSession(
+        auto_pass_ai_no_move=battle_v2_auto_pass,
+    )
     server = ThreadingHTTPServer((args.host, args.port), ReviewBoardHandler)
     print(f"Review board: http://{args.host}:{args.port}")
     print(f"Replay file: {ReviewBoardHandler.replay_path}")

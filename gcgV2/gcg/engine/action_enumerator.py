@@ -165,6 +165,10 @@ class ActionEnumerator:
             once_key = self.state.once_per_turn_key(player_id, "base", card_id)
             if self.state.is_once_per_turn_used(once_key):
                 return []
+        if self._requires_empty_unit_slot(spec) and not self.state.find_empty_slots(player_id):
+            return []
+        if self._requires_friendly_link_unit(spec) and not self._has_friendly_link_unit(player_id):
+            return []
         if not self._first_requirement_satisfiable(spec, player_id, card_id):
             return []
         return ["activate_effect base"]
@@ -233,3 +237,29 @@ class ActionEnumerator:
         )
         options = self.effect_engine.enumerate_targets(requirements[0], probe_run)
         return bool(options)
+
+    def _requires_empty_unit_slot(self, spec):
+        return any(self._step_requires_empty_unit_slot(step) for step in spec.get("primitive_steps") or [])
+
+    def _step_requires_empty_unit_slot(self, step):
+        primitive = step.get("primitive")
+        if primitive == "conditionalTokenDeploy":
+            return True
+        if primitive in {"sequence", "conditional"}:
+            child_steps = list(step.get("steps") or []) + list(step.get("else_steps") or [])
+            return any(self._step_requires_empty_unit_slot(child) for child in child_steps)
+        return False
+
+    def _requires_friendly_link_unit(self, spec):
+        return any(self._step_requires_friendly_link_unit(step) for step in spec.get("primitive_steps") or [])
+
+    def _step_requires_friendly_link_unit(self, step):
+        if step.get("target") == "self_all_link_unit":
+            return True
+        if step.get("primitive") in {"sequence", "conditional"}:
+            child_steps = list(step.get("steps") or []) + list(step.get("else_steps") or [])
+            return any(self._step_requires_friendly_link_unit(child) for child in child_steps)
+        return False
+
+    def _has_friendly_link_unit(self, player_id):
+        return any(slot.get("is_link") for slot in self.state.iter_units(player_id))
