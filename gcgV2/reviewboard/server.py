@@ -7,7 +7,7 @@ import re
 from datetime import datetime
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 import yaml
 
@@ -23,6 +23,7 @@ class ReviewBoardHandler(SimpleHTTPRequestHandler):
     replay_path = DEFAULT_REPLAY
     battle_session = None
     battle_v2_session = None
+    battle_v3_session = None
 
     def end_headers(self):
         self.send_header("Cache-Control", "no-store, max-age=0")
@@ -39,11 +40,23 @@ class ReviewBoardHandler(SimpleHTTPRequestHandler):
         if parsed.path == "/api/battleV2/state":
             self._send_json(self.battle_v2_session.state())
             return
+        if parsed.path == "/api/battleV3/state":
+            self._send_json(self.battle_v3_session.state())
+            return
+        if parsed.path == "/api/battleV3/card":
+            query = parse_qs(parsed.query)
+            card_id = (query.get("card_id") or [""])[0]
+            detail = self.battle_v3_session.card_detail(card_id)
+            self._send_json(detail if detail else {})
+            return
         if parsed.path == "/mobile/battle":
             self.path = "/mobile/battle/index.html"
             return super().do_GET()
         if parsed.path == "/mobile/battleV2":
             self.path = "/mobile/battleV2/index.html"
+            return super().do_GET()
+        if parsed.path == "/mobile/battleV3":
+            self.path = "/mobile/battleV3/index.html"
             return super().do_GET()
         if parsed.path in ("/", "/mobile"):
             self.path = "/index.html"
@@ -70,6 +83,16 @@ class ReviewBoardHandler(SimpleHTTPRequestHandler):
         if parsed.path == "/api/battleV2/command":
             payload = self._read_json_body()
             self._send_json(self.battle_v2_session.submit_command(payload.get("command")))
+            return
+        if parsed.path == "/api/battleV3/start":
+            self._send_json(self.battle_v3_session.start())
+            return
+        if parsed.path == "/api/battleV3/reset":
+            self._send_json(self.battle_v3_session.reset())
+            return
+        if parsed.path == "/api/battleV3/command":
+            payload = self._read_json_body()
+            self._send_json(self.battle_v3_session.submit_command(payload.get("command")))
             return
         self.send_error(404, "Not found")
 
@@ -298,6 +321,10 @@ def main():
     )
     ReviewBoardHandler.battle_v2_session = HumanVsAiBattleSession(
         auto_pass_ai_no_move=battle_v2_auto_pass,
+    )
+    ReviewBoardHandler.battle_v3_session = HumanVsAiBattleSession(
+        auto_pass_ai_no_move=battle_v2_auto_pass,
+        reveal_card_names=True,
     )
     server = ThreadingHTTPServer((args.host, args.port), ReviewBoardHandler)
     print(f"Review board: http://{args.host}:{args.port}")

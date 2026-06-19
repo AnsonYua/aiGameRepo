@@ -29,7 +29,19 @@ from .command_labels import build_legal_actions  # noqa: E402
 HUMAN_PLAYER = "P1"
 AI_PLAYER = "P2"
 _CARD_ID_PATTERN = re.compile(r"\bst\d{2}/[A-Z0-9-]+\b")
+# AI reasoning markers, e.g. "。 理由：先攻可率先部署…" — the leak vector.
+# Everything from the first marker onward is dropped so a hidden card id
+# buried in a multiline rationale can never survive into the public message.
+_REASONING_MARKERS = ("理由：", "理由:")
 _MAX_CHAINED_AUTO_PASSES = 8
+
+
+def _strip_reasoning(message):
+    for marker in _REASONING_MARKERS:
+        idx = message.find(marker)
+        if idx != -1:
+            return message[:idx]
+    return message
 
 
 class HumanVsAiBattleSession:
@@ -40,12 +52,18 @@ class HumanVsAiBattleSession:
         ai_timeout_seconds=None,
         max_ai_invalid_attempts=2,
         auto_pass_ai_no_move=False,
+        reveal_card_names=False,
     ):
         self.players_mode = players_mode or os.getenv("GCG_BATTLE_AI_MODE", "hermes")
         self.interpreter_mode = interpreter_mode or os.getenv("GCG_BATTLE_INTERPRETER", "llm")
         self.ai_timeout_seconds = int(ai_timeout_seconds or os.getenv("GCG_HERMES_TIMEOUT_SECONDS", "60"))
         self.max_ai_invalid_attempts = max(1, int(max_ai_invalid_attempts))
         self.auto_pass_ai_no_move = bool(auto_pass_ai_no_move)
+        # When True (V3), public event messages show card names instead of the
+        # opaque "卡牌" token and strip the AI free-text 理由 (reasoning), which
+        # is the only vector that could leak a hidden hand card. Board/own cards
+        # are already public via viewer_state, so naming them is safe.
+        self.reveal_card_names = bool(reveal_card_names)
 
         self._lock = threading.RLock()
         self._generation = 0
@@ -233,7 +251,48 @@ class HumanVsAiBattleSession:
         if actor == AI_PLAYER and event_type == "command_rejected":
             return "AI 輸出不合法指令，正在重新決策。"
         message = str(event.get("message") or "")
+        if self.reveal_card_names:
+            # Drop the AI reasoning tail first — it is the only place a hidden
+            # hand card id can appear. Then map every remaining (public) card id
+            # to its name so the log reads "Demi Trainer 攻擊 Gundam" not
+            # "卡牌 attacked 卡牌".
+            message = _strip_reasoning(message).strip()
+            return _CARD_ID_PATTERN.sub(self._card_name_replacer, message)
         return _CARD_ID_PATTERN.sub("卡牌", message)
+
+    def _card_name_replacer(self, match):
+        card_id = match.group(0)
+        card_db = self._runner.prompt_builder.card_db if self._runner else None
+        if card_db is not None:
+            card = card_db.get(card_id)
+            name = card.get("name") if card else None
+            if name:
+                return name
+        return card_id
+
+    def card_detail(self, card_id):
+        """Public card metadata for the V3 detail sheet. Returns None if the
+        card id is unknown. Only exposes display fields, never rules engine
+        internals."""
+        if self._runner is None or not card_id:
+            return None
+        card = self._runner.prompt_builder.card_db.get(card_id)
+        if card is None:
+            return None
+        return {
+            "id": card.get("id"),
+            "name": card.get("name"),
+            "cardType": card.get("cardType"),
+            "color": card.get("color"),
+            "level": card.get("level", 0),
+            "cost": card.get("cost", 0),
+            "ap": card.get("ap", 0),
+            "hp": card.get("hp", 0),
+            "zone": list(card.get("zone", [])),
+            "traits": list(card.get("traits", [])),
+            "link": list(card.get("link", [])),
+            "descriptions": list(card.get("effects", {}).get("description", [])),
+        }
 
     def _error_response(self, message):
         with self._lock:
