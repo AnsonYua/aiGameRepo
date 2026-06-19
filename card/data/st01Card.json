@@ -850,7 +850,10 @@
         "Space",
         "Earth"
       ],
-      "traits": [],
+      "traits": [
+        "Earth Federation",
+        "White Base Team"
+      ],
       "link": [],
       "ap": 3,
       "hp": 3,
@@ -870,7 +873,10 @@
         "Space",
         "Earth"
       ],
-      "traits": [],
+      "traits": [
+        "Earth Federation",
+        "White Base Team"
+      ],
       "link": [],
       "ap": 2,
       "hp": 2,
@@ -890,7 +896,10 @@
         "Space",
         "Earth"
       ],
-      "traits": [],
+      "traits": [
+        "Earth Federation",
+        "White Base Team"
+      ],
       "link": [],
       "ap": 1,
       "hp": 1,

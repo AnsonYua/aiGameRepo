@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import logging
 import subprocess
+import time
 
 from ..gamelog.writers import AiTraceWriter
 
@@ -76,6 +77,7 @@ class HermesPlayerClient:
             game_id, player_id, prompt_bytes, self.source_tag,
         )
 
+        started = time.monotonic()
         try:
             result = subprocess.run(
                 argv,
@@ -83,6 +85,11 @@ class HermesPlayerClient:
                 timeout=self.timeout,
             )
         except subprocess.TimeoutExpired:
+            elapsed = time.monotonic() - started
+            logger.warning(
+                "hermes_decision_timeout game=%s player=%s elapsed=%.3fs timeout=%ss size=%d source=%s",
+                game_id, player_id, elapsed, self.timeout, prompt_bytes, self.source_tag,
+            )
             raise RuntimeError(
                 f"Hermes player {player_id} timed out after {self.timeout}s"
             )
@@ -91,6 +98,12 @@ class HermesPlayerClient:
                 f"Hermes wrapper '{self.wrapper}' not found. "
                 "Check PATH or install Hermes."
             )
+
+        elapsed = time.monotonic() - started
+        logger.info(
+            "hermes_decision_done game=%s player=%s elapsed=%.3fs returncode=%s size=%d source=%s",
+            game_id, player_id, elapsed, result.returncode, prompt_bytes, self.source_tag,
+        )
 
         if result.returncode != 0:
             tail = (result.stderr or "")[:500]
