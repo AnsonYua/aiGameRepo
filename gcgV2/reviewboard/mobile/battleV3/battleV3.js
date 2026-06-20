@@ -27,18 +27,34 @@ const cardAliases = {
 };
 
 const apiBase = "/api/battleV3";
+const prewarmAssets = [
+  "/mobile/battleV3/assets/card-back-opponent.webp",
+  "/mobile/battleV3/assets/ui-ornaments.webp",
+];
 
 const el = {
+  app: document.querySelector(".app"),
+  dialog: null,
   startBtn: document.getElementById("startBtn"),
   startScreen: document.getElementById("startScreen"),
   statusMessage: document.getElementById("statusMessage"),
   combatMessage: document.getElementById("combatMessage"),
+  thinkingLabel: document.getElementById("opponentThinkingLabel"),
   sheet: document.getElementById("sheet"),
   errorBox: document.getElementById("errorBox"),
   endTurnBtn: document.getElementById("endTurnBtn"),
   actionsListBtn: document.getElementById("actionsListBtn"),
   actionsCount: document.getElementById("actionsCount"),
+  actionsFooterCount: document.getElementById("actionsFooterCount"),
 };
+
+function prewarmImages() {
+  for (const src of prewarmAssets) {
+    const img = new Image();
+    img.decoding = "async";
+    img.src = src;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // small dom helpers (carried over from V2)
@@ -323,23 +339,24 @@ function slotElement(player, slot) {
 }
 
 function animateDamage(player, slot, delta) {
-  const el = slotElement(player, slot);
-  if (!el) return;
-  el.classList.remove("b3-hit");
+  const target = slotElement(player, slot);
+  if (!target || !el.app) return;
+  target.classList.remove("b3-hit");
   // force reflow so the class re-triggers the keyframes if hit again
-  void el.offsetWidth;
-  el.classList.add("b3-hit");
-  window.setTimeout(() => el.classList.remove("b3-hit"), 500);
+  void target.offsetWidth;
+  target.classList.add("b3-hit");
+  window.setTimeout(() => target.classList.remove("b3-hit"), 500);
 
-  // floating damage number, rendered at viewport level so no slot overflow
+  // floating damage number, rendered at app level so no slot overflow
   // can clip it as it rises.
-  const rect = el.getBoundingClientRect();
+  const rect = target.getBoundingClientRect();
+  const appRect = el.app.getBoundingClientRect();
   const floater = document.createElement("span");
   floater.className = "b3-float-dmg";
   floater.textContent = `-${delta}`;
-  floater.style.left = `${rect.left + rect.width / 2}px`;
-  floater.style.top = `${rect.top + rect.height * 0.3}px`;
-  document.body.appendChild(floater);
+  floater.style.left = `${rect.left - appRect.left + rect.width / 2}px`;
+  floater.style.top = `${rect.top - appRect.top + rect.height * 0.3}px`;
+  el.app.appendChild(floater);
   window.setTimeout(() => floater.remove(), 900);
 }
 
@@ -375,7 +392,7 @@ function showTurnBanner(who) {
     banner = document.createElement("div");
     banner.id = "turnBanner";
     banner.className = "b3-turn-banner";
-    document.body.appendChild(banner);
+    el.app.appendChild(banner);
   }
   banner.classList.remove("show", "human", "ai");
   void banner.offsetWidth;
@@ -481,17 +498,24 @@ function render(fallbackMessage = "") {
   renderError();
   renderBoard();
   renderSheet();
+  renderDialog();
   document.body.classList.toggle("picking-target", state.selected?.phase === "pickTarget");
 }
 
 function renderStatus(fallbackMessage) {
   const message = state.error || fallbackMessage || statusMessage();
+  const combatMessage = latestEventMessage() || message;
+  const opponentThinking = state.status === "waiting_ai";
   el.statusMessage.textContent = message;
-  el.combatMessage.textContent = latestEventMessage() || message;
+  el.combatMessage.textContent = combatMessage;
+  el.combatMessage.title = combatMessage;
+  if (el.thinkingLabel) el.thinkingLabel.hidden = !opponentThinking;
   const waiting = state.status === "waiting_human";
   el.endTurnBtn.disabled = state.busy || !waiting || !passAction();
   el.actionsListBtn.disabled = state.busy || !waiting || actionableCount() === 0;
-  el.actionsCount.textContent = String(actionableCount());
+  const count = String(actionableCount());
+  if (el.actionsCount) el.actionsCount.textContent = count;
+  if (el.actionsFooterCount) el.actionsFooterCount.textContent = count;
 }
 
 function statusMessage() {
@@ -531,16 +555,28 @@ function renderPlayer(playerId, player, isSelf) {
 function renderHand(playerId, player, isSelf) {
   const cards = Array.isArray(player.hand) ? player.hand : [];
   const count = isSelf ? cards.length : visibleCount(player.hand_count);
-  setText(`${playerId}HandCount`, `(${count})`);
+  setText(`${playerId}HandCount`, String(count));
   const container = document.getElementById(`${playerId}Hand`);
-  container.replaceChildren();
+  const handCards = isSelf ? cards : [];
+  const key = isSelf ? handCards.join("\u0001") : `indicators:${Math.min(count, 10)}`;
 
-  if (!isSelf) {
-    for (let i = 0; i < Math.min(count, 10); i += 1) container.appendChild(cardBack());
+  if (container.dataset.b3HandKey === key && !pendingDealIn.size) {
+    syncHandButtons(container, handCards, isSelf);
     return;
   }
 
-  const handCards = cards.slice(0, 10);
+  container.dataset.b3HandKey = key;
+  container.replaceChildren();
+
+  if (!isSelf) {
+    for (let i = 0; i < Math.min(count, 10); i += 1) {
+      const back = cardBack("card-back opponent-hand-card");
+      back.setAttribute("aria-label", `對手手牌 ${i + 1}`);
+      container.appendChild(back);
+    }
+    return;
+  }
+
   // Deal-in flags per index: only the newly-drawn copies animate (count-based
   // so duplicate card ids are handled, not Set membership).
   const dealFlags = dealInFlags(handCards, pendingDealIn);
@@ -552,13 +588,7 @@ function renderHand(playerId, player, isSelf) {
     button.type = "button";
     button.title = cardId;
     button.dataset.b3Card = cardId;
-    const playable = state.status === "waiting_human" && actionsForCard(cardId).length > 0;
-    // Every own hand card is tappable to inspect it — even unplayable ones.
-    // Only block taps while busy or when it's not the human's moment.
-    button.disabled = state.busy || state.status !== "waiting_human";
-    if (playable) button.classList.add("selectable");
-    else button.classList.add("dimmed");
-    if (isActiveCard(cardId)) button.classList.add("selected");
+    syncHandButton(button, cardId);
     if (dealFlags[idx]) {
       button.classList.add("dealing");
       button.style.setProperty("--b3-deal-delay", `${dealStagger * 55}ms`);
@@ -572,10 +602,33 @@ function renderHand(playerId, player, isSelf) {
   pendingDealIn = new Map();
 }
 
+function syncHandButtons(container, handCards, isSelf) {
+  if (!isSelf) return;
+  const buttons = Array.from(container.querySelectorAll(".hand-card-button"));
+  for (let idx = 0; idx < buttons.length; idx += 1) {
+    syncHandButton(buttons[idx], handCards[idx]);
+    buttons[idx].classList.remove("dealing");
+    buttons[idx].style.removeProperty("--b3-deal-delay");
+  }
+}
+
+function syncHandButton(button, cardId) {
+  const playable = state.status === "waiting_human" && actionsForCard(cardId).length > 0;
+  // Every own hand card is tappable to inspect it — even unplayable ones.
+  // Only block taps while busy or when it's not the human's moment.
+  button.disabled = state.busy || state.status !== "waiting_human";
+  button.classList.toggle("selectable", playable);
+  button.classList.toggle("dimmed", !playable);
+  button.classList.toggle("selected", isActiveCard(cardId));
+}
+
 function renderShields(playerId, player) {
   const count = visibleCount(player.shield_count ?? player.shields);
-  setText(`${playerId}ShieldCount`, `(${count})`);
+  setText(`${playerId}ShieldCount`, String(count));
   const container = document.getElementById(`${playerId}Shields`);
+  const key = String(Math.min(count, 6));
+  if (container.dataset.b3ShieldKey === key) return;
+  container.dataset.b3ShieldKey = key;
   container.replaceChildren();
   for (let i = 0; i < Math.min(count, 6); i += 1) {
     const shield = document.createElement("div");
@@ -590,25 +643,31 @@ function renderResources(playerId, player) {
   const rested = visibleCount(resources.rested);
   const ex = visibleCount(resources.ex);
   const normal = active + rested;
-  setText(`${playerId}ResourceText`, ex ? `${normal}/10 + EX ${ex}/5` : `${normal} / 10`);
+  const exRested = Math.max(0, 5 - ex);
+  setText(`${playerId}ResourceText`, `${active} 可用 / ${rested} 休息`);
+  setText(`${playerId}ExResourceText`, `${ex} 可用 / ${exRested} 休息`);
   const container = document.getElementById(`${playerId}Resources`);
-  container.replaceChildren();
   const pips = [
     ...Array(active).fill("active"),
     ...Array(rested).fill("rested"),
     ...Array(Math.max(0, 10 - normal)).fill("empty"),
-    ...Array(ex).fill("ex"),
+    "ex",
   ];
-  for (const kind of pips.slice(0, 15)) {
+  const key = pips.join("|");
+  if (container.dataset.b3ResourceKey === key) return;
+  container.dataset.b3ResourceKey = key;
+  container.replaceChildren();
+  for (let idx = 0; idx < pips.length; idx += 1) {
+    const kind = idx === 10 ? (ex ? "ex active" : "ex empty") : pips[idx];
     const pip = document.createElement("span");
     pip.className = `pip ${kind}`;
+    pip.dataset.label = idx === 10 ? (ex ? `EX${ex}` : "EX") : kind === "active" ? "可" : kind === "rested" ? "橫" : "";
     container.appendChild(pip);
   }
 }
 
 function renderBase(playerId, player, isSelf) {
   const container = document.getElementById(`${playerId}Base`);
-  container.replaceChildren();
   container.classList.remove("selectable", "selectable-ability", "selected", "targetable");
   const ability = isSelf ? baseAbilityAction() : null;
   const canTarget = !isSelf && isPickingAttack() && attackOnBaseExists();
@@ -624,27 +683,50 @@ function renderBase(playerId, player, isSelf) {
     : () => handleOpponentBaseClick();
 
   const base = player.base || {};
-  if (!base.present || !base.card_id) {
+  const baseCardId = base.card_id || "";
+  const remaining = visibleCount(base.remaining_hp ?? (visibleCount(base.hp) - visibleCount(base.damage)));
+  const key = base.present && baseCardId
+    ? [baseCardId, base.ap ?? 0, remaining].join("|")
+    : "none";
+  if (container.dataset.b3BaseKey === key) return;
+  container.dataset.b3BaseKey = key;
+  container.replaceChildren();
+
+  if (!base.present || !baseCardId) {
+    const placeholder = document.createElement("div");
+    placeholder.className = "base-placeholder";
+    container.appendChild(placeholder);
     const empty = document.createElement("div");
-    empty.className = "base-stats";
-    empty.textContent = "Base: none";
+    empty.className = "base-stats base-empty-stats";
+    empty.textContent = "無基地";
     empty.dataset.mobileHp = "-";
     container.appendChild(empty);
     return;
   }
 
-  container.appendChild(imageCard(base.card_id, "base-image"));
+  container.appendChild(imageCard(baseCardId, "base-image"));
   const stats = document.createElement("div");
   stats.className = "base-stats";
-  const remaining = visibleCount(base.remaining_hp ?? (visibleCount(base.hp) - visibleCount(base.damage)));
-  stats.textContent = `AP|HP ${base.ap ?? 0}|${remaining}`;
+  stats.setAttribute("aria-label", `AP ${base.ap ?? 0} HP ${remaining}`);
   stats.dataset.mobileHp = String(remaining);
+  const ap = document.createElement("span");
+  ap.className = "base-stat-value";
+  ap.textContent = String(base.ap ?? 0);
+  const divider = document.createElement("span");
+  divider.className = "base-stat-divider";
+  divider.textContent = "/";
+  const hp = document.createElement("span");
+  hp.className = "base-stat-value";
+  hp.textContent = String(remaining);
+  stats.append(ap, divider, hp);
   container.appendChild(stats);
 }
 
 function renderDecks(playerId, player) {
   const energy = document.getElementById(`${playerId}EnergyDeck`);
-  energy.dataset.count = String(visibleCount(player.resource_deck_count));
+  const count = visibleCount(player.deck_count);
+  energy.dataset.count = String(count);
+  energy.textContent = String(count);
   const trash = document.getElementById(`${playerId}Trash`);
   const trashCount = visibleCount(player.trash?.length);
   trash.textContent = trashCount;
@@ -653,16 +735,27 @@ function renderDecks(playerId, player) {
 
 function renderSlots(playerId, slots, isSelf) {
   const container = document.getElementById(`${playerId}Slots`);
-  container.replaceChildren();
+  const normalized = [];
   for (let i = 0; i < 6; i += 1) {
     const data = slots.find((slot) => Number(slot.slot) === i) || { slot: i, empty: true };
+    normalized.push(data);
+  }
+  const key = normalized.map(slotKey).join("||");
+  if (container.dataset.b3SlotsKey === key) {
+    syncSlots(container, normalized, isSelf);
+    return;
+  }
+  container.dataset.b3SlotsKey = key;
+  container.replaceChildren();
+  for (let i = 0; i < 6; i += 1) {
+    const data = normalized[i];
     const slot = document.createElement("button");
     slot.type = "button";
     slot.dataset.b3Player = playerId;
     slot.dataset.b3Slot = String(i);
     slot.className = `slot slot-button ${data.empty || !data.unit_id ? "empty" : "filled"} ${data.status === "rested" ? "rested" : ""}`;
     markSlotState(slot, i, isSelf, data);
-    slot.addEventListener("click", () => handleSlotClick(i, isSelf, data));
+    slot.onclick = () => handleSlotClick(i, isSelf, data);
 
     if (data.unit_id) {
       const cardWrap = document.createElement("div");
@@ -675,6 +768,18 @@ function renderSlots(playerId, slots, isSelf) {
         pilotCard.className = "pilot-card";
         pilotCard.appendChild(imageCard(data.pilot_id, "card-img"));
         slot.appendChild(pilotCard);
+      }
+
+      const tags = slotTags(data);
+      if (tags.length) {
+        const tagRow = document.createElement("div");
+        tagRow.className = "slot-tags";
+        for (const tag of tags.slice(0, 3)) {
+          const item = document.createElement("span");
+          item.textContent = tag;
+          tagRow.appendChild(item);
+        }
+        slot.appendChild(tagRow);
       }
 
       const info = document.createElement("div");
@@ -691,6 +796,42 @@ function renderSlots(playerId, slots, isSelf) {
     number.textContent = String(i + 1);
     slot.appendChild(number);
     container.appendChild(slot);
+  }
+}
+
+function slotTags(data) {
+  const tags = [];
+  if (Array.isArray(data.buffs)) tags.push(...data.buffs.map((buff) => String(buff).slice(0, 2).toUpperCase()));
+  if (Array.isArray(data.status_icons)) tags.push(...data.status_icons.map((status) => String(status).slice(0, 2).toUpperCase()));
+  if (data.status && data.status !== "active" && data.status !== "rested") {
+    tags.push(String(data.status).slice(0, 2).toUpperCase());
+  }
+  return tags;
+}
+
+function slotKey(data) {
+  if (data.empty || !data.unit_id) return `${data.slot}:empty`;
+  return [
+    data.slot,
+    data.unit_id || "",
+    data.pilot_id || "",
+    data.status || "",
+    (data.buffs || []).join(","),
+    (data.status_icons || []).join(","),
+    data.ap ?? 0,
+    data.remaining_hp ?? 0,
+  ].join("|");
+}
+
+function syncSlots(container, normalized, isSelf) {
+  const slotEls = Array.from(container.querySelectorAll(".slot"));
+  for (let i = 0; i < 6; i += 1) {
+    const slot = slotEls[i];
+    if (!slot) continue;
+    const data = normalized[i];
+    slot.className = `slot slot-button ${data.empty || !data.unit_id ? "empty" : "filled"} ${data.status === "rested" ? "rested" : ""}`;
+    markSlotState(slot, i, isSelf, data);
+    slot.onclick = () => handleSlotClick(i, isSelf, data);
   }
 }
 
@@ -783,9 +924,7 @@ function renderSheet() {
   }
 
   if (state.confirm) {
-    el.sheet.classList.add("mode-prompt");
-    el.sheet.appendChild(buildConfirmBar(state.confirm));
-    el.sheet.hidden = false;
+    el.sheet.hidden = true;
     return;
   }
 
@@ -804,14 +943,46 @@ function renderSheet() {
   }
 
   // forced choice with nothing selected → surface automatically
-  if (choiceActions().length) {
-    el.sheet.classList.add("mode-actions");
-    buildChoiceSheet(el.sheet);
-    el.sheet.hidden = false;
+  if (!state.selected && choiceActions().length) {
+    el.sheet.hidden = true;
     return;
   }
 
   el.sheet.hidden = true;
+}
+
+function renderDialog() {
+  clearDialog();
+
+  if (state.status !== "waiting_human" || state.busy) return;
+
+  if (state.confirm) {
+    el.dialog = buildModal();
+    el.dialog.querySelector(".b3-modal").appendChild(buildConfirmDialog(state.confirm));
+    el.app.appendChild(el.dialog);
+    return;
+  }
+
+  if (!state.selected && choiceActions().length) {
+    el.dialog = buildModal();
+    el.dialog.querySelector(".b3-modal").appendChild(buildChoiceDialog());
+    el.app.appendChild(el.dialog);
+  }
+}
+
+function clearDialog() {
+  if (!el.dialog) return;
+  el.dialog.remove();
+  el.dialog = null;
+}
+
+function buildModal() {
+  const backdrop = document.createElement("section");
+  backdrop.className = "b3-modal-backdrop";
+  const modal = document.createElement("div");
+  modal.className = "b3-modal";
+  backdrop.appendChild(modal);
+  return backdrop;
 }
 
 function buildPromptBar() {
@@ -824,7 +995,7 @@ function buildPromptBar() {
   headline.textContent = promptHeadline();
   const hint = document.createElement("span");
   hint.className = "b3-hint";
-  hint.textContent = "點擊藍色目標，可再點取消重選";
+  hint.textContent = "點擊亮起的目標，可再點取消重選";
   text.appendChild(headline);
   text.appendChild(hint);
   bar.appendChild(text);
@@ -866,6 +1037,71 @@ function buildConfirmBar(confirm) {
   bar.appendChild(ok);
 
   return bar;
+}
+
+function buildDialogHeader({ title, sub, onClose }) {
+  const head = document.createElement("div");
+  head.className = "b3-sheet-head";
+
+  const meta = document.createElement("div");
+  meta.className = "b3-sheet-meta";
+  const titleEl = document.createElement("div");
+  titleEl.className = "b3-sheet-title";
+  titleEl.textContent = title;
+  meta.appendChild(titleEl);
+  if (sub) {
+    const subEl = document.createElement("div");
+    subEl.className = "b3-sheet-sub";
+    subEl.textContent = sub;
+    meta.appendChild(subEl);
+  }
+  head.appendChild(meta);
+
+  if (onClose) {
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "b3-close";
+    close.setAttribute("aria-label", "關閉");
+    close.textContent = "×";
+    close.addEventListener("click", onClose);
+    head.appendChild(close);
+  }
+
+  return head;
+}
+
+function buildConfirmDialog(confirm) {
+  const fragment = document.createDocumentFragment();
+  fragment.appendChild(buildDialogHeader({
+    title: "確認",
+    onClose: cancelConfirm,
+  }));
+  fragment.appendChild(buildConfirmBar(confirm));
+  return fragment;
+}
+
+function buildChoiceDialog() {
+  const fragment = document.createDocumentFragment();
+  fragment.appendChild(buildDialogHeader({
+    title: choiceDialogTitle(),
+  }));
+  const grid = document.createElement("div");
+  grid.className = "b3-options";
+  for (const action of choiceActions()) grid.appendChild(actionButton(action, action.label, "primary"));
+  fragment.appendChild(grid);
+  return fragment;
+}
+
+function choiceDialogTitle() {
+  const labels = choiceActions().map((action) => action.label || action.command || "").join(" ");
+  if (labels.includes("先攻") || labels.includes("後攻")) return "選擇先後攻";
+  if (labels.includes("保留") || labels.includes("重新調度")) return "起手牌";
+  return "選擇";
+}
+
+function cancelConfirm() {
+  state.confirm = null;
+  render();
 }
 
 function promptHeadline() {
@@ -998,14 +1234,6 @@ function buildBaseSheet(sheet) {
     sheet.appendChild(note);
     return;
   }
-  sheet.appendChild(grid);
-}
-
-function buildChoiceSheet(sheet) {
-  sheet.appendChild(sheetHeader({ title: "對局選項", sub: "請選擇一項" }));
-  const grid = document.createElement("div");
-  grid.className = "b3-options";
-  for (const action of choiceActions()) grid.appendChild(actionButton(action, action.label, "primary"));
   sheet.appendChild(grid);
 }
 
@@ -1260,4 +1488,59 @@ el.actionsListBtn.addEventListener("click", () => {
   render();
 });
 
+function applyQaLayoutState() {
+  const params = new URLSearchParams(window.location.search);
+  const qaMode = params.get("qa");
+  if (qaMode !== "layout" && qaMode !== "nobase") return;
+
+  const fullBoard = ["ST01-008", "ST01-009", "ST01-010", "ST01-011", "ST01-012", "ST01-013"].map((unit, slot) => ({
+    slot,
+    unit_id: `st01/${unit}`,
+    pilot_id: slot % 2 === 0 ? "st01/ST01-001" : "",
+    status: slot === 1 ? "rested" : "active",
+    buffs: slot >= 3 ? ["+2"] : [],
+    status_icons: slot === 4 ? ["盾"] : [],
+    ap: slot === 5 ? 99 : 12 + slot,
+    remaining_hp: slot === 5 ? 99 : 12 + slot,
+  }));
+
+  const qaBase = qaMode === "nobase"
+    ? { present: false, card_id: "", ap: 0, remaining_hp: 0 }
+    : { present: true, card_id: "EX-BASE", ap: 0, remaining_hp: 3 };
+
+  state.gameId = `qa-${qaMode}`;
+  state.viewerState = {
+    winner: null,
+    players: {
+      P1: {
+        hand: ["st01/ST01-001", "st01/ST01-002", "st01/ST01-003", "st01/ST01-004", "st01/ST01-005"],
+        shield_count: 6,
+        resources: { active: 1, rested: 3, ex: 1 },
+        base: qaBase,
+        deck_count: 999,
+        trash: ["a", "b", "c"],
+        battle_area: fullBoard,
+      },
+      P2: {
+        hand_count: 5,
+        shield_count: 6,
+        resources: { active: 2, rested: 2, ex: 1 },
+        base: qaBase,
+        deck_count: 120,
+        trash: ["a"],
+        battle_area: fullBoard,
+      },
+    },
+  };
+  state.legalActions = [
+    { kind: "pass", command: "pass" },
+    { kind: "attack", source_slot: 0, target_slot: 0, label: "1 號位攻擊", command: "attack 1 1" },
+  ];
+  state.events = [{ message: qaMode === "nobase" ? "QA layout: 無基地。" : "QA layout: 滿場、駕駛、增益、狀態、大數字。" }];
+  state.status = "waiting_human";
+  render();
+}
+
+prewarmImages();
 render();
+applyQaLayoutState();

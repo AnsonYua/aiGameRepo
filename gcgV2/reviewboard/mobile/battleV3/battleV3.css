@@ -2281,6 +2281,101 @@ body.mobile-board.battle-v3 .resource-line .energy-line .resource-pips {
   max-width: none;
 }
 
+body.mobile-board.battle-v3 .resource-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+  padding: 7px 10px;
+}
+
+body.mobile-board.battle-v3 .opponent .resource-line,
+body.mobile-board.battle-v3 .self .resource-line {
+  align-self: stretch;
+  justify-self: stretch;
+  width: 100%;
+  height: 100%;
+}
+
+body.mobile-board.battle-v3 .resource-line .shield-line,
+body.mobile-board.battle-v3 .resource-line .energy-line,
+body.mobile-board.battle-v3 .resource-line .ex-line {
+  display: grid;
+  grid-template-columns: clamp(84px, calc(var(--b3-canvas-width) * 0.24), 100px) minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  min-height: 18px;
+  color: #f4d59e;
+}
+
+body.mobile-board.battle-v3 .resource-line .shield-line {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+body.mobile-board.battle-v3 .resource-line .energy-line {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+body.mobile-board.battle-v3 .resource-line .ex-line {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+body.mobile-board.battle-v3 .resource-line .shield-line strong,
+body.mobile-board.battle-v3 .resource-line .energy-line strong,
+body.mobile-board.battle-v3 .resource-line .ex-line strong {
+  display: block;
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+  width: auto;
+  padding: 0;
+  color: #f6ddb0;
+  font-size: clamp(15px, calc(var(--b3-canvas-width) * 0.044), 19px);
+  font-weight: 1000;
+  line-height: 18px;
+  text-align: left;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px #000, 0 0 4px rgba(255, 213, 106, 0.36);
+}
+
+body.mobile-board.battle-v3 .resource-line .shield-line span,
+body.mobile-board.battle-v3 .resource-line .energy-line > span,
+body.mobile-board.battle-v3 .resource-line .ex-line span {
+  display: block;
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: start;
+  width: auto;
+  height: auto;
+  margin: 0;
+  color: #fff0cf;
+  font-size: clamp(13px, calc(var(--b3-canvas-width) * 0.039), 16px);
+  font-weight: 1000;
+  line-height: 18px;
+  white-space: nowrap;
+  text-align: left;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.92);
+}
+
+body.mobile-board.battle-v3 .resource-line .energy-line > span,
+body.mobile-board.battle-v3 .resource-line .ex-line span {
+  color: #9fe2ff;
+}
+
+body.mobile-board.battle-v3 .resource-line .ex-line span {
+  color: #d9b2ff;
+}
+
+body.mobile-board.battle-v3 .resource-line .shields,
+body.mobile-board.battle-v3 .resource-line .resource-pips {
+  display: none;
+}
+
 body.mobile-board.battle-v3 .opponent .base-strip,
 body.mobile-board.battle-v3 .opponent .resource-line,
 body.mobile-board.battle-v3 .opponent .side-stack .deck-box {
@@ -2357,6 +2452,101 @@ body.mobile-board.battle-v3 .self .resource-line .shield-line span,
 body.mobile-board.battle-v3 .self .side-stack.lower .deck-box {
   background: transparent;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.16);
+}
+
+body.mobile-board.battle-v3 .opponent .resource-line .shield-line span,
+body.mobile-board.battle-v3 .self .resource-line .shield-line span {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+body.mobile-board.battle-v3 .resource-line {
+  --b3-resource-label-width: clamp(64px, calc(var(--b3-canvas-width) * 0.18), 78px);
+  --b3-resource-font-size: clamp(13px, calc(var(--b3-canvas-width) * 0.039), 16px);
+  display: grid;
+  grid-template-columns: var(--b3-resource-label-width) minmax(0, 1fr);
+  grid-template-rows: repeat(3, 18px);
+  align-content: center;
+  gap: 4px 8px;
+  padding: 7px 12px;
+}
+
+body.mobile-board.battle-v3 .opponent .resource-line,
+body.mobile-board.battle-v3 .self .resource-line {
+  align-self: stretch;
+  justify-self: stretch;
+  width: 100%;
+  height: 100%;
+}
+
+body.mobile-board.battle-v3 .resource-line .shield-line,
+body.mobile-board.battle-v3 .resource-line .energy-line,
+body.mobile-board.battle-v3 .resource-line .ex-line {
+  display: contents;
+}
+
+body.mobile-board.battle-v3 .resource-line .shield-line strong,
+body.mobile-board.battle-v3 .resource-line .energy-line strong,
+body.mobile-board.battle-v3 .resource-line .ex-line strong,
+body.mobile-board.battle-v3 .resource-line .shield-line span,
+body.mobile-board.battle-v3 .resource-line .energy-line > span,
+body.mobile-board.battle-v3 .resource-line .ex-line span {
+  display: block;
+  align-self: center;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--b3-resource-font-size);
+  font-weight: 1000;
+  line-height: 18px;
+  white-space: nowrap;
+  text-align: left;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.92);
+}
+
+body.mobile-board.battle-v3 .resource-line .shield-line strong,
+body.mobile-board.battle-v3 .resource-line .energy-line strong,
+body.mobile-board.battle-v3 .resource-line .ex-line strong {
+  grid-column: 1;
+  justify-self: start;
+  color: #f6ddb0;
+}
+
+body.mobile-board.battle-v3 .resource-line .shield-line span,
+body.mobile-board.battle-v3 .resource-line .energy-line > span,
+body.mobile-board.battle-v3 .resource-line .ex-line span {
+  grid-column: 2;
+  justify-self: start;
+  color: #9fe2ff;
+}
+
+body.mobile-board.battle-v3 .resource-line .ex-line span {
+  color: #d9b2ff;
+}
+
+body.mobile-board.battle-v3 .resource-line .shield-line strong,
+body.mobile-board.battle-v3 .resource-line .shield-line span {
+  grid-row: 1;
+}
+
+body.mobile-board.battle-v3 .resource-line .energy-line strong,
+body.mobile-board.battle-v3 .resource-line .energy-line > span {
+  grid-row: 2;
+}
+
+body.mobile-board.battle-v3 .resource-line .ex-line strong,
+body.mobile-board.battle-v3 .resource-line .ex-line span {
+  grid-row: 3;
+}
+
+body.mobile-board.battle-v3 .resource-line .shields,
+body.mobile-board.battle-v3 .resource-line .resource-pips {
+  display: none;
 }
 
 body.mobile-board.battle-v3 .base-strip,
@@ -2510,21 +2700,28 @@ body.mobile-board.battle-v3 .base-empty-stats {
   }
 
   body.mobile-board.battle-v3 .resource-line {
-    grid-template-columns: 42px minmax(0, 1fr) auto;
-    gap: 5px 6px;
+    --b3-resource-label-width: 58px;
+    --b3-resource-font-size: 12px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: repeat(3, 16px);
+    gap: 3px 6px;
     padding: 5px 8px;
   }
 
   body.mobile-board.battle-v3 .resource-line .shield-line,
-  body.mobile-board.battle-v3 .resource-line .shield-line strong,
-  body.mobile-board.battle-v3 .self .resource-line .shield-line strong {
-    grid-template-columns: 42px minmax(0, 1fr) auto;
-    gap: 6px;
+  body.mobile-board.battle-v3 .resource-line .energy-line,
+  body.mobile-board.battle-v3 .resource-line .ex-line {
+    display: contents;
   }
 
-  body.mobile-board.battle-v3 .resource-line .energy-line {
-    grid-template-columns: 42px minmax(0, 1fr);
-    gap: 1px 6px;
+  body.mobile-board.battle-v3 .resource-line .shield-line strong,
+  body.mobile-board.battle-v3 .resource-line .energy-line strong,
+  body.mobile-board.battle-v3 .resource-line .ex-line strong,
+  body.mobile-board.battle-v3 .resource-line .shield-line span,
+  body.mobile-board.battle-v3 .resource-line .energy-line > span,
+  body.mobile-board.battle-v3 .resource-line .ex-line span {
+    font-size: var(--b3-resource-font-size);
+    line-height: 16px;
   }
 
   body.mobile-board.battle-v3 .base-card,
@@ -2538,26 +2735,8 @@ body.mobile-board.battle-v3 .base-empty-stats {
     height: 55px;
   }
 
-  body.mobile-board.battle-v3 .resource-line > span {
-    font-size: clamp(11px, calc(var(--b3-canvas-width) * 0.034), 14px);
-  }
-
-  body.mobile-board.battle-v3 .resource-line .energy-line > span {
-    font-size: clamp(13px, calc(var(--b3-canvas-width) * 0.04), 16px);
-  }
-
-  body.mobile-board.battle-v3 .resource-line strong {
-    font-size: 11px;
-  }
-
-  body.mobile-board.battle-v3 .resource-line .shield-line span,
-  body.mobile-board.battle-v3 .self .resource-line .shield-line span {
-    height: 24px;
-    font-size: 19px;
-  }
-
   body.mobile-board.battle-v3 .resource-pips {
-    gap: 2px;
+    display: none;
   }
 
   body.mobile-board.battle-v3 .self .hand-card-button {
@@ -2566,5 +2745,192 @@ body.mobile-board.battle-v3 .base-empty-stats {
 
   body.mobile-board.battle-v3 #endTurnBtn {
     font-size: 21px;
+  }
+}
+
+/* Canonical resource panel text layout. Keep this after legacy resource rules. */
+body.mobile-board.battle-v3 .resource-panel {
+  --b3-resource-label-width: clamp(64px, calc(var(--b3-canvas-width) * 0.18), 78px);
+  --b3-resource-font-size: clamp(13px, calc(var(--b3-canvas-width) * 0.039), 16px);
+  display: grid;
+  grid-template-columns: var(--b3-resource-label-width) minmax(0, 1fr);
+  grid-template-rows: repeat(3, 18px);
+  align-content: center;
+  align-self: stretch;
+  justify-self: stretch;
+  gap: 4px 8px;
+  width: 100%;
+  height: 100%;
+  padding: 7px 12px;
+}
+
+body.mobile-board.battle-v3 .resource-panel .shield-line,
+body.mobile-board.battle-v3 .resource-panel .energy-line,
+body.mobile-board.battle-v3 .resource-panel .ex-line {
+  display: contents;
+}
+
+body.mobile-board.battle-v3 .resource-panel .shield-line strong,
+body.mobile-board.battle-v3 .resource-panel .energy-line strong,
+body.mobile-board.battle-v3 .resource-panel .ex-line strong,
+body.mobile-board.battle-v3 .resource-panel .shield-line span,
+body.mobile-board.battle-v3 .resource-panel .energy-line > span,
+body.mobile-board.battle-v3 .resource-panel .ex-line span {
+  display: block;
+  align-self: center;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--b3-resource-font-size);
+  font-weight: 1000;
+  line-height: 18px;
+  white-space: nowrap;
+  text-align: left;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.92);
+}
+
+body.mobile-board.battle-v3 .resource-panel .shield-line strong,
+body.mobile-board.battle-v3 .resource-panel .energy-line strong,
+body.mobile-board.battle-v3 .resource-panel .ex-line strong {
+  grid-column: 1;
+  justify-self: start;
+  color: #f6ddb0;
+}
+
+body.mobile-board.battle-v3 .resource-panel .shield-line span,
+body.mobile-board.battle-v3 .resource-panel .energy-line > span,
+body.mobile-board.battle-v3 .resource-panel .ex-line span {
+  grid-column: 2;
+  justify-self: start;
+  color: #9fe2ff;
+}
+
+body.mobile-board.battle-v3 .resource-panel .ex-line span {
+  color: #d9b2ff;
+}
+
+body.mobile-board.battle-v3 .resource-panel .shield-line strong,
+body.mobile-board.battle-v3 .resource-panel .shield-line span {
+  grid-row: 1;
+}
+
+body.mobile-board.battle-v3 .resource-panel .energy-line strong,
+body.mobile-board.battle-v3 .resource-panel .energy-line > span {
+  grid-row: 2;
+}
+
+body.mobile-board.battle-v3 .resource-panel .ex-line strong,
+body.mobile-board.battle-v3 .resource-panel .ex-line span {
+  grid-row: 3;
+}
+
+body.mobile-board.battle-v3 .resource-panel .shields,
+body.mobile-board.battle-v3 .resource-panel .resource-pips {
+  display: none;
+}
+
+body.mobile-board.battle-v3 .opponent .resource-panel .shield-line strong,
+body.mobile-board.battle-v3 .opponent .resource-panel .energy-line strong,
+body.mobile-board.battle-v3 .opponent .resource-panel .ex-line strong,
+body.mobile-board.battle-v3 .self .resource-panel .shield-line strong,
+body.mobile-board.battle-v3 .self .resource-panel .energy-line strong,
+body.mobile-board.battle-v3 .self .resource-panel .ex-line strong {
+  grid-column: 1;
+  justify-self: start;
+}
+
+body.mobile-board.battle-v3 .opponent .resource-panel .shield-line span,
+body.mobile-board.battle-v3 .opponent .resource-panel .energy-line > span,
+body.mobile-board.battle-v3 .opponent .resource-panel .ex-line span,
+body.mobile-board.battle-v3 .self .resource-panel .shield-line span,
+body.mobile-board.battle-v3 .self .resource-panel .energy-line > span,
+body.mobile-board.battle-v3 .self .resource-panel .ex-line span {
+  grid-column: 2;
+  justify-self: start;
+}
+
+body.mobile-board.battle-v3 .opponent .resource-panel .shield-line strong,
+body.mobile-board.battle-v3 .opponent .resource-panel .shield-line span,
+body.mobile-board.battle-v3 .self .resource-panel .shield-line strong,
+body.mobile-board.battle-v3 .self .resource-panel .shield-line span {
+  grid-row: 1;
+}
+
+body.mobile-board.battle-v3 .opponent .resource-panel .energy-line strong,
+body.mobile-board.battle-v3 .opponent .resource-panel .energy-line > span,
+body.mobile-board.battle-v3 .self .resource-panel .energy-line strong,
+body.mobile-board.battle-v3 .self .resource-panel .energy-line > span {
+  grid-row: 2;
+}
+
+body.mobile-board.battle-v3 .opponent .resource-panel .ex-line strong,
+body.mobile-board.battle-v3 .opponent .resource-panel .ex-line span,
+body.mobile-board.battle-v3 .self .resource-panel .ex-line strong,
+body.mobile-board.battle-v3 .self .resource-panel .ex-line span {
+  grid-row: 3;
+}
+
+body.mobile-board.battle-v3 .opponent .resource-panel .shield-line strong,
+body.mobile-board.battle-v3 .opponent .resource-panel .energy-line strong,
+body.mobile-board.battle-v3 .opponent .resource-panel .ex-line strong,
+body.mobile-board.battle-v3 .self .resource-panel .shield-line strong,
+body.mobile-board.battle-v3 .self .resource-panel .energy-line strong,
+body.mobile-board.battle-v3 .self .resource-panel .ex-line strong,
+body.mobile-board.battle-v3 .opponent .resource-panel .shield-line span,
+body.mobile-board.battle-v3 .opponent .resource-panel .energy-line > span,
+body.mobile-board.battle-v3 .opponent .resource-panel .ex-line span,
+body.mobile-board.battle-v3 .self .resource-panel .shield-line span,
+body.mobile-board.battle-v3 .self .resource-panel .energy-line > span,
+body.mobile-board.battle-v3 .self .resource-panel .ex-line span {
+  display: block;
+  align-self: center;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--b3-resource-font-size);
+  line-height: 18px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+@media (max-width: 380px) {
+  body.mobile-board.battle-v3 .resource-panel {
+    --b3-resource-label-width: 58px;
+    --b3-resource-font-size: 12px;
+    grid-template-rows: repeat(3, 16px);
+    gap: 3px 6px;
+    padding: 5px 8px;
+  }
+
+  body.mobile-board.battle-v3 .resource-panel .shield-line strong,
+  body.mobile-board.battle-v3 .resource-panel .energy-line strong,
+  body.mobile-board.battle-v3 .resource-panel .ex-line strong,
+  body.mobile-board.battle-v3 .resource-panel .shield-line span,
+  body.mobile-board.battle-v3 .resource-panel .energy-line > span,
+  body.mobile-board.battle-v3 .resource-panel .ex-line span {
+    line-height: 16px;
+  }
+
+  body.mobile-board.battle-v3 .opponent .resource-panel .shield-line strong,
+  body.mobile-board.battle-v3 .opponent .resource-panel .energy-line strong,
+  body.mobile-board.battle-v3 .opponent .resource-panel .ex-line strong,
+  body.mobile-board.battle-v3 .self .resource-panel .shield-line strong,
+  body.mobile-board.battle-v3 .self .resource-panel .energy-line strong,
+  body.mobile-board.battle-v3 .self .resource-panel .ex-line strong,
+  body.mobile-board.battle-v3 .opponent .resource-panel .shield-line span,
+  body.mobile-board.battle-v3 .opponent .resource-panel .energy-line > span,
+  body.mobile-board.battle-v3 .opponent .resource-panel .ex-line span,
+  body.mobile-board.battle-v3 .self .resource-panel .shield-line span,
+  body.mobile-board.battle-v3 .self .resource-panel .energy-line > span,
+  body.mobile-board.battle-v3 .self .resource-panel .ex-line span {
+    line-height: 16px;
   }
 }
