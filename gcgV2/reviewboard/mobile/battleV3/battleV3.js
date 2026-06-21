@@ -1036,7 +1036,7 @@ function scheduleOpeningRevealDone() {
     if (!state.openingReveal) return;
     state.openingReveal = { ...state.openingReveal, active: false };
     render();
-  }, reducedMotion ? 900 : 3200);
+  }, reducedMotion ? 1200 : 4200);
 }
 
 function renderOpeningReveal() {
