@@ -7,6 +7,8 @@
     <link rel="icon" href="data:," />
     <link rel="preload" as="image" type="image/avif" href="/mobile/battleV3/assets/board-bg.avif" />
     <link rel="preload" as="image" type="image/webp" href="/mobile/battleV3/assets/card-back-opponent.webp" />
+    <link rel="preload" as="image" type="image/webp" href="/mobile/battleV3/assets/coin-p1-token.webp" />
+    <link rel="preload" as="image" type="image/webp" href="/mobile/battleV3/assets/coin-p2-token.webp" />
     <link rel="stylesheet" href="/styles.css?v=20260615-mobile-fill" />
     <link rel="stylesheet" href="/mobile/battleV3/battleV3.css" />
   </head>
@@ -51,7 +53,7 @@
               </div>
               <div class="ex-line">
                 <strong>EX</strong>
-                <span id="p2ExResourceText">0 可用 / 5 休息</span>
+                <span id="p2ExResourceText">0 可用</span>
               </div>
             </div>
             <div class="battlefield red-panel">
@@ -94,7 +96,7 @@
               </div>
               <div class="ex-line">
                 <strong>EX</strong>
-                <span id="p1ExResourceText">0 可用 / 5 休息</span>
+                <span id="p1ExResourceText">0 可用</span>
               </div>
             </div>
             <div class="hand-row panel blue-panel">
@@ -124,6 +126,24 @@
         </div>
       </section>
 
+      <section class="b3-coin-flip" id="coinFlipOverlay" aria-live="polite" hidden>
+        <div class="b3-coin-stage" aria-hidden="true">
+          <div class="b3-coin-token" id="coinFlipToken">
+            <div class="b3-coin-face b3-coin-front">
+              <img src="/mobile/battleV3/assets/coin-p1-token.webp" alt="" />
+            </div>
+            <div class="b3-coin-face b3-coin-back">
+              <img src="/mobile/battleV3/assets/coin-p2-token.webp" alt="" />
+            </div>
+          </div>
+        </div>
+        <div class="b3-coin-copy">
+          <strong id="coinFlipTitle">擲毫中</strong>
+          <span id="coinFlipSub">決定開局選擇權</span>
+        </div>
+      </section>
+
+      <div class="b3-sheet-backdrop" id="sheetBackdrop" hidden></div>
       <section class="b3-sheet" id="sheet" hidden></section>
       <section class="b3-error" id="errorBox" hidden></section>
     </main>

@@ -782,7 +782,7 @@ body.mobile-board {
   --mobile-red: #ee2d32;
   --mobile-blue: #1484ff;
   --mobile-controls-height: 46px;
-  --mobile-side-width: clamp(64px, 14vw, 118px);
+  --mobile-side-width: clamp(44px, 8vw, 56px);
   --mobile-gap: clamp(4px, 0.8dvh, 8px);
   --hand-card-width: clamp(36px, 10vw, 70px);
   --slot-width: clamp(58px, 15vw, 118px);
@@ -849,13 +849,13 @@ body.mobile-board .board {
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--mobile-side-width);
   grid-template-rows:
-    minmax(96px, 1.05fr)
-    minmax(92px, 0.72fr)
+    minmax(42px, 0.28fr)
+    minmax(54px, 0.45fr)
     minmax(112px, 1.5fr)
-    minmax(34px, 0.34fr)
-    minmax(112px, 1.5fr)
-    minmax(92px, 0.72fr)
-    minmax(96px, 1.05fr);
+    minmax(20px, 0.15fr)
+    minmax(128px, 1.8fr)
+    minmax(64px, 0.62fr)
+    minmax(150px, 2.2fr);
   gap: var(--mobile-gap) clamp(4px, 1vw, 6px);
   height: 100%;
   min-height: 0;
@@ -895,6 +895,7 @@ body.mobile-board .hand-row {
 body.mobile-board .opponent .hand-row {
   grid-column: 1;
   grid-row: 1;
+  padding: 5px 8px 4px;
   border-color: rgba(238, 45, 50, 0.72);
   background: linear-gradient(180deg, rgba(64, 7, 14, 0.98), rgba(16, 7, 12, 0.98));
 }
@@ -902,6 +903,7 @@ body.mobile-board .opponent .hand-row {
 body.mobile-board .self .hand-row {
   grid-column: 1;
   grid-row: 7;
+  padding-bottom: 10px;
 }
 
 body.mobile-board h2 {
@@ -922,14 +924,27 @@ body.mobile-board .blue-panel h2 {
 body.mobile-board .hand {
   justify-content: center;
   gap: clamp(4px, 1.3vw, 9px);
-  margin-top: clamp(4px, 0.8dvh, 8px);
+  margin-top: clamp(3px, 0.6dvh, 6px);
   height: calc(100% - 18px);
   min-height: 0;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
-  padding-bottom: 2px;
+  padding: 0 6px 2px;
+  scroll-snap-type: x proximity;
   scrollbar-width: none;
+}
+
+body.mobile-board .self .hand {
+  justify-content: flex-start;
+  height: calc(100% - 16px);
+  padding-inline: 8px;
+}
+
+body.mobile-board .opponent .hand {
+  height: calc(100% - 12px);
+  margin-top: 2px;
+  padding-inline: 2px;
 }
 
 body.mobile-board .hand::-webkit-scrollbar {
@@ -938,11 +953,23 @@ body.mobile-board .hand::-webkit-scrollbar {
 
 body.mobile-board .hand .card-img,
 body.mobile-board .hand .card-back {
-  width: min(var(--hand-card-width), calc((100vw - var(--mobile-side-width) - 80px) / 7));
+  width: var(--hand-card-width);
   max-width: none;
-  height: 100%;
+  height: auto;
+  max-height: 100%;
   object-fit: cover;
   object-position: center top;
+  scroll-snap-align: start;
+}
+
+body.mobile-board .opponent .hand .card-img,
+body.mobile-board .opponent .hand .card-back {
+  width: clamp(24px, 6vw, 34px);
+}
+
+body.mobile-board .self .hand .card-img,
+body.mobile-board .self .hand .card-back {
+  width: clamp(76px, 22vw, 104px);
 }
 
 body.mobile-board .card-back,
@@ -1318,7 +1345,7 @@ body.mobile-board .deck-box strong {
 
 body.mobile-board .deck-box strong::before {
   content: "ENERGY";
-  font-size: clamp(10px, 1vw, 12px);
+  font-size: clamp(8px, 0.85vw, 10px);
 }
 
 body.mobile-board .deck-box:nth-child(2) strong::before {
@@ -1438,9 +1465,9 @@ body:not(.mobile-board) .mobile-main-action {
 
 @media (max-width: 430px) {
   body.mobile-board {
-    --mobile-side-width: 64px;
+    --mobile-side-width: clamp(44px, 8vw, 56px);
     --mobile-controls-height: 44px;
-    --hand-card-width: 42px;
+    --hand-card-width: 78px;
     --slot-width: 60px;
   }
 
@@ -1448,15 +1475,29 @@ body:not(.mobile-board) .mobile-main-action {
     gap: 6px 5px;
   }
 
-  body.mobile-board .hand-row,
-  body.mobile-board .opponent .hand-row {
+  body.mobile-board .hand-row {
     padding: 12px 10px 8px;
+  }
+
+  body.mobile-board .opponent .hand-row {
+    padding: 5px 8px 4px;
   }
 
   body.mobile-board .hand .card-img,
   body.mobile-board .hand .card-back {
-    width: clamp(33px, calc((100vw - 116px) / 7), var(--hand-card-width));
-    height: 100%;
+    width: var(--hand-card-width);
+    height: auto;
+    max-height: 100%;
+  }
+
+  body.mobile-board .opponent .hand .card-img,
+  body.mobile-board .opponent .hand .card-back {
+    width: clamp(24px, 6vw, 34px);
+  }
+
+  body.mobile-board .self .hand .card-img,
+  body.mobile-board .self .hand .card-back {
+    width: clamp(76px, 22vw, 104px);
   }
 
   body.mobile-board .base-strip {
@@ -1511,5 +1552,24 @@ body:not(.mobile-board) .mobile-main-action {
 
   body.mobile-board .controls button {
     height: 34px;
+  }
+}
+
+@media (max-width: 380px) {
+  body.mobile-board .board {
+    grid-template-rows:
+      minmax(40px, 0.25fr)
+      minmax(50px, 0.42fr)
+      minmax(104px, 1.35fr)
+      minmax(18px, 0.12fr)
+      minmax(116px, 1.6fr)
+      minmax(58px, 0.55fr)
+      minmax(126px, 1.9fr);
+    gap: 5px;
+  }
+
+  body.mobile-board .self .hand .card-img,
+  body.mobile-board .self .hand .card-back {
+    width: clamp(70px, 20vw, 76px);
   }
 }

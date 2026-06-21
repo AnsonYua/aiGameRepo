@@ -15,6 +15,8 @@ const state = {
   busy: false,
   error: null,
   pollTimer: null,
+  revealTimer: null,
+  openingReveal: null,
   // selected: { type: 'card'|'unit'|'base'|'list', cardId?, slot?, phase: 'pickAction'|'pickTarget', action? }
   selected: null,
   // confirm: { command, label } — target picked, awaiting confirm
@@ -30,6 +32,8 @@ const apiBase = "/api/battleV3";
 const prewarmAssets = [
   "/mobile/battleV3/assets/card-back-opponent.webp",
   "/mobile/battleV3/assets/ui-ornaments.webp",
+  "/mobile/battleV3/assets/coin-p1-token.webp",
+  "/mobile/battleV3/assets/coin-p2-token.webp",
 ];
 
 const el = {
@@ -41,6 +45,11 @@ const el = {
   combatMessage: document.getElementById("combatMessage"),
   thinkingLabel: document.getElementById("opponentThinkingLabel"),
   sheet: document.getElementById("sheet"),
+  sheetBackdrop: document.getElementById("sheetBackdrop"),
+  coinFlipOverlay: document.getElementById("coinFlipOverlay"),
+  coinFlipToken: document.getElementById("coinFlipToken"),
+  coinFlipTitle: document.getElementById("coinFlipTitle"),
+  coinFlipSub: document.getElementById("coinFlipSub"),
   errorBox: document.getElementById("errorBox"),
   endTurnBtn: document.getElementById("endTurnBtn"),
   actionsListBtn: document.getElementById("actionsListBtn"),
@@ -145,17 +154,6 @@ function renderDetailInto(container, detail) {
   const block = document.createElement("div");
   block.className = "b3-card-detail";
 
-  const stats = document.createElement("div");
-  stats.className = "b3-detail-stats";
-  const chips = [];
-  if (detail.cardType) chips.push(typeLabel(detail.cardType));
-  if (detail.color) chips.push(detail.color);
-  if (detail.cost != null) chips.push(`耗 ${detail.cost}`);
-  if (detail.ap || detail.hp) chips.push(`AP${detail.ap ?? 0}/HP${detail.hp ?? 0}`);
-  if (detail.level) chips.push(`LV${detail.level}`);
-  stats.textContent = chips.join("  ·  ");
-  block.appendChild(stats);
-
   if (detail.traits?.length) {
     const t = document.createElement("div");
     t.className = "b3-detail-traits";
@@ -173,7 +171,19 @@ function renderDetailInto(container, detail) {
     }
     block.appendChild(desc);
   }
-  container.appendChild(block);
+  if (block.childElementCount) container.appendChild(block);
+}
+
+function detailSummary(detail, fallback = "") {
+  if (!detail) return fallback;
+  const chips = [];
+  if (detail.cardType) chips.push(typeLabel(detail.cardType));
+  if (detail.color) chips.push(detail.color);
+  if (detail.cost != null) chips.push(`耗 ${detail.cost}`);
+  if (detail.ap || detail.hp) chips.push(`AP${detail.ap ?? 0}/HP${detail.hp ?? 0}`);
+  if (detail.level) chips.push(`LV${detail.level}`);
+  if (detail.id) chips.push(detail.id);
+  return chips.join(" · ") || fallback;
 }
 
 function typeLabel(cardType) {
@@ -213,7 +223,7 @@ function countMap(arr) {
   return m;
 }
 
-function applyPayload(payload) {
+function applyPayload(payload, options = {}) {
   const prevStatus = state.status;
   const prevPlayers = state.viewerState?.players || null;
   const prevHand = prevPlayers?.P1?.hand ? countMap(prevPlayers.P1.hand) : null;
@@ -225,6 +235,7 @@ function applyPayload(payload) {
   state.status = payload.status || "not_started";
   state.error = payload.error || null;
   state.busy = false;
+  state.openingReveal = options.openingReveal || state.openingReveal;
   // a fresh decision boundary invalidates any in-progress selection
   state.selected = null;
   state.confirm = null;
@@ -327,6 +338,8 @@ function animateChanges(diff, prevStatus, currStatus) {
 }
 
 function statusFlippedToTurn(prevStatus, currStatus) {
+  const viewer = state.viewerState || {};
+  if (viewer.phase === "pre-game" || viewer.decision_type === "pending_choice") return null;
   if (currStatus === "waiting_human" && prevStatus !== "waiting_human") return "human";
   if (currStatus === "waiting_ai" && prevStatus !== "waiting_ai") return "ai";
   return null;
@@ -404,8 +417,13 @@ function showTurnBanner(who) {
 
 async function startBattle() {
   state.busy = true;
+  state.openingReveal = null;
+  clearOpeningRevealTimer();
   render("建立對局中...");
-  applyPayload(await postJson(`${apiBase}/start`));
+  const payload = await postJson(`${apiBase}/start`);
+  const chooser = openingChoicePlayer(payload);
+  applyPayload(payload, chooser ? { openingReveal: buildOpeningReveal(chooser) } : {});
+  if (chooser) scheduleOpeningRevealDone();
 }
 
 async function refreshBattle() {
@@ -499,6 +517,7 @@ function render(fallbackMessage = "") {
   renderBoard();
   renderSheet();
   renderDialog();
+  renderOpeningReveal();
   document.body.classList.toggle("picking-target", state.selected?.phase === "pickTarget");
 }
 
@@ -520,7 +539,13 @@ function renderStatus(fallbackMessage) {
 
 function statusMessage() {
   if (state.status === "waiting_ai") return "對手思考中...";
-  if (state.status === "waiting_human") return "點擊亮起的卡牌或單位選擇行動。";
+  if (state.status === "waiting_human") {
+    const pending = state.viewerState?.pending_choice || {};
+    if (pending.visible && pending.message) return pending.message;
+    if (actionableCount() > 0) return "點擊亮起的卡牌或單位選擇行動。";
+    if (passAction()) return "目前沒有可用操作，可以讓過。";
+    return "等待操作。";
+  }
   if (state.status === "game_over") return `對局結束，勝者：${state.viewerState?.winner || "-"}`;
   return "準備開始";
 }
@@ -643,9 +668,8 @@ function renderResources(playerId, player) {
   const rested = visibleCount(resources.rested);
   const ex = visibleCount(resources.ex);
   const normal = active + rested;
-  const exRested = Math.max(0, 5 - ex);
   setText(`${playerId}ResourceText`, `${active} 可用 / ${rested} 休息`);
-  setText(`${playerId}ExResourceText`, `${ex} 可用 / ${exRested} 休息`);
+  setText(`${playerId}ExResourceText`, `${ex} 可用`);
   const container = document.getElementById(`${playerId}Resources`);
   const pips = [
     ...Array(active).fill("active"),
@@ -917,8 +941,9 @@ function attackOnBaseExists() {
 function renderSheet() {
   el.sheet.replaceChildren();
   el.sheet.className = "b3-sheet";
+  el.sheetBackdrop.hidden = true;
 
-  if (state.status !== "waiting_human" || state.busy) {
+  if (state.openingReveal?.active || state.status !== "waiting_human" || state.busy) {
     el.sheet.hidden = true;
     return;
   }
@@ -938,6 +963,7 @@ function renderSheet() {
   if (state.selected?.phase === "pickAction") {
     el.sheet.classList.add("mode-actions");
     buildActionSheet(state.selected, el.sheet);
+    el.sheetBackdrop.hidden = false;
     el.sheet.hidden = false;
     return;
   }
@@ -954,6 +980,7 @@ function renderSheet() {
 function renderDialog() {
   clearDialog();
 
+  if (state.openingReveal?.active) return;
   if (state.status !== "waiting_human" || state.busy) return;
 
   if (state.confirm) {
@@ -974,6 +1001,56 @@ function clearDialog() {
   if (!el.dialog) return;
   el.dialog.remove();
   el.dialog = null;
+}
+
+function openingChoicePlayer(payload) {
+  const pending = payload?.viewer_state?.pending_choice || {};
+  if (!pending.visible || pending.type !== "choose_turn_order") return null;
+  const choices = Array.isArray(payload.legal_actions) ? payload.legal_actions : [];
+  const canChooseFirst = choices.some((action) => action.choice_id === "go_first");
+  const canChooseSecond = choices.some((action) => action.choice_id === "go_second");
+  return canChooseFirst && canChooseSecond ? pending.waiting_player : null;
+}
+
+function buildOpeningReveal(chooser) {
+  return {
+    active: true,
+    chooser,
+    resultClass: chooser === "P2" ? "result-p2" : "result-p1",
+    title: chooser === "P2" ? "對手取得開局選擇權" : "你取得開局選擇權",
+    sub: chooser === "P2" ? "對手正在選擇先攻或後攻" : "選擇先攻或後攻",
+  };
+}
+
+function clearOpeningRevealTimer() {
+  if (!state.revealTimer) return;
+  window.clearTimeout(state.revealTimer);
+  state.revealTimer = null;
+}
+
+function scheduleOpeningRevealDone() {
+  clearOpeningRevealTimer();
+  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+  state.revealTimer = window.setTimeout(() => {
+    state.revealTimer = null;
+    if (!state.openingReveal) return;
+    state.openingReveal = { ...state.openingReveal, active: false };
+    render();
+  }, reducedMotion ? 900 : 3200);
+}
+
+function renderOpeningReveal() {
+  if (!el.coinFlipOverlay || !el.coinFlipToken) return;
+  const reveal = state.openingReveal;
+  const active = Boolean(reveal?.active);
+  el.coinFlipOverlay.hidden = !active;
+  if (!active) {
+    el.coinFlipToken.className = "b3-coin-token";
+    return;
+  }
+  el.coinFlipTitle.textContent = reveal.title;
+  el.coinFlipSub.textContent = reveal.sub;
+  el.coinFlipToken.className = `b3-coin-token ${reveal.resultClass}`;
 }
 
 function buildModal() {
@@ -1123,6 +1200,7 @@ function buildActionSheet(sel, sheet) {
 function sheetHeader({ thumbCard, title, sub }) {
   const head = document.createElement("div");
   head.className = "b3-sheet-head";
+  if (!thumbCard) head.classList.add("no-thumb");
 
   if (thumbCard) {
     const thumb = document.createElement("div");
@@ -1159,7 +1237,7 @@ function sheetHeader({ thumbCard, title, sub }) {
 function buildCardSheet(cardId, sheet) {
   const detail = cardDetailCache.get(cardId) || null;
   const title = detail?.name || cardId;
-  const sub = detail ? `${typeLabel(detail.cardType)} · ${cardId}` : cardId;
+  const sub = detailSummary(detail, cardId);
   sheet.appendChild(sheetHeader({ thumbCard: cardId, title, sub }));
   if (detail) renderDetailInto(sheet, detail);
   else if (!cardDetailCache.has(cardId)) fetchCardDetail(cardId).then(() => maybeRefreshDetail(cardId));
@@ -1200,7 +1278,7 @@ function buildUnitSheet(slot, sheet) {
   const detail = cardId ? (cardDetailCache.get(cardId) || null) : null;
   const name = detail?.name || cardId || "";
   const title = `${slotLabel(slot)} 號位${name ? ` · ${name}` : ""}`;
-  const sub = `AP ${unit?.ap ?? 0} / HP ${unit?.remaining_hp ?? 0}`;
+  const sub = detailSummary(detail, `AP ${unit?.ap ?? 0} / HP ${unit?.remaining_hp ?? 0}`);
   sheet.appendChild(sheetHeader({ thumbCard: cardId, title, sub }));
   if (detail) renderDetailInto(sheet, detail);
   else if (cardId && !cardDetailCache.has(cardId)) fetchCardDetail(cardId).then(() => maybeRefreshDetail(cardId));
@@ -1487,6 +1565,8 @@ el.actionsListBtn.addEventListener("click", () => {
   state.confirm = null;
   render();
 });
+
+el.sheetBackdrop.addEventListener("click", closeSheet);
 
 function applyQaLayoutState() {
   const params = new URLSearchParams(window.location.search);

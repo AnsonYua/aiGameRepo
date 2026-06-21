@@ -323,7 +323,7 @@ def main():
         auto_pass_ai_no_move=battle_v2_auto_pass,
     )
     ReviewBoardHandler.battle_v3_session = HumanVsAiBattleSession(
-        auto_pass_ai_no_move=battle_v2_auto_pass,
+        auto_pass_ai_no_move=True,
         reveal_card_names=True,
     )
     server = ThreadingHTTPServer((args.host, args.port), ReviewBoardHandler)
