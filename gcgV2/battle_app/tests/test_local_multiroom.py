@@ -49,10 +49,14 @@ class LocalMultiRoomTest(unittest.TestCase):
             "GCG_V2_OUTPUT_ROOT": os.environ.get("GCG_V2_OUTPUT_ROOT"),
             "GCG_BATTLE_AI_MODE": os.environ.get("GCG_BATTLE_AI_MODE"),
             "GCG_BATTLE_INTERPRETER": os.environ.get("GCG_BATTLE_INTERPRETER"),
+            "GCG_ENABLE_SCENARIO_MODE": os.environ.get("GCG_ENABLE_SCENARIO_MODE"),
+            "GCG_ENABLE_MANUAL_MODE": os.environ.get("GCG_ENABLE_MANUAL_MODE"),
         }
         os.environ["GCG_V2_OUTPUT_ROOT"] = self.tmpdir.name
         os.environ["GCG_BATTLE_AI_MODE"] = "scripted"
         os.environ["GCG_BATTLE_INTERPRETER"] = "reference"
+        os.environ["GCG_ENABLE_SCENARIO_MODE"] = "1"
+        os.environ["GCG_ENABLE_MANUAL_MODE"] = "1"
 
         QuietBattleAppHandler.registry = BattleGameRegistry()
         handler = partial(QuietBattleAppHandler, directory=str(PUBLIC_ROOT))
@@ -175,6 +179,190 @@ class LocalMultiRoomTest(unittest.TestCase):
                 break
             time.sleep(0.05)
         self.assertEqual(final["status"], "waiting_human")
+
+    def test_can_start_manual_scenario_game(self):
+        status, payload = self.request(
+            "/api/games/scenario",
+            method="POST",
+            payload={"scenario_id": "st01-008-playable"},
+        )
+
+        self.assertEqual(status, 200)
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["status"], "waiting_human")
+        self.assertIn("st01/ST01-008", payload["viewer_state"]["players"]["P1"]["hand"])
+        self.assertIn("play_card st01/ST01-008 0", payload["legal_commands"])
+        self.assertEqual(payload["viewer_state"]["players"]["P2"]["hand"], [])
+        self.assertEqual(payload["events"][-1]["event_type"], "scenario_loaded")
+
+    def test_command_scenario_exposes_command_card(self):
+        status, payload = self.request(
+            "/api/games/scenario",
+            method="POST",
+            payload={"scenario_id": "st01-012-rested-target"},
+        )
+
+        self.assertEqual(status, 200)
+        self.assertTrue(payload["ok"])
+        self.assertIn("play_card st01/ST01-012", payload["legal_commands"])
+
+        status, after_command = self.request(
+            f"/api/games/{payload['game_id']}/command",
+            method="POST",
+            payload={"command": "play_card st01/ST01-012"},
+        )
+
+        self.assertEqual(status, 200)
+        self.assertTrue(after_command["ok"])
+        self.assertEqual(after_command["decision_type"], "pending_choice")
+        self.assertEqual(after_command["legal_commands"], ["choose opponent_slot_0"])
+
+    def test_scenario_route_requires_feature_flag(self):
+        os.environ["GCG_ENABLE_SCENARIO_MODE"] = "0"
+
+        status, payload = self.request(
+            "/api/games/scenario",
+            method="POST",
+            payload={"scenario_id": "st01-008-playable"},
+        )
+
+        self.assertEqual(status, 404)
+        self.assertFalse(payload["ok"])
+
+    def test_manual_scenario_switches_viewer_to_p2(self):
+        status, payload = self.request(
+            "/api/games/scenario",
+            method="POST",
+            payload={"scenario_id": "st01-008-playable", "mode": "manual"},
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(payload["viewer_state"]["viewer_player"], "P1")
+        self.assertIn("pass", payload["legal_commands"])
+
+        status, after_pass = self.request(
+            f"/api/games/{payload['game_id']}/command",
+            method="POST",
+            payload={"command": "pass"},
+        )
+
+        self.assertEqual(status, 200)
+        self.assertTrue(after_pass["ok"])
+        self.assertEqual(after_pass["status"], "waiting_human")
+        self.assertEqual(after_pass["viewer_state"]["viewer_player"], "P2")
+        self.assertEqual(after_pass["viewer_state"]["opponent_player"], "P1")
+        self.assertEqual(after_pass["viewer_state"]["players"]["P1"]["hand"], [])
+        self.assertIn("pass", after_pass["legal_commands"])
+
+    def test_can_start_fresh_manual_game(self):
+        status, payload = self.request(
+            "/api/games",
+            method="POST",
+            payload={"mode": "manual"},
+        )
+        self.assertEqual(status, 200)
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["status"], "waiting_human")
+        self.assertEqual(payload["viewer_state"]["viewer_player"], "P1")
+        self.assertIn("choose go_first", payload["legal_commands"])
+
+        status, after_order = self.request(
+            f"/api/games/{payload['game_id']}/command",
+            method="POST",
+            payload={"command": "choose go_first"},
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(after_order["viewer_state"]["viewer_player"], "P1")
+        self.assertIn("choose keep", after_order["legal_commands"])
+
+        status, after_keep = self.request(
+            f"/api/games/{payload['game_id']}/command",
+            method="POST",
+            payload={"command": "choose keep"},
+        )
+        self.assertEqual(status, 200)
+        self.assertTrue(after_keep["ok"])
+        self.assertEqual(after_keep["status"], "waiting_human")
+        self.assertEqual(after_keep["viewer_state"]["viewer_player"], "P2")
+        self.assertIn("choose keep", after_keep["legal_commands"])
+
+    def test_manual_mode_requires_feature_flag(self):
+        os.environ["GCG_ENABLE_MANUAL_MODE"] = "0"
+
+        status, payload = self.request(
+            "/api/games/scenario",
+            method="POST",
+            payload={"scenario_id": "st01-008-playable", "mode": "manual"},
+        )
+
+        self.assertEqual(status, 404)
+        self.assertFalse(payload["ok"])
+
+    def test_public_event_does_not_reveal_hidden_shield_card_name(self):
+        status, payload = self.request(
+            "/api/games/scenario",
+            method="POST",
+            payload={"scenario_id": "st01-008-playable"},
+        )
+        self.assertEqual(status, 200)
+        record = QuietBattleAppHandler.registry.get(payload["game_id"])
+
+        message = record.session._public_message({
+            "actor": "system",
+            "event_type": "rule_event",
+            "message": "P1 breaks a hidden defense card (st01/ST01-009).",
+            "result": {"payload": {"hidden_card_ids": ["st01/ST01-009"]}},
+        })
+
+        self.assertEqual(message, "P1 breaks a hidden defense card (卡牌).")
+
+        public_message = record.session._public_message({
+            "actor": "system",
+            "event_type": "rule_event",
+            "message": "P1 使用 st01/ST01-008。",
+            "result": {"payload": {"hidden_card_ids": ["st01/ST01-009"]}},
+        })
+
+        self.assertIn("Demi Trainer", public_message)
+
+    def test_real_shield_break_events_do_not_reveal_hidden_card_name(self):
+        status, payload = self.request(
+            "/api/games/scenario",
+            method="POST",
+            payload={"scenario_id": "st01-shield-break-redaction", "mode": "manual"},
+        )
+        self.assertEqual(status, 200)
+        self.assertIn("attack my_slot_0 opponent_base", payload["legal_commands"])
+
+        status, after_attack = self.request(
+            f"/api/games/{payload['game_id']}/command",
+            method="POST",
+            payload={"command": "attack my_slot_0 opponent_base"},
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(after_attack["viewer_state"]["viewer_player"], "P2")
+        self.assertIn("pass", after_attack["legal_commands"])
+
+        status, after_defender_pass = self.request(
+            f"/api/games/{payload['game_id']}/command",
+            method="POST",
+            payload={"command": "pass"},
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(after_defender_pass["viewer_state"]["viewer_player"], "P1")
+        self.assertIn("pass", after_defender_pass["legal_commands"])
+
+        status, after_damage = self.request(
+            f"/api/games/{payload['game_id']}/command",
+            method="POST",
+            payload={"command": "pass"},
+        )
+        self.assertEqual(status, 200)
+
+        messages = "\n".join(event["message"] for event in after_damage["events"])
+        self.assertIn("P1 擊破 P2 1 面盾牌（卡牌）。", messages)
+        self.assertIn("P2 的盾牌 卡牌 被破壞並進入廢棄區。", messages)
+        self.assertNotIn("st01/ST01-009", messages)
+        self.assertNotIn("Zowort", messages)
 
 
 if __name__ == "__main__":

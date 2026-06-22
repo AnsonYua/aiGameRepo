@@ -84,7 +84,7 @@ class HumanVsAiBattleSession:
             self._status = "waiting_human"
             self._error = None
             self._last_message = "對戰開始，請選擇先攻或後攻。"
-            self._runner.start_game(decision_player=HUMAN_PLAYER)
+            self._runner.start_game(decision_player=self._human_player_locked())
             self._advance_and_update_status_locked()
             self._start_ai_worker_if_needed_locked()
             return self._response_locked()
@@ -117,12 +117,13 @@ class HumanVsAiBattleSession:
                 return self._response_locked()
 
             self._advance_and_update_status_locked()
+            human_player = self._human_player_locked()
             actor, legal_commands, pending_choice = self._current_decision_locked()
-            if actor != HUMAN_PLAYER:
-                return self._error_response_locked("目前不是 P1 的決策時機。")
+            if actor != human_player:
+                return self._error_response_locked(f"目前不是 {human_player} 的決策時機。")
 
             try:
-                parsed = CommandParser().parse(raw_command, HUMAN_PLAYER)
+                parsed = CommandParser().parse(raw_command, human_player)
                 normalized = parsed.command_line()
                 if normalized not in set(legal_commands):
                     raise ValueError(f"指令不在合法清單中：{normalized}")
@@ -133,13 +134,13 @@ class HumanVsAiBattleSession:
             except Exception as exc:  # noqa: BLE001 - API should return JSON error
                 self._runner.gameplay_logger.log_invalid_command(
                     game_id=self._runner.game_id,
-                    player_id=HUMAN_PLAYER,
+                    player_id=human_player,
                     raw_command=raw_command,
                     reason=str(exc),
                 )
                 return self._error_response_locked(f"指令執行失敗：{exc}")
 
-            self._last_message = "P1 已執行操作。"
+            self._last_message = f"{human_player} 已執行操作。"
             self._advance_and_update_status_locked()
             self._start_ai_worker_if_needed_locked()
             return self._response_locked()
@@ -178,14 +179,15 @@ class HumanVsAiBattleSession:
                 "error": self._error,
             }
 
+        human_player = self._human_player_locked()
         viewer_bundle = self._runner.viewer_builder.build_for_player(
-            self._runner.state, HUMAN_PLAYER,
+            self._runner.state, human_player,
         )
         viewer_state = viewer_bundle["viewer_state"]
         legal_commands = []
         if self._status == "waiting_human":
             actor, legal_commands, _pending_choice = self._current_decision_locked()
-            if actor != HUMAN_PLAYER:
+            if actor != human_player:
                 legal_commands = []
 
         decision_type = viewer_state.get("decision_type")
@@ -257,8 +259,20 @@ class HumanVsAiBattleSession:
             # to its name so the log reads "Demi Trainer 攻擊 Gundam" not
             # "卡牌 attacked 卡牌".
             message = _strip_reasoning(message).strip()
-            return _CARD_ID_PATTERN.sub(self._card_name_replacer, message)
+            return _CARD_ID_PATTERN.sub(self._public_card_replacer(event), message)
         return _CARD_ID_PATTERN.sub("卡牌", message)
+
+    def _public_card_replacer(self, event):
+        payload = ((event.get("result") or {}).get("payload") or {})
+        hidden_card_ids = set(payload.get("hidden_card_ids") or [])
+
+        def replace(match):
+            card_id = match.group(0)
+            if card_id in hidden_card_ids:
+                return "卡牌"
+            return self._card_name_replacer(match)
+
+        return replace
 
     def _card_name_replacer(self, match):
         card_id = match.group(0)
@@ -317,7 +331,7 @@ class HumanVsAiBattleSession:
             self._status = "game_over"
             return
         actor, legal_commands, _pending_choice = self._current_decision_locked()
-        if actor == HUMAN_PLAYER:
+        if actor == self._human_player_locked():
             self._status = "waiting_human"
         elif actor == AI_PLAYER and legal_commands:
             self._status = "waiting_ai"
@@ -338,6 +352,9 @@ class HumanVsAiBattleSession:
             legal_commands = self._runner.enumerator.legal_commands(actor)
             return actor, legal_commands, None
         return None, [], None
+
+    def _human_player_locked(self):
+        return HUMAN_PLAYER
 
     # ------------------------------------------------------------------
     # AI worker
@@ -516,3 +533,16 @@ class HumanVsAiBattleSession:
         self._status = "error"
         self._error = message
         self._last_message = message
+
+
+class ManualBattleSession(HumanVsAiBattleSession):
+    """Dev/test session where both players are manually controlled."""
+
+    def _human_player_locked(self):
+        if self._runner is None or self._runner.state.get_state() is None:
+            return HUMAN_PLAYER
+        actor, _legal_commands, _pending_choice = self._current_decision_locked()
+        return actor if actor in {"P1", "P2"} else HUMAN_PLAYER
+
+    def _start_ai_worker_if_needed_locked(self):
+        return

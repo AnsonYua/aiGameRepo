@@ -978,6 +978,7 @@ class Runtime:
                 self._log_system(
                     "rule_event",
                     f"{event['player']} 的盾牌 {event['card_id']} 被破壞並進入廢棄區。",
+                    payload={"hidden_card_ids": [event["card_id"]]},
                 )
         return chained
 
@@ -1039,7 +1040,11 @@ class Runtime:
                     f"{attacker_player} 對對手基地造成 {attacker_ap} 點傷害{note}。",
                 )
             elif result["target"] == "shield":
-                self._log_system("rule_event", f"{attacker_player} 擊破 {defender_player} 1 面盾牌（{result['card_id']}）。")
+                self._log_system(
+                    "rule_event",
+                    f"{attacker_player} 擊破 {defender_player} 1 面盾牌（{result['card_id']}）。",
+                    payload={"hidden_card_ids": [result["card_id"]]},
+                )
                 events.append({
                     "type": "shield_broken",
                     "player": defender_player,
@@ -1082,11 +1087,14 @@ class Runtime:
         )
         self.state.save_snapshot()
 
-    def _log_system(self, event_type, message):
+    def _log_system(self, event_type, message, payload=None):
+        event_payload = {"message": message}
+        if payload:
+            event_payload.update(payload)
         self.gameplay_logger.log_system_event(
             game_id=self.state.get_game_id(),
             event_type=event_type,
-            payload={"message": message},
+            payload=event_payload,
         )
 
     def _log_command(self, parsed_command, message):

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import threading
 from dataclasses import dataclass, field
@@ -27,7 +28,8 @@ PUBLIC_ROOT = BATTLE_APP_ROOT / "public"
 if str(GCGV2_ROOT) not in sys.path:
     sys.path.insert(0, str(GCGV2_ROOT))
 
-from reviewboard.humanVsAI.battle_session import HumanVsAiBattleSession  # noqa: E402
+from reviewboard.humanVsAI.battle_session import HumanVsAiBattleSession, ManualBattleSession  # noqa: E402
+from battle_app.scenarios import ScenarioError, load_scenario, start_session_from_scenario  # noqa: E402
 
 
 def utc_now_iso() -> str:
@@ -36,7 +38,7 @@ def utc_now_iso() -> str:
 
 @dataclass
 class GameRecord:
-    session: HumanVsAiBattleSession
+    session: HumanVsAiBattleSession | ManualBattleSession
     created_at: str = field(default_factory=utc_now_iso)
     updated_at: str = field(default_factory=utc_now_iso)
 
@@ -49,15 +51,20 @@ class BattleGameRegistry:
         self._lock = threading.RLock()
         self._games: dict[str, GameRecord] = {}
 
-    def create(self) -> dict:
-        session = HumanVsAiBattleSession(
-            auto_pass_ai_no_move=True,
-            reveal_card_names=True,
-        )
+    def create(self, mode: str | None = None) -> dict:
+        session = _build_session(mode)
         response = session.start()
         game_id = response.get("game_id")
         if not game_id:
             raise RuntimeError("runtime did not return game_id")
+        with self._lock:
+            self._games[game_id] = GameRecord(session=session)
+        return response
+
+    def create_from_scenario(self, scenario_id: str, mode: str | None = None) -> dict:
+        scenario = load_scenario(scenario_id)
+        session = _build_session(mode)
+        game_id, response = start_session_from_scenario(session, scenario)
         with self._lock:
             self._games[game_id] = GameRecord(session=session)
         return response
@@ -133,9 +140,31 @@ class BattleAppHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self):  # noqa: N802 - http.server API
         parsed = urlparse(self.path)
+        if parsed.path == "/api/games/scenario":
+            if not _scenario_mode_enabled():
+                self._send_json({"ok": False, "error": "測試場景模式未啟用。"}, status=404)
+                return
+            try:
+                payload = self._read_json_body()
+                mode = payload.get("mode")
+                if mode == "manual" and not _manual_mode_enabled():
+                    self._send_json({"ok": False, "error": "手動對戰模式未啟用。"}, status=404)
+                    return
+                self._send_json(self.registry.create_from_scenario(payload.get("scenario_id"), mode=mode))
+            except ScenarioError as exc:
+                self._send_json({"ok": False, "error": str(exc)}, status=400)
+            except Exception as exc:  # noqa: BLE001 - API boundary
+                self._send_json({"ok": False, "error": str(exc)}, status=500)
+            return
+
         if parsed.path == "/api/games":
             try:
-                self._send_json(self.registry.create())
+                payload = self._read_json_body()
+                mode = payload.get("mode")
+                if mode == "manual" and not _manual_mode_enabled():
+                    self._send_json({"ok": False, "error": "手動對戰模式未啟用。"}, status=404)
+                    return
+                self._send_json(self.registry.create(mode=mode))
             except Exception as exc:  # noqa: BLE001 - API boundary
                 self._send_json({"ok": False, "error": str(exc)}, status=500)
             return
@@ -218,6 +247,22 @@ class BattleAppHandler(SimpleHTTPRequestHandler):
 
     def log_message(self, format, *args):  # noqa: A002 - inherited API name
         sys.stderr.write("%s - - [%s] %s\n" % (self.address_string(), self.log_date_time_string(), format % args))
+
+
+def _scenario_mode_enabled() -> bool:
+    return os.getenv("GCG_ENABLE_SCENARIO_MODE") == "1"
+
+
+def _manual_mode_enabled() -> bool:
+    return os.getenv("GCG_ENABLE_MANUAL_MODE") == "1"
+
+
+def _build_session(mode: str | None):
+    session_cls = ManualBattleSession if mode == "manual" else HumanVsAiBattleSession
+    return session_cls(
+        auto_pass_ai_no_move=True,
+        reveal_card_names=True,
+    )
 
 
 def main():

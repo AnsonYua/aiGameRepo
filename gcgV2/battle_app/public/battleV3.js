@@ -209,7 +209,7 @@ function maybeRefreshDetail(cardId) {
   if (!sel || sel.phase !== "pickAction") return;
   if (sel.type === "card" && sel.cardId !== cardId) return;
   if (sel.type === "unit") {
-    const unit = (state.viewerState?.players?.P1?.battle_area || []).find((s) => Number(s.slot) === sel.slot);
+    const unit = (state.viewerState?.players?.[viewerPlayerId()]?.battle_area || []).find((s) => Number(s.slot) === sel.slot);
     if (unit?.unit_id !== cardId) return;
   }
   render();
@@ -229,6 +229,14 @@ let lastAnimatedSeq = 0;
 // still animates.
 let pendingDealIn = new Map();
 
+function viewerPlayerId() {
+  return state.viewerState?.viewer_player || "P1";
+}
+
+function opponentPlayerId() {
+  return state.viewerState?.opponent_player || (viewerPlayerId() === "P1" ? "P2" : "P1");
+}
+
 function countMap(arr) {
   const m = new Map();
   for (const x of arr) m.set(x, (m.get(x) || 0) + 1);
@@ -237,8 +245,10 @@ function countMap(arr) {
 
 function applyPayload(payload, options = {}) {
   const prevStatus = state.status;
-  const prevPlayers = state.viewerState?.players || null;
-  const prevHand = prevPlayers?.P1?.hand ? countMap(prevPlayers.P1.hand) : null;
+  const prevViewer = viewerPlayerId();
+  const nextViewer = payload.viewer_state?.viewer_player || "P1";
+  const prevPlayers = prevViewer === nextViewer ? state.viewerState?.players || null : null;
+  const prevHand = prevPlayers?.[nextViewer]?.hand ? countMap(prevPlayers[nextViewer].hand) : null;
 
   state.gameId = payload.game_id || null;
   state.viewerState = payload.viewer_state || null;
@@ -269,7 +279,7 @@ function diffBoard(prevPlayers, currPlayers, prevHand) {
   const out = { unitDamaged: [], unitEntered: [], unitLeft: [], shieldLost: [], handGained: [] };
   // viewer_state.players uses uppercase keys P1/P2; the DOM data-b3-player
   // attribute uses lowercase p1/p2 (from renderPlayer), so emit lowercase.
-  for (const [dom, key] of [["p1", "P1"], ["p2", "P2"]]) {
+  for (const [dom, key] of [["p1", viewerPlayerId()], ["p2", opponentPlayerId()]]) {
     const prevP = prevPlayers[key] || {};
     const currP = currPlayers[key] || {};
 
@@ -299,7 +309,7 @@ function diffBoard(prevPlayers, currPlayers, prevHand) {
   // own hand deal-in: only animate cards that are genuinely new (drawn), not
   // the whole hand re-rendering. Count-based so a second copy of a card
   // already in hand still counts as newly drawn.
-  const ownHand = currPlayers.P1?.hand;
+  const ownHand = currPlayers[viewerPlayerId()]?.hand;
   out.handGained = new Map();
   if (prevHand && Array.isArray(ownHand)) {
     const currCounts = countMap(ownHand);
@@ -428,17 +438,32 @@ function showTurnBanner(who) {
 }
 
 async function startBattle() {
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get("mode") === "manual" ? "manual" : null;
   state.busy = true;
   state.openingReveal = null;
   clearOpeningRevealTimer();
   cardDetailCache.clear();
   pendingCardDetail.clear();
   render("建立對局中...");
-  const payload = await postJson("/api/games");
+  const payload = await postJson("/api/games", mode ? { mode } : {});
   if (payload.game_id) setGameUrl(payload.game_id);
   const chooser = openingChoicePlayer(payload);
   applyPayload(payload, chooser ? { openingReveal: buildOpeningReveal(chooser) } : {});
   if (chooser) scheduleOpeningRevealDone();
+}
+
+async function startScenarioBattle(scenarioId, mode = null) {
+  state.busy = true;
+  state.openingReveal = null;
+  clearOpeningRevealTimer();
+  cardDetailCache.clear();
+  pendingCardDetail.clear();
+  render("載入測試場景中...");
+  const body = mode ? { scenario_id: scenarioId, mode } : { scenario_id: scenarioId };
+  const payload = await postJson("/api/games/scenario", body);
+  if (payload.game_id) setGameUrl(payload.game_id);
+  applyPayload(payload);
 }
 
 async function refreshBattle() {
@@ -586,8 +611,8 @@ function renderError() {
 }
 
 function renderBoard() {
-  renderPlayer("p2", playerBlock("P2"), false);
-  renderPlayer("p1", playerBlock("P1"), true);
+  renderPlayer("p2", playerBlock(opponentPlayerId()), false);
+  renderPlayer("p1", playerBlock(viewerPlayerId()), true);
 }
 
 function playerBlock(playerId) {
@@ -1299,7 +1324,7 @@ function buildCardSheet(cardId, sheet) {
 }
 
 function buildUnitSheet(slot, sheet) {
-  const unit = (state.viewerState?.players?.P1?.battle_area || []).find((s) => Number(s.slot) === slot);
+  const unit = (state.viewerState?.players?.[viewerPlayerId()]?.battle_area || []).find((s) => Number(s.slot) === slot);
   const cardId = unit?.unit_id;
   const detail = cardId ? (cardDetailCache.get(cardId) || null) : null;
   const name = detail?.name || cardId || "";
@@ -1650,7 +1675,11 @@ function applyQaLayoutState() {
 
 prewarmImages();
 if (!applyQaLayoutState()) {
-  const gameId = new URLSearchParams(window.location.search).get("game_id");
+  const params = new URLSearchParams(window.location.search);
+  const gameId = params.get("game_id");
+  const scenarioId = params.get("scenario_id");
+  const mode = params.get("mode") === "manual" ? "manual" : null;
   if (gameId) resumeBattle(gameId);
+  else if (scenarioId) startScenarioBattle(scenarioId, mode);
   else render();
 }
