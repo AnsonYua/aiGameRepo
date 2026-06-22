@@ -117,8 +117,8 @@ class HumanVsAiBattleSession:
                 return self._response_locked()
 
             self._advance_and_update_status_locked()
-            human_player = self._human_player_locked()
             actor, legal_commands, pending_choice = self._current_decision_locked()
+            human_player = self._human_player_for_decision_locked(actor)
             if actor != human_player:
                 return self._error_response_locked(f"目前不是 {human_player} 的決策時機。")
 
@@ -179,16 +179,17 @@ class HumanVsAiBattleSession:
                 "error": self._error,
             }
 
-        human_player = self._human_player_locked()
+        actor = None
+        legal_commands = []
+        if self._status == "waiting_human":
+            actor, legal_commands, _pending_choice = self._current_decision_locked()
+        human_player = self._viewer_player_for_decision_locked(actor)
         viewer_bundle = self._runner.viewer_builder.build_for_player(
             self._runner.state, human_player,
         )
         viewer_state = viewer_bundle["viewer_state"]
-        legal_commands = []
-        if self._status == "waiting_human":
-            actor, legal_commands, _pending_choice = self._current_decision_locked()
-            if actor != human_player:
-                legal_commands = []
+        if self._status == "waiting_human" and actor != human_player:
+            legal_commands = []
 
         decision_type = viewer_state.get("decision_type")
         if self._status == "waiting_ai":
@@ -331,7 +332,7 @@ class HumanVsAiBattleSession:
             self._status = "game_over"
             return
         actor, legal_commands, _pending_choice = self._current_decision_locked()
-        if actor == self._human_player_locked():
+        if actor == self._human_player_for_decision_locked(actor):
             self._status = "waiting_human"
         elif actor == AI_PLAYER and legal_commands:
             self._status = "waiting_ai"
@@ -354,6 +355,12 @@ class HumanVsAiBattleSession:
         return None, [], None
 
     def _human_player_locked(self):
+        return HUMAN_PLAYER
+
+    def _human_player_for_decision_locked(self, _actor):
+        return HUMAN_PLAYER
+
+    def _viewer_player_for_decision_locked(self, _actor):
         return HUMAN_PLAYER
 
     # ------------------------------------------------------------------
@@ -538,11 +545,11 @@ class HumanVsAiBattleSession:
 class ManualBattleSession(HumanVsAiBattleSession):
     """Dev/test session where both players are manually controlled."""
 
-    def _human_player_locked(self):
-        if self._runner is None or self._runner.state.get_state() is None:
-            return HUMAN_PLAYER
-        actor, _legal_commands, _pending_choice = self._current_decision_locked()
+    def _human_player_for_decision_locked(self, actor):
         return actor if actor in {"P1", "P2"} else HUMAN_PLAYER
+
+    def _viewer_player_for_decision_locked(self, actor):
+        return self._human_player_for_decision_locked(actor)
 
     def _start_ai_worker_if_needed_locked(self):
         return

@@ -22,6 +22,7 @@ if str(BATTLE_APP_ROOT) not in sys.path:
     sys.path.insert(0, str(BATTLE_APP_ROOT))
 
 from battle_app.server import BattleAppHandler, BattleGameRegistry, PUBLIC_ROOT  # noqa: E402
+from battle_app.scenarios import load_scenario  # noqa: E402
 from reviewboard.humanVsAI.battle_session import AI_PLAYER  # noqa: E402
 
 
@@ -229,6 +230,29 @@ class LocalMultiRoomTest(unittest.TestCase):
         self.assertEqual(status, 404)
         self.assertFalse(payload["ok"])
 
+    def test_scenario_loader_skips_bad_files_and_invalidates_cache(self):
+        scenario_root = Path(self.tmpdir.name) / "manual_scenarios"
+        scenario_root.mkdir()
+        (scenario_root / "broken.yaml").write_text("schema_version: [", encoding="utf-8")
+        valid_path = scenario_root / "valid.yaml"
+        valid_path.write_text(
+            _scenario_yaml("cache-test", title="第一次載入", target_card="ST01-008"),
+            encoding="utf-8",
+        )
+
+        with self.assertLogs("battle_app.scenarios", level="WARNING"):
+            scenario = load_scenario("cache-test", root=scenario_root)
+        self.assertEqual(scenario["title"], "第一次載入")
+
+        valid_path.write_text(
+            _scenario_yaml("cache-test", title="第二次載入後快取更新", target_card="ST01-012"),
+            encoding="utf-8",
+        )
+        with self.assertLogs("battle_app.scenarios", level="WARNING"):
+            scenario = load_scenario("cache-test", root=scenario_root)
+        self.assertEqual(scenario["title"], "第二次載入後快取更新")
+        self.assertEqual(scenario["target_card"], "ST01-012")
+
     def test_manual_scenario_switches_viewer_to_p2(self):
         status, payload = self.request(
             "/api/games/scenario",
@@ -363,6 +387,45 @@ class LocalMultiRoomTest(unittest.TestCase):
         self.assertIn("P2 的盾牌 卡牌 被破壞並進入廢棄區。", messages)
         self.assertNotIn("st01/ST01-009", messages)
         self.assertNotIn("Zowort", messages)
+
+
+def _scenario_yaml(scenario_id, title, target_card):
+    return f"""schema_version: 1
+scenario_id: {scenario_id}
+title: {title}
+target_card: {target_card}
+purpose: 測試 scenario loader。
+setup:
+  turn: 1
+  phase: main
+  step: null
+  active_player: P1
+  priority_player: P1
+  first_player: P1
+players:
+  P1:
+    hand: []
+    resources:
+      active: 0
+      rested: 0
+      ex: 0
+    shields: 0
+    deck_count: 0
+    base: EX-BASE
+    board: []
+  P2:
+    hand: []
+    resources:
+      active: 0
+      rested: 0
+      ex: 0
+    shields: 0
+    deck_count: 0
+    base: EX-BASE
+    board: []
+expected:
+  legal_commands: []
+"""
 
 
 if __name__ == "__main__":

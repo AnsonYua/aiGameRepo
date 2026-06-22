@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import logging
 from pathlib import Path
 
 import yaml
@@ -14,6 +15,7 @@ BATTLE_APP_ROOT = Path(__file__).resolve().parent
 GCGV2_ROOT = BATTLE_APP_ROOT.parent
 DEFAULT_SCENARIO_ROOT = GCGV2_ROOT / "scenarios" / "manual"
 _SCENARIO_INDEX_CACHE = {}
+logger = logging.getLogger(__name__)
 
 
 class ScenarioError(ValueError):
@@ -42,13 +44,24 @@ def _scenario_index(root):
 
     index = {}
     for path in files:
-        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        try:
+            data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        except (OSError, yaml.YAMLError) as exc:
+            logger.warning("scenario YAML parse failed: %s - %s", path, exc)
+            continue
+        if not isinstance(data, dict):
+            logger.warning("scenario YAML root must be a mapping: %s", path)
+            continue
         scenario_id = data.get("scenario_id")
         if not scenario_id:
             continue
         if scenario_id in index:
             raise ScenarioError(f"scenario_id 重複：{scenario_id}")
-        _validate_scenario(data)
+        try:
+            _validate_scenario(data)
+        except ScenarioError as exc:
+            logger.warning("scenario validation failed: %s - %s", path, exc)
+            continue
         index[scenario_id] = data
     _SCENARIO_INDEX_CACHE[root] = {"signature": signature, "index": index}
     return index
