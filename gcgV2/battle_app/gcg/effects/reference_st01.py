@@ -47,7 +47,7 @@ _SPECS = {
         "ST01-002", "PAIRING_COMPLETE",
         primitive_steps=[{
             "primitive": "conditional",
-            "condition": {"type": "pilot_trait_any", "traits": ["White Base Team"]},
+            "condition": {"type": "pilot_trait_any", "traits": ["WB隊", "White Base Team"]},
             "steps": [{"primitive": "draw", "amount": 1}],
         }],
     ),
@@ -163,9 +163,9 @@ _SPECS = {
         primitive_steps=[{
             "primitive": "conditionalTokenDeploy",
             "tokens": [
-                {"unit_count": 0, "name": "Gundam", "ap": 3, "hp": 3},
-                {"unit_count": 1, "name": "Guncannon", "ap": 2, "hp": 2},
-                {"unit_count_gte": 2, "name": "GunTank", "ap": 1, "hp": 1},
+                {"unit_count": 0, "name": "高達", "ap": 3, "hp": 3},
+                {"unit_count": 1, "name": "鋼加農", "ap": 2, "hp": 2},
+                {"unit_count_gte": 2, "name": "鋼坦克", "ap": 1, "hp": 1},
             ],
         }],
     ),

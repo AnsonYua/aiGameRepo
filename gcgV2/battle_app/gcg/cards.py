@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import yaml
@@ -28,7 +29,12 @@ class CardDatabase:
     """Read-only card metadata index keyed by card id（不含 set 前綴）。"""
 
     def __init__(self, card_data_root=None, schema_paths=None):
-        self.card_data_root = Path(card_data_root) if card_data_root is not None else None
+        env_card_data_root = os.getenv("GCG_CARD_DATA_ROOT")
+        self.card_data_root = (
+            Path(card_data_root or env_card_data_root).expanduser()
+            if card_data_root is not None or env_card_data_root
+            else None
+        )
         self.schema_paths = [Path(path) for path in (schema_paths or config.card_effect_schema_paths())]
         self.source = "json" if self.card_data_root is not None else "schema"
         self.cards = self._load_json_cards() if self.source == "json" else self._load_schema_cards()
