@@ -346,7 +346,7 @@ class LocalMultiRoomTest(unittest.TestCase):
             "result": {"payload": {"hidden_card_ids": ["st01/ST01-009"]}},
         })
 
-        self.assertIn("Demi Trainer", public_message)
+        self.assertIn("迪米教練機", public_message)
 
     def test_real_shield_break_events_do_not_reveal_hidden_card_name(self):
         status, payload = self.request(

@@ -45,6 +45,7 @@ class RulesIndex:
                 "can_attack_player": schema_info.can_attack_player and info["can_attack_player"],
                 "trigger_timings": set(schema_info.trigger_timings),
                 "play_windows": set(schema_info.play_windows),
+                "pilot_designation": getattr(schema_info, "pilot_designation", None),
                 "has_activated_main": schema_info.has_activated_main,
                 "has_activated_action": getattr(schema_info, "has_activated_action", False),
                 "continuous_modifiers": list(schema_info.continuous_modifiers),

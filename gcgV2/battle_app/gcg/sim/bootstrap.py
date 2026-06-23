@@ -41,7 +41,11 @@ def build_simulator(
     output_root = output_root or config.output_root()
     card_database = CardDatabase()
     deck_config = DeckConfig()
-    schema_index = CardEffectSchemaLoader().load() if interpreter == "schema" else None
+    schema_index = (
+        CardEffectSchemaLoader().load()
+        if interpreter == "schema" or getattr(card_database, "source", None) == "schema"
+        else None
+    )
     rules_index = RulesIndex(card_database, schema_index=schema_index)
     snapshot_writer = SnapshotWriter(output_root)
     state_store = StateStore(

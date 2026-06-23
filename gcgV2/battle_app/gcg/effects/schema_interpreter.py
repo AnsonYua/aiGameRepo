@@ -501,17 +501,13 @@ class SchemaEffectInterpreter(EffectInterpreter):
         return str(card_type).lower()
 
     def _translate_trait(self, value):
-        return _TRAIT_TRANSLATIONS.get(value, value)
+        return value
 
     def _translate_keyword(self, value):
         return _KEYWORD_TRANSLATIONS.get(value, value)
 
     def _translate_token_name(self, value):
-        return {
-            "高達": "Gundam",
-            "鋼加農": "Guncannon",
-            "鋼坦克": "GunTank",
-        }.get(value, value)
+        return value
 
     def _unsupported(self, card_id, timing, reason):
         return {

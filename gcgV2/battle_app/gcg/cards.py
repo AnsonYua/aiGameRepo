@@ -5,15 +5,33 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import yaml
+
 from . import config
+
+
+_CARD_TYPE_BY_SCHEMA = {
+    "UNIT": "unit",
+    "PILOT": "pilot",
+    "COMMAND": "command",
+    "BASE": "base",
+}
+
+
+def _schema_int(value):
+    if value in (None, "-"):
+        return 0
+    return int(str(value).replace("+", ""))
 
 
 class CardDatabase:
     """Read-only card metadata index keyed by card id（不含 set 前綴）。"""
 
-    def __init__(self, card_data_root=None):
-        self.card_data_root = Path(card_data_root or config.card_data_root())
-        self.cards = self._load_cards()
+    def __init__(self, card_data_root=None, schema_paths=None):
+        self.card_data_root = Path(card_data_root) if card_data_root is not None else None
+        self.schema_paths = [Path(path) for path in (schema_paths or config.card_effect_schema_paths())]
+        self.source = "json" if self.card_data_root is not None else "schema"
+        self.cards = self._load_json_cards() if self.source == "json" else self._load_schema_cards()
 
     def get(self, card_id):
         if card_id is None:
@@ -46,7 +64,7 @@ class CardDatabase:
             return []
         return list(card.get("effects", {}).get("rules", []))
 
-    def _load_cards(self):
+    def _load_json_cards(self):
         cards = {}
         for path in sorted(self.card_data_root.glob("*Card.json")):
             payload = json.loads(path.read_text(encoding="utf-8"))
@@ -66,6 +84,32 @@ class CardDatabase:
                     "effects": {
                         "description": list(card.get("effects", {}).get("description", [])),
                         "rules": list(card.get("effects", {}).get("rules", [])),
+                    },
+                }
+        return cards
+
+    def _load_schema_cards(self):
+        cards = {}
+        for path in self.schema_paths:
+            payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+            for card in payload.get("cards", []):
+                card_id = card["card_id"]
+                raw_effect = card.get("raw_effect")
+                cards[card_id] = {
+                    "id": card_id,
+                    "name": card.get("name"),
+                    "cardType": _CARD_TYPE_BY_SCHEMA.get(card.get("card_type"), str(card.get("card_type")).lower()),
+                    "color": card.get("color"),
+                    "level": _schema_int(card.get("level")),
+                    "cost": _schema_int(card.get("play_cost")),
+                    "ap": _schema_int(card.get("base_ap")),
+                    "hp": _schema_int(card.get("base_hp")),
+                    "zone": list(card.get("terrain") or []),
+                    "traits": list(card.get("traits") or []),
+                    "link": [card["resonance"]] if card.get("resonance") else [],
+                    "effects": {
+                        "description": [] if raw_effect in (None, "-") else [raw_effect],
+                        "rules": [],
                     },
                 }
         return cards

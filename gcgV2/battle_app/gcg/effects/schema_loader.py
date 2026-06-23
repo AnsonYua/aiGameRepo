@@ -40,12 +40,19 @@ _KEYWORD_BY_SCHEMA = {
 }
 
 
+def _schema_int(value):
+    if value in (None, "-"):
+        return 0
+    return int(str(value).replace("+", ""))
+
+
 @dataclass(frozen=True)
 class SchemaRulesInfo:
     keywords: tuple[str, ...] = ()
     can_attack_player: bool = True
     trigger_timings: frozenset[str] = frozenset()
     play_windows: frozenset[str] = frozenset()
+    pilot_designation: dict | None = None
     has_activated_main: bool = False
     has_activated_action: bool = False
     continuous_modifiers: tuple[dict, ...] = ()
@@ -191,9 +198,16 @@ class CardEffectSchemaLoader:
                         keywords.append(valued)
             trigger_timings = set()
             play_windows = set()
+            pilot_designation = None
             has_activated_main = False
             has_activated_action = False
             can_attack_player = True
+            if card.get("pilot_requirement"):
+                pilot_designation = {
+                    "name": card.get("pilot_requirement"),
+                    "ap": _schema_int(card.get("base_ap")),
+                    "hp": _schema_int(card.get("base_hp")),
+                }
             if any(keyword == "Support" or keyword.startswith("Support:") for keyword in keywords):
                 has_activated_main = True
             for continuous in index.continuous_effects.get(card_id, []):
@@ -224,6 +238,7 @@ class CardEffectSchemaLoader:
                 can_attack_player=can_attack_player,
                 trigger_timings=frozenset(trigger_timings),
                 play_windows=frozenset(play_windows),
+                pilot_designation=pilot_designation,
                 has_activated_main=has_activated_main,
                 has_activated_action=has_activated_action,
                 continuous_modifiers=tuple(index.continuous_effects.get(card_id, [])),
