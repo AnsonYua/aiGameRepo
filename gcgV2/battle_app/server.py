@@ -13,6 +13,7 @@ import json
 import os
 import sys
 import threading
+import types
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from functools import partial
@@ -28,6 +29,10 @@ PUBLIC_ROOT = BATTLE_APP_ROOT / "public"
 for path in (BATTLE_APP_ROOT, BATTLE_APP_ROOT.parent):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
+if "battle_app" not in sys.modules:
+    package = types.ModuleType("battle_app")
+    package.__path__ = [str(BATTLE_APP_ROOT)]
+    sys.modules["battle_app"] = package
 
 from battle_app.env import load_battle_app_env  # noqa: E402
 from reviewboard.humanVsAI.battle_session import HumanVsAiBattleSession, ManualBattleSession  # noqa: E402

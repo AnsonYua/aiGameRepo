@@ -224,6 +224,12 @@ def card_effect_schema_paths() -> list[Path]:
 
 ### 3.1 `battle_app/server.py`
 
+新增 import：
+
+```python
+import types
+```
+
 ```python
 # 現狀（第 24-29 行）：
 BATTLE_APP_ROOT = Path(__file__).resolve().parent
@@ -239,9 +245,22 @@ PUBLIC_ROOT = BATTLE_APP_ROOT / "public"
 for _p in (BATTLE_APP_ROOT, BATTLE_APP_ROOT.parent):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
+
+# 若 deployment root 係 battle_app contents，而唔係 parent/battle_app，
+# 需要將目前 root 註冊成 battle_app package，令 battle_app.* imports 成立。
+if "battle_app" not in sys.modules:
+    package = types.ModuleType("battle_app")
+    package.__path__ = [str(BATTLE_APP_ROOT)]
+    sys.modules["battle_app"] = package
 ```
 
 ### 3.2 `battle_app/api/games.py`
+
+新增 import：
+
+```python
+import types
+```
 
 ```python
 # 現狀（第 10-15 行）：
@@ -255,6 +274,10 @@ GCGV2_ROOT = BATTLE_APP_ROOT
 for _p in (BATTLE_APP_ROOT, BATTLE_APP_ROOT.parent):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
+if "battle_app" not in sys.modules:
+    package = types.ModuleType("battle_app")
+    package.__path__ = [str(BATTLE_APP_ROOT)]
+    sys.modules["battle_app"] = package
 ```
 
 ### 3.3 `battle_app/scenarios.py`
@@ -453,6 +476,32 @@ rm -rf "$ISODIR"
 
 **如果 5.5 fail，deploy 仍然唔會 work。** 呢個係最終 acceptance test。
 
+### 5.5b Vercel Project Root Contents Test（stricter）
+
+模擬 Vercel 將 `battle_app/` 設為 project root，deployment root 直接包含 `api/`, `gcg/`, `runtime_document.py` 等檔案，而唔係 parent folder 入面再有 `battle_app/` directory。
+
+```bash
+cd /Users/hello/Desktop/cardAI/gcgV2
+
+ROOT=$(mktemp -d)
+cp -R battle_app/. "$ROOT/"
+cd "$ROOT"
+
+GCG_BATTLE_AI_MODE=mcts GCG_BATTLE_INTERPRETER=schema python3 -c "
+import api.games
+print('api.games import ok')
+from battle_app.runtime_document import DocumentBackedBattle
+from gcg.sim.bootstrap import build_simulator
+runner = build_simulator(players='mcts', interpreter='schema', output_root='/tmp/gcg_test')
+print('VERCEL ROOT COPY: PASS — runner built successfully')
+"
+
+cd /Users/hello/Desktop/cardAI/gcgV2
+rm -rf "$ROOT"
+```
+
+呢個 test 比 5.5 更接近 Vercel project-root packaging；必須 pass。
+
 ---
 
 ### 5.6 Production env contract check
@@ -648,6 +697,7 @@ Implemented:
 - Copied runtime dependencies into `battle_app/`: `gcg/`, `reviewboard/humanVsAI/`, `card/`, `manifests/`, `schemas/`, `knowledge/`, and `scenarios/manual/`.
 - Replaced schema symlinks with real YAML copies.
 - Updated standalone path roots in `battle_app/gcg/config.py`, `battle_app/server.py`, `battle_app/api/games.py`, `battle_app/scenarios.py`, and `battle_app/env.py`.
+- Added a lightweight package alias in `battle_app/server.py` and `battle_app/api/games.py` so `battle_app.*` imports work when Vercel deploys the contents of `battle_app/` as the project root.
 - Added Vercel deployment hygiene: `battle_app/.vercelignore`, `battle_app/pyproject.toml`, and `vercel.json` `excludeFiles`.
 - Kept Hermes local-only; production target remains MCTS+schema through Vercel env vars.
 
@@ -658,9 +708,11 @@ python3 -m py_compile server.py api/games.py runtime_document.py scenarios.py en
 Path checks: GCGV2_ROOT == battle_app; schema YAML files exist and are not symlinks; card/deck/manifest paths exist.
 MCTS+schema import/instantiation: api.games import ok; CardDatabase=545; Schema cards=74; runner built.
 Isolated copy: api.games import ok; build_simulator(players="mcts", interpreter="schema") passed.
+Vercel-root contents copy: api.games import ok; battle_app.runtime_document import ok; build_simulator(players="mcts", interpreter="schema") passed.
+Local HTTP smoke: GET /api/games and POST /api/games returned ok with a game_id.
 python3 -m unittest battle_app.tests.test_local_multiroom battle_app.tests.test_runtime_document battle_app.tests.test_api_games battle_app.tests.test_mongo_storage battle_app.tests.test_env
 ```
 
 Deferred:
 
-- `vercel build`, preview deploy, and production smoke require linked Vercel project settings plus production `MONGODB_URI`.
+- `vercel build`, preview deploy, and production smoke require Vercel CLI plus linked Vercel project settings and production `MONGODB_URI`.

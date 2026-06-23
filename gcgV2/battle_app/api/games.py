@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sys
+import types
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -13,6 +14,10 @@ GCGV2_ROOT = BATTLE_APP_ROOT
 for path in (BATTLE_APP_ROOT, BATTLE_APP_ROOT.parent):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
+if "battle_app" not in sys.modules:
+    package = types.ModuleType("battle_app")
+    package.__path__ = [str(BATTLE_APP_ROOT)]
+    sys.modules["battle_app"] = package
 
 from battle_app.runtime_document import MongoBattleService, card_detail  # noqa: E402
 from battle_app.storage import MissingMongoUri, MongoGameStore  # noqa: E402
