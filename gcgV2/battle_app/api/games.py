@@ -16,6 +16,7 @@ for path in (BATTLE_APP_ROOT, BATTLE_APP_ROOT.parent):
         sys.path.insert(0, str(path))
 if "battle_app" not in sys.modules:
     package = types.ModuleType("battle_app")
+    package.__package__ = "battle_app"
     package.__path__ = [str(BATTLE_APP_ROOT)]
     sys.modules["battle_app"] = package
 

@@ -250,6 +250,7 @@ for _p in (BATTLE_APP_ROOT, BATTLE_APP_ROOT.parent):
 # 需要將目前 root 註冊成 battle_app package，令 battle_app.* imports 成立。
 if "battle_app" not in sys.modules:
     package = types.ModuleType("battle_app")
+    package.__package__ = "battle_app"
     package.__path__ = [str(BATTLE_APP_ROOT)]
     sys.modules["battle_app"] = package
 ```
@@ -276,6 +277,7 @@ for _p in (BATTLE_APP_ROOT, BATTLE_APP_ROOT.parent):
         sys.path.insert(0, str(_p))
 if "battle_app" not in sys.modules:
     package = types.ModuleType("battle_app")
+    package.__package__ = "battle_app"
     package.__path__ = [str(BATTLE_APP_ROOT)]
     sys.modules["battle_app"] = package
 ```
@@ -697,7 +699,7 @@ Implemented:
 - Copied runtime dependencies into `battle_app/`: `gcg/`, `reviewboard/humanVsAI/`, `card/`, `manifests/`, `schemas/`, `knowledge/`, and `scenarios/manual/`.
 - Replaced schema symlinks with real YAML copies.
 - Updated standalone path roots in `battle_app/gcg/config.py`, `battle_app/server.py`, `battle_app/api/games.py`, `battle_app/scenarios.py`, and `battle_app/env.py`.
-- Added a lightweight package alias in `battle_app/server.py` and `battle_app/api/games.py` so `battle_app.*` imports work when Vercel deploys the contents of `battle_app/` as the project root.
+- Added a lightweight package alias in `battle_app/server.py` and `battle_app/api/games.py` so `battle_app.*` imports work when Vercel deploys the contents of `battle_app/` as the project root; the alias sets `__package__` and `__path__`.
 - Added Vercel deployment hygiene: `battle_app/.vercelignore`, `battle_app/pyproject.toml`, and `vercel.json` `excludeFiles`.
 - Kept Hermes local-only; production target remains MCTS+schema through Vercel env vars.
 
