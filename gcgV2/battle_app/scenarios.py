@@ -12,7 +12,7 @@ from gcg import config
 
 
 BATTLE_APP_ROOT = Path(__file__).resolve().parent
-GCGV2_ROOT = BATTLE_APP_ROOT.parent
+GCGV2_ROOT = BATTLE_APP_ROOT
 DEFAULT_SCENARIO_ROOT = GCGV2_ROOT / "scenarios" / "manual"
 _SCENARIO_INDEX_CACHE = {}
 logger = logging.getLogger(__name__)

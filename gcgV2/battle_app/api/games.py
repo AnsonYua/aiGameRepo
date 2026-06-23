@@ -9,8 +9,8 @@ from urllib.parse import parse_qs, urlparse
 
 API_DIR = Path(__file__).resolve().parent
 BATTLE_APP_ROOT = API_DIR.parent
-GCGV2_ROOT = BATTLE_APP_ROOT.parent
-for path in (GCGV2_ROOT, BATTLE_APP_ROOT):
+GCGV2_ROOT = BATTLE_APP_ROOT
+for path in (BATTLE_APP_ROOT, BATTLE_APP_ROOT.parent):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 

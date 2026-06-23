@@ -1,0 +1,551 @@
+schema_version: "0.1-draft"
+source_file: "../gcg_card_effects_by_package/st02_card_effects.json"
+package:
+  code: ST02
+  name: "Wings of Advance [ST02]"
+notes:
+  - "本檔係按 CARD_EFFECT_STRUCTURE_DESIGN.md 人手轉寫的草案。"
+  - "正常使用費用放在 play_cost；EffectClause.cost 只放啟動能力或額外費用。"
+  - "未有卡面效果的卡，effects 使用空陣列。"
+  - "【機師】指定先以 pilot_requirement 表示，之後可再納入正式 schema vocabulary。"
+  - "牌庫頂操作、防止護盾傷害、戰鬥破壞後觸發屬於需 engine 後續實作的高階 primitive。"
+
+cards:
+  - card_id: ST02-001
+    name: 飛翼高達
+    card_type: UNIT
+    level: 6
+    play_cost: 4
+    color: Green
+    terrain: [宇宙, 地球]
+    traits: [流星作戰]
+    resonance: 希洛・唯
+    base_ap: 4
+    base_hp: 5
+    raw_effect: "《突破5》（當透過攻擊破壞對方的機體時，給予該方護盾區最前方的1張卡牌指定數值的傷害）\n此機體可以選擇對方活躍狀態且等級不高於Lv.4的機體作為攻擊對象。"
+    keywords:
+      - keyword: BREACH
+        value: 5
+    effects:
+      - kind: continuous
+        condition: none
+        target:
+          scope: source
+        modifiers:
+          - allow_attack_active:
+              attack_target_filter:
+                controller: opponent
+                card_type: unit
+                status: active
+                comparisons:
+                  - field: level
+                    op: lte
+                    value: 4
+        duration: while_source_in_play
+
+  - card_id: ST02-002
+    name: 飛翼高達（鳥型型態）
+    card_type: UNIT
+    level: 3
+    play_cost: 3
+    color: Green
+    terrain: [宇宙, 地球]
+    traits: [流星作戰]
+    resonance: 希洛・唯
+    base_ap: 2
+    base_hp: 2
+    raw_effect: "【配置時】我方放置1張EX能源。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: ENTERS_PLAY
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: add_extra_energy
+              amount: 1
+
+  - card_id: ST02-003
+    name: 重砲手高達
+    card_type: UNIT
+    level: 5
+    play_cost: 3
+    color: Green
+    terrain: [地球]
+    traits: [流星作戰]
+    resonance: 特洛瓦・巴頓
+    base_ap: 3
+    base_hp: 4
+    raw_effect: "【搭乘中】我方的回合中，當此機體透過戰鬥傷害破壞對方的機體時，給予對方所有等級不高於Lv.3的機體1點傷害。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: ON_BATTLE_DESTROY
+        optional: false
+        cost: none
+        condition:
+          all_of:
+            - type: source_is_paired
+            - type: turn_side_is
+              side: self
+            - type: destroyed_unit_controller_is
+              controller: opponent
+            - type: event_source_is
+              source: this_unit
+        target:
+          name: enemy_low_level_units
+          scope: opponent_all_unit
+          comparisons:
+            - field: level
+              op: lte
+              value: 3
+        resolution:
+          type: simple
+          actions:
+            - action: damage
+              target: $enemy_low_level_units
+              amount: 1
+
+  - card_id: ST02-004
+    name: 沙漠高達
+    card_type: UNIT
+    level: 4
+    play_cost: 2
+    color: Green
+    terrain: [地球]
+    traits: [流星作戰]
+    resonance: 卡特爾・拉巴伯・溫拿
+    base_ap: 4
+    base_hp: 3
+    raw_effect: "-"
+    keywords: []
+    effects: []
+
+  - card_id: ST02-005
+    name: 馬格亞那克
+    card_type: UNIT
+    level: 2
+    play_cost: 2
+    color: Green
+    terrain: [宇宙, 地球]
+    traits: [馬格亞那克隊]
+    resonance: null
+    base_ap: 3
+    base_hp: 2
+    raw_effect: "-"
+    keywords: []
+    effects: []
+
+  - card_id: ST02-006
+    name: 托爾吉斯
+    card_type: UNIT
+    level: 5
+    play_cost: 4
+    color: Blue
+    terrain: [宇宙, 地球]
+    traits: [OZ]
+    resonance: 傑克斯・馬吉斯
+    base_ap: 4
+    base_hp: 4
+    raw_effect: "【啟動·主要】【每回合1次】④：將此機體轉為活躍狀態。"
+    keywords: []
+    effects:
+      - kind: activated
+        timing: MAIN
+        frequency: once_per_turn
+        cost:
+          - type: pay_resource
+            amount: 4
+            allowed_resource_types: [basic, ex]
+        resolution:
+          type: simple
+          actions:
+            - action: set_active
+              target: source
+
+  - card_id: ST02-007
+    name: 里歐
+    card_type: UNIT
+    level: 2
+    play_cost: 2
+    color: Blue
+    terrain: [宇宙, 地球]
+    traits: [OZ]
+    resonance: null
+    base_ap: 2
+    base_hp: 2
+    raw_effect: "-"
+    keywords: []
+    effects: []
+
+  - card_id: ST02-008
+    name: 艾亞利茲
+    card_type: UNIT
+    level: 2
+    play_cost: 2
+    color: Blue
+    terrain: [地球]
+    traits: [OZ]
+    resonance: null
+    base_ap: 2
+    base_hp: 1
+    raw_effect: "《阻擋者》（可轉換為休息狀態並將攻擊對象改為此機體）"
+    keywords:
+      - keyword: BLOCKER
+    effects: []
+
+  - card_id: ST02-009
+    name: 特拉哥斯
+    card_type: UNIT
+    level: 1
+    play_cost: 1
+    color: Blue
+    terrain: [地球]
+    traits: [OZ]
+    resonance: null
+    base_ap: 1
+    base_hp: 1
+    raw_effect: "《阻擋者》（可轉換為休息狀態並將攻擊對象改為此機體）"
+    keywords:
+      - keyword: BLOCKER
+    effects: []
+
+  - card_id: ST02-010
+    name: 希洛・唯
+    card_type: PILOT
+    level: 4
+    play_cost: 1
+    color: Green
+    terrain: []
+    traits: [流星作戰]
+    resonance: null
+    base_ap: "+2"
+    base_hp: "+1"
+    raw_effect: "【爆發】此卡牌加入手牌。\n【共鳴中】此機體的AP+1、HP+1。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: add_to_hand
+              target: source
+              visibility:
+                reveal_to: all_players
+                reason: burst
+      - kind: continuous
+        condition:
+          type: resonance_active
+        target:
+          scope: paired_unit
+        modifiers:
+          - stat: AP
+            amount: 1
+          - stat: HP
+            amount: 1
+        duration: while_condition_true
+
+  - card_id: ST02-011
+    name: 傑克斯・馬吉斯
+    card_type: PILOT
+    level: 5
+    play_cost: 1
+    color: Blue
+    terrain: []
+    traits: [OZ]
+    resonance: null
+    base_ap: "+2"
+    base_hp: "+1"
+    raw_effect: "【爆發】此卡牌加入手牌。\n【共鳴中】我方的回合中，當此機體透過戰鬥傷害破壞對方的機體時，我方抽取1張卡牌。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: add_to_hand
+              target: source
+              visibility:
+                reveal_to: all_players
+                reason: burst
+      - kind: continuous
+        condition:
+          all_of:
+            - type: resonance_active
+            - type: turn_side_is
+              side: self
+        target:
+          scope: paired_unit
+        modifiers:
+          - type: grant_triggered_effect
+            granted_effect:
+              kind: triggered
+              timing: ON_BATTLE_DESTROY
+              optional: false
+              cost: none
+              condition:
+                all_of:
+                  - type: destroyed_unit_controller_is
+                    controller: opponent
+                  - type: event_source_is
+                    source: this_unit
+              resolution:
+                type: simple
+                actions:
+                  - action: draw
+                    amount: 1
+        duration: while_condition_true
+
+  - card_id: ST02-012
+    name: 全彈發射
+    card_type: COMMAND
+    level: 4
+    play_cost: 1
+    color: Green
+    terrain: []
+    traits: [流星作戰]
+    resonance: null
+    base_ap: "+1"
+    base_hp: "+1"
+    pilot_requirement: 特洛瓦・巴頓
+    raw_effect: "【主要】選擇我方的1張機體。本回合中，其獲得《突破3》效果。\n（當透過攻擊破壞對方的機體時，給予該方護盾區最前方的1張卡牌指定數值的傷害）\n【機師】「特洛瓦・巴頓」"
+    keywords: []
+    effects:
+      - kind: activated
+        timing: MAIN
+        cost: none
+        target:
+          controller: self
+          card_type: unit
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: grant_keyword
+              target: chosen
+              keyword: BREACH
+              value: 3
+              duration: this_turn
+
+  - card_id: ST02-013
+    name: 溫和的音色
+    card_type: COMMAND
+    level: 4
+    play_cost: 1
+    color: Green
+    terrain: []
+    traits: [流星作戰]
+    resonance: null
+    base_ap: "+1"
+    base_hp: "+1"
+    pilot_requirement: 卡特爾・拉巴伯・溫拿
+    raw_effect: "【瞬動】本次戰鬥中，我方護盾區中的卡牌，不會受到來自對方等級不高於Lv.4的機體的傷害。\n【機師】「卡特爾・拉巴伯・溫拿」"
+    keywords: []
+    effects:
+      - kind: activated
+        timing: ACTION
+        cost: none
+        target:
+          name: own_shields
+          controller: self
+          card_type: shield
+          zone: shield_area
+        resolution:
+          type: simple
+          actions:
+            - action: grant_damage_prevention
+              target: $own_shields
+              source_filter:
+                controller: opponent
+                card_type: unit
+                comparisons:
+                  - field: level
+                    op: lte
+                    value: 4
+              duration: this_battle
+
+  - card_id: ST02-014
+    name: 包圍戰術
+    card_type: COMMAND
+    level: 3
+    play_cost: 1
+    color: Blue
+    terrain: []
+    traits: []
+    resonance: null
+    base_ap: null
+    base_hp: null
+    raw_effect: "【爆發】發動此卡牌的【主要】效果。\n【主要】/【瞬動】選擇對方1張HP不高於5的機體。將其轉為休息狀態。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: execute_own_effect
+              timing: MAIN
+      - kind: activated
+        timing: [MAIN, ACTION]
+        cost: none
+        target:
+          controller: opponent
+          card_type: unit
+          comparisons:
+            - field: hp
+              op: lte
+              value: 5
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: rest
+              target: chosen
+
+  - card_id: ST02-015
+    name: 聖加百列學園
+    card_type: BASE
+    level: 2
+    play_cost: 2
+    color: Green
+    terrain: [地球]
+    traits: [學園, 據點]
+    resonance: null
+    base_ap: null
+    base_hp: 5
+    raw_effect: "【爆發】配置此卡牌。\n【配置時】將我方的1張護盾加入手牌。此後，確認我方卡組最上方的2張卡牌，將其中的1張卡牌放回卡組最上方。剩餘的卡牌放回卡組最下方。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: deploy
+              target: source
+      - kind: triggered
+        timing: ENTERS_PLAY
+        optional: false
+        cost: none
+        resolution:
+          type: sequence
+          steps:
+            - actions:
+                - action: add_shield_to_hand
+            - actions:
+                - action: scry_top_deck
+                  amount: 2
+                  keep: 1
+                  remainder: bottom
+
+  - card_id: ST02-016
+    name: 科西嘉基地
+    card_type: BASE
+    level: 3
+    play_cost: 3
+    color: Blue
+    terrain: [地球]
+    traits: [OZ, 據點]
+    resonance: null
+    base_ap: null
+    base_hp: 5
+    raw_effect: "【爆發】配置此卡牌。\n【配置時】將我方的1張護盾加入手牌。此後，若是我方的回合，則配置1張「托爾吉斯」（〔OZ〕・AP4・HP2）的機體替代卡。在我方的回合，若我方廢棄區中有卡牌名稱中包含「科西嘉基地」的卡牌，則改為配置2張「里歐」（〔OZ〕・AP1・HP1）的機體替代卡。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: deploy
+              target: source
+      - kind: triggered
+        timing: ENTERS_PLAY
+        optional: false
+        cost: none
+        resolution:
+          type: sequence
+          steps:
+            - actions:
+                - action: add_shield_to_hand
+            - resolution:
+                type: conditional_chain
+                exclusive: true
+                branches:
+                  - condition:
+                      all_of:
+                        - type: turn_side_is
+                          side: self
+                        - type: trash_card_name_contains
+                          controller: self
+                          value: 科西嘉基地
+                    actions:
+                      - action: deploy_token
+                        token:
+                          card_id: T-004
+                          name: 里歐
+                          card_type: unit
+                          traits: [OZ]
+                          base_ap: 1
+                          base_hp: 1
+                          keywords: []
+                          count: 2
+                  - condition:
+                      type: turn_side_is
+                      side: self
+                    actions:
+                      - action: deploy_token
+                        token:
+                          card_id: T-005
+                          name: 托爾吉斯
+                          card_type: unit
+                          traits: [OZ]
+                          base_ap: 4
+                          base_hp: 2
+                          keywords: []
+
+  - card_id: T-004
+    name: 里歐
+    card_type: UNIT
+    token: true
+    level: null
+    play_cost: null
+    color: null
+    terrain: []
+    traits: [OZ]
+    resonance: null
+    base_ap: 1
+    base_hp: 1
+    raw_effect: "-"
+    keywords: []
+    effects: []
+
+  - card_id: T-005
+    name: 托爾吉斯
+    card_type: UNIT
+    token: true
+    level: null
+    play_cost: null
+    color: null
+    terrain: []
+    traits: [OZ]
+    resonance: null
+    base_ap: 4
+    base_hp: 2
+    raw_effect: "-"
+    keywords: []
+    effects: []

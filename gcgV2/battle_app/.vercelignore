@@ -1,0 +1,8 @@
+tests/
+**/__pycache__/
+**/*.pyc
+.understand-anything/
+out/
+.env
+.env.local
+.DS_Store

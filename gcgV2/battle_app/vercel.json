@@ -3,7 +3,8 @@
   "outputDirectory": "public",
   "functions": {
     "api/games.py": {
-      "maxDuration": 300
+      "maxDuration": 300,
+      "excludeFiles": "{tests/**,**/__pycache__/**,**/*.pyc,.understand-anything/**,out/**}"
     }
   },
   "rewrites": [

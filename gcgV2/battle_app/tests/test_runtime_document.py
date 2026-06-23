@@ -85,6 +85,7 @@ class RuntimeDocumentTest(unittest.TestCase):
 
         self.assertEqual(detail["id"], "ST01-008")
         self.assertTrue(detail["name"])
+        self.assertIn("keywords", detail)
         self.assertIn("descriptions", detail)
 
     def test_waiting_ai_only_pass_auto_passes_without_calling_player(self):

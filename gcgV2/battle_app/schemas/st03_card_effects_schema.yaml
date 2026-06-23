@@ -1,0 +1,552 @@
+schema_version: "0.1-draft"
+source_file: "../gcg_card_effects_by_package/st03_card_effects.json"
+package:
+  code: ST03
+  name: "Zeon's Rush [ST03]"
+notes:
+  - "本檔係按 CARD_EFFECT_STRUCTURE_DESIGN.md 人手轉寫的草案。"
+  - "正常使用費用放在 play_cost；EffectClause.cost 只放啟動能力或額外費用。"
+  - "未有卡面效果的卡，effects 使用空陣列。"
+  - "【機師】指定先以 pilot_requirement 表示，之後可再納入正式 schema vocabulary。"
+  - "《支援N》屬於 intrinsic keyword ability，只放 keywords，不重複展開成 effects。"
+  - "卡牌文字中的「此機體」用 event_source_is.source: this_unit 表示。"
+
+cards:
+  - card_id: ST03-001
+    name: 新安州
+    card_type: UNIT
+    level: 6
+    play_cost: 5
+    color: Red
+    terrain: [宇宙, 地球]
+    traits: [新吉翁]
+    resonance: 弗爾・伏朗托
+    base_ap: 5
+    base_hp: 4
+    raw_effect: "【搭乘中】此機體獲得《高機動》效果。\n（此機體不會被阻擋）\n我方的回合中，當此機體透過戰鬥傷害破壞對方護盾區中的卡牌時，選擇對方的1張機體。給予其2點傷害。"
+    keywords: []
+    effects:
+      - kind: continuous
+        condition:
+          type: source_is_paired
+        target:
+          scope: source
+        modifiers:
+          - grant_keyword: HIGH_MOBILITY
+        duration: while_condition_true
+      - kind: triggered
+        timing: ON_SHIELD_BREAK
+        optional: false
+        cost: none
+        condition:
+          all_of:
+            - type: turn_side_is
+              side: self
+            - type: event_source_is
+              source: this_unit
+        target:
+          controller: opponent
+          card_type: unit
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: damage
+              target: chosen
+              amount: 2
+
+  - card_id: ST03-002
+    name: 吉拉・祖魯（安傑羅・梭斐專用機）
+    card_type: UNIT
+    level: 4
+    play_cost: 3
+    color: Red
+    terrain: [宇宙, 地球]
+    traits: [新吉翁]
+    resonance: 安傑羅・梭斐
+    base_ap: 3
+    base_hp: 3
+    raw_effect: "【啟動·主要】《支援2》（可轉為休息狀態，且本回合中，使另1張友方機體的AP+指定數值）"
+    keywords:
+      - keyword: SUPPORT
+        value: 2
+    effects: []
+
+  - card_id: ST03-003
+    name: 吉拉・祖魯
+    card_type: UNIT
+    level: 3
+    play_cost: 2
+    color: Red
+    terrain: [宇宙, 地球]
+    traits: [新吉翁]
+    resonance: null
+    base_ap: 3
+    base_hp: 2
+    raw_effect: "-"
+    keywords: []
+    effects: []
+
+  - card_id: ST03-004
+    name: 卡薩D（帶袖的規格）
+    card_type: UNIT
+    level: 2
+    play_cost: 2
+    color: Red
+    terrain: [宇宙, 地球]
+    traits: [新吉翁]
+    resonance: null
+    base_ap: 2
+    base_hp: 1
+    raw_effect: "【啟動·主要】《支援2》（可轉為休息狀態，且本回合中，使另1張友方機體的AP+指定數值）"
+    keywords:
+      - keyword: SUPPORT
+        value: 2
+    effects: []
+
+  - card_id: ST03-005
+    name: 特拉傑（帶袖的規格）
+    card_type: UNIT
+    level: 1
+    play_cost: 1
+    color: Red
+    terrain: [宇宙]
+    traits: [新吉翁]
+    resonance: null
+    base_ap: 1
+    base_hp: 2
+    raw_effect: "-"
+    keywords: []
+    effects: []
+
+  - card_id: ST03-006
+    name: 夏亞專用薩克Ⅱ
+    card_type: UNIT
+    level: 3
+    play_cost: 2
+    color: Green
+    terrain: [宇宙, 地球]
+    traits: [吉翁]
+    resonance: 夏亞・阿茲那布爾
+    base_ap: 3
+    base_hp: 2
+    raw_effect: "【破壞時】確認我方卡組最上方的3張卡牌，可以公開其中1張〔吉翁〕/〔新吉翁〕的機體卡牌並加入手牌。剩餘的卡牌隨機放回卡組最下方。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: DESTROYED
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: select_from_top_deck
+              amount: 3
+              optional: true
+              reveal: true
+              visibility:
+                reveal_to: all_players
+                reason: revealed_by_effect
+              filter:
+                card_type: unit
+                trait_any: [吉翁, 新吉翁]
+              count: 1
+              to: hand
+              remainder: random_bottom
+
+  - card_id: ST03-007
+    name: 薩克Ⅰ
+    card_type: UNIT
+    level: 1
+    play_cost: 1
+    color: Green
+    terrain: [宇宙, 地球]
+    traits: [吉翁]
+    resonance: null
+    base_ap: 1
+    base_hp: 2
+    raw_effect: "-"
+    keywords: []
+    effects: []
+
+  - card_id: ST03-008
+    name: 薩克Ⅱ
+    card_type: UNIT
+    level: 2
+    play_cost: 1
+    color: Green
+    terrain: [宇宙, 地球]
+    traits: [吉翁]
+    resonance: null
+    base_ap: 1
+    base_hp: 2
+    raw_effect: "【攻擊時】本回合中，此機體的AP+2。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: ON_ATTACK
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: modify_ap
+              target: source
+              amount: 2
+              duration: this_turn
+
+  - card_id: ST03-009
+    name: 古夫
+    card_type: UNIT
+    level: 3
+    play_cost: 3
+    color: Green
+    terrain: [地球]
+    traits: [吉翁]
+    resonance: 蘭巴・拉爾
+    base_ap: 2
+    base_hp: 3
+    raw_effect: "【配置時】配置1張休息狀態的「薩克Ⅱ」（〔吉翁〕・AP1・HP1）的機體替代卡。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: ENTERS_PLAY
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: deploy_token
+              token:
+                card_id: T-007
+                name: 薩克Ⅱ
+                card_type: unit
+                traits: [吉翁]
+                base_ap: 1
+                base_hp: 1
+                keywords: []
+                rested: true
+
+  - card_id: ST03-010
+    name: 弗爾・伏朗托
+    card_type: PILOT
+    level: 6
+    play_cost: 1
+    color: Red
+    terrain: []
+    traits: [新吉翁, 強化人]
+    resonance: null
+    base_ap: "+2"
+    base_hp: "+2"
+    raw_effect: "【爆發】此卡牌加入手牌。\n【搭乘時】可以配置我方手牌中1張等級不高於Lv.4的〔新吉翁〕/〔吉翁〕的機體卡牌。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: add_to_hand
+              target: source
+              visibility:
+                reveal_to: all_players
+                reason: burst
+      - kind: triggered
+        timing: PAIRING_COMPLETE
+        optional: true
+        cost: none
+        target:
+          controller: self
+          zone: hand
+          card_type: unit
+          extra_filters:
+            trait_any: [新吉翁, 吉翁]
+          comparisons:
+            - field: level
+              op: lte
+              value: 4
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: deploy
+              target: chosen
+
+  - card_id: ST03-011
+    name: 夏亞・阿茲那布爾
+    card_type: PILOT
+    level: 3
+    play_cost: 1
+    color: Green
+    terrain: []
+    traits: [吉翁, 新人類]
+    resonance: null
+    base_ap: "+1"
+    base_hp: "+1"
+    raw_effect: "【爆發】此卡牌加入手牌。\n【攻擊時】本回合中，此機體的AP+1，且若此機體為共鳴機體，則此機體獲得《高機動》效果。\n（此機體不會被阻擋）"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: add_to_hand
+              target: source
+              visibility:
+                reveal_to: all_players
+                reason: burst
+      - kind: triggered
+        timing: ON_ATTACK
+        optional: false
+        cost: none
+        condition:
+          type: event_source_is
+          source: this_unit
+        resolution:
+          type: sequence
+          steps:
+            - actions:
+                - action: modify_ap
+                  target: this_unit
+                  amount: 1
+                  duration: this_turn
+            - condition:
+                type: resonance_active
+              actions:
+                - action: grant_keyword
+                  target: this_unit
+                  keyword: HIGH_MOBILITY
+                  duration: this_turn
+
+  - card_id: ST03-012
+    name: 激昂
+    card_type: COMMAND
+    level: 2
+    play_cost: 1
+    color: Red
+    terrain: []
+    traits: [新吉翁]
+    resonance: null
+    base_ap: "+1"
+    base_hp: "+0"
+    pilot_requirement: 安傑羅・梭斐
+    raw_effect: "【主要】/【瞬動】選擇友方的1張機體。本回合中，使其AP+2。\n【機師】「安傑羅・梭斐」"
+    keywords: []
+    effects:
+      - kind: activated
+        timing: [MAIN, ACTION]
+        cost: none
+        target:
+          controller: self
+          card_type: unit
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: modify_ap
+              target: chosen
+              amount: 2
+              duration: this_turn
+
+  - card_id: ST03-013
+    name: 格鬥戰
+    card_type: COMMAND
+    level: 2
+    play_cost: 2
+    color: Red
+    terrain: []
+    traits: []
+    resonance: null
+    base_ap: null
+    base_hp: null
+    raw_effect: "【爆發】發動此卡牌的【主要】效果。\n【主要】/【瞬動】選擇對方的1張機體。給予其2點傷害。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: execute_own_effect
+              timing: MAIN
+      - kind: activated
+        timing: [MAIN, ACTION]
+        cost: none
+        target:
+          controller: opponent
+          card_type: unit
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: damage
+              target: chosen
+              amount: 2
+
+  - card_id: ST03-014
+    name: 青色巨星
+    card_type: COMMAND
+    level: 4
+    play_cost: 1
+    color: Green
+    terrain: []
+    traits: [吉翁]
+    resonance: null
+    base_ap: "+1"
+    base_hp: "+1"
+    pilot_requirement: 蘭巴・拉爾
+    raw_effect: "【瞬動】選擇友方的1張機體。本次戰鬥中，其不會受到來自對方AP不高於2的機體的戰鬥傷害。\n【機師】「蘭巴・拉爾」"
+    keywords: []
+    effects:
+      - kind: activated
+        timing: ACTION
+        cost: none
+        target:
+          controller: self
+          card_type: unit
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: grant_damage_prevention
+              target: chosen
+              damage_type: battle
+              source_filter:
+                controller: opponent
+                card_type: unit
+                comparisons:
+                  - field: ap
+                    op: lte
+                    value: 2
+              duration: this_battle
+
+  - card_id: ST03-015
+    name: 雷烏路拉
+    card_type: BASE
+    level: 3
+    play_cost: 2
+    color: Red
+    terrain: [宇宙]
+    traits: [新吉翁, 艦船]
+    resonance: null
+    base_ap: null
+    base_hp: 5
+    raw_effect: "【爆發】配置此卡牌。\n【配置時】將我方的1張護盾加入手牌。此後，選擇對方1張AP不高於5的機體。給予其1點傷害。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: deploy
+              target: source
+      - kind: triggered
+        timing: ENTERS_PLAY
+        optional: false
+        cost: none
+        target:
+          controller: opponent
+          card_type: unit
+          comparisons:
+            - field: ap
+              op: lte
+              value: 5
+          count: 1
+        resolution:
+          type: sequence
+          steps:
+            - actions:
+                - action: add_shield_to_hand
+            - actions:
+                - action: damage
+                  target: chosen
+                  amount: 1
+
+  - card_id: ST03-016
+    name: 法爾梅爾
+    card_type: BASE
+    level: 3
+    play_cost: 2
+    color: Green
+    terrain: [宇宙]
+    traits: [吉翁, 艦船]
+    resonance: null
+    base_ap: null
+    base_hp: 5
+    raw_effect: "【爆發】配置此卡牌。\n【配置時】將我方的1張護盾加入手牌。此後，若是我方的回合，則配置1張休息狀態的「夏亞專用薩克Ⅱ」（〔吉翁〕・AP3・HP1）的機體替代卡。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: deploy
+              target: source
+      - kind: triggered
+        timing: ENTERS_PLAY
+        optional: false
+        cost: none
+        resolution:
+          type: sequence
+          steps:
+            - actions:
+                - action: add_shield_to_hand
+            - condition:
+                type: turn_side_is
+                side: self
+              actions:
+                - action: deploy_token
+                  token:
+                    card_id: T-006
+                    name: 夏亞專用薩克Ⅱ
+                    card_type: unit
+                    traits: [吉翁]
+                    base_ap: 3
+                    base_hp: 1
+                    keywords: []
+                    rested: true
+
+  - card_id: T-006
+    name: 夏亞專用薩克Ⅱ
+    card_type: UNIT
+    token: true
+    level: null
+    play_cost: null
+    color: null
+    terrain: []
+    traits: [吉翁]
+    resonance: null
+    base_ap: 3
+    base_hp: 1
+    raw_effect: "-"
+    keywords: []
+    effects: []
+
+  - card_id: T-007
+    name: 薩克Ⅱ
+    card_type: UNIT
+    token: true
+    level: null
+    play_cost: null
+    color: null
+    terrain: []
+    traits: [吉翁]
+    resonance: null
+    base_ap: 1
+    base_hp: 1
+    raw_effect: "-"
+    keywords: []
+    effects: []

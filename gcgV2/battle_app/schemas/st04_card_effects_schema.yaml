@@ -1,0 +1,613 @@
+schema_version: "0.1-draft"
+source_file: "../gcg_card_effects_by_package/st04_card_effects.json"
+package:
+  code: ST04
+  name: "SEED Strike [ST04]"
+notes:
+  - "本檔係按 CARD_EFFECT_STRUCTURE_DESIGN.md 人手轉寫的草案。"
+  - "正常使用費用放在 play_cost；EffectClause.cost 只放啟動能力或額外費用。"
+  - "未有卡面效果的卡，effects 使用空陣列。"
+  - "【機師】指定先以 pilot_requirement 表示，之後可再納入正式 schema vocabulary。"
+  - "BLOCKER / BREACH 屬於 intrinsic keyword ability，只放 keywords，不重複展開成 effects。"
+  - "卡牌文字中的「此機體」用 event_source_is.source: this_unit 或 action target: this_unit 表示。"
+
+cards:
+  - card_id: ST04-001
+    name: 機動型突擊高達
+    card_type: UNIT
+    level: 5
+    play_cost: 4
+    color: White
+    terrain: [宇宙, 地球]
+    traits: [地球聯合]
+    resonance: 基拉・大和
+    base_ap: 4
+    base_hp: 4
+    raw_effect: "《阻擋者》（可轉換為休息狀態並將攻擊對象改為此機體）\n【搭乘時·等級為Lv.4或更高的機師】選擇對方1張HP不高於4的機體。將其放回到持有者的手牌中。"
+    keywords:
+      - keyword: BLOCKER
+    effects:
+      - kind: triggered
+        timing: PAIRING_COMPLETE
+        optional: false
+        cost: none
+        condition:
+          type: pilot_level
+          op: gte
+          value: 4
+        target:
+          controller: opponent
+          card_type: unit
+          comparisons:
+            - field: hp
+              op: lte
+              value: 4
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: return_to_hand
+              target: chosen
+
+  - card_id: ST04-002
+    name: 突擊高達
+    card_type: UNIT
+    level: 4
+    play_cost: 2
+    color: White
+    terrain: [宇宙, 地球]
+    traits: [地球聯合]
+    resonance: 基拉・大和
+    base_ap: 3
+    base_hp: 3
+    raw_effect: "【配置時】我方抽取1張卡牌。此後，丟棄我方的1張手牌。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: ENTERS_PLAY
+        optional: false
+        cost: none
+        resolution:
+          type: sequence
+          steps:
+            - actions:
+                - action: draw
+                  amount: 1
+            - actions:
+                - action: discard
+                  amount: 1
+
+  - card_id: ST04-003
+    name: 梅比烏斯零式
+    card_type: UNIT
+    level: 3
+    play_cost: 2
+    color: White
+    terrain: [宇宙]
+    traits: [地球聯合]
+    resonance: 穆・拉・福拉卡
+    base_ap: 2
+    base_hp: 4
+    raw_effect: "-"
+    keywords: []
+    effects: []
+
+  - card_id: ST04-004
+    name: 梅比烏斯
+    card_type: UNIT
+    level: 1
+    play_cost: 1
+    color: White
+    terrain: [宇宙]
+    traits: [地球聯合]
+    resonance: null
+    base_ap: 1
+    base_hp: 1
+    raw_effect: "《阻擋者》（可轉換為休息狀態並將攻擊對象改為此機體）"
+    keywords:
+      - keyword: BLOCKER
+    effects: []
+
+  - card_id: ST04-005
+    name: 突擊達加
+    card_type: UNIT
+    level: 2
+    play_cost: 2
+    color: White
+    terrain: [宇宙, 地球]
+    traits: [地球聯合]
+    resonance: null
+    base_ap: 3
+    base_hp: 2
+    raw_effect: "-"
+    keywords: []
+    effects: []
+
+  - card_id: ST04-006
+    name: 神盾高達
+    card_type: UNIT
+    level: 4
+    play_cost: 3
+    color: Red
+    terrain: [宇宙, 地球]
+    traits: [札夫特]
+    resonance: 阿斯蘭・薩拉
+    base_ap: 4
+    base_hp: 3
+    raw_effect: "【攻擊時】若此機體的AP為5或更高，則選擇對方1張等級為Lv.5或更高的機體。給予其3點傷害。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: ON_ATTACK
+        optional: false
+        cost: none
+        condition:
+          type: source_ap
+          op: gte
+          value: 5
+        target:
+          controller: opponent
+          card_type: unit
+          comparisons:
+            - field: level
+              op: gte
+              value: 5
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: damage
+              target: chosen
+              amount: 3
+
+  - card_id: ST04-007
+    name: 神盾高達（MA型態）
+    card_type: UNIT
+    level: 4
+    play_cost: 3
+    color: Red
+    terrain: [宇宙, 地球]
+    traits: [札夫特]
+    resonance: 阿斯蘭・薩拉
+    base_ap: 3
+    base_hp: 4
+    raw_effect: "《突破3》（當透過攻擊破壞對方的機體時，給予該方護盾區最前方的1張卡牌指定數值的傷害）"
+    keywords:
+      - keyword: BREACH
+        value: 3
+    effects: []
+
+  - card_id: ST04-008
+    name: 基恩
+    card_type: UNIT
+    level: 2
+    play_cost: 1
+    color: Red
+    terrain: [宇宙, 地球]
+    traits: [札夫特]
+    resonance: null
+    base_ap: 2
+    base_hp: 2
+    raw_effect: "-"
+    keywords: []
+    effects: []
+
+  - card_id: ST04-009
+    name: 基恩（米蓋爾・艾曼專用機）
+    card_type: UNIT
+    level: 2
+    play_cost: 2
+    color: Red
+    terrain: [宇宙, 地球]
+    traits: [札夫特]
+    resonance: 米蓋爾・艾曼
+    base_ap: 3
+    base_hp: 1
+    raw_effect: "【搭乘中】【破壞時】若我方戰鬥區中存在此機體以外的共鳴機體，則我方抽取1張卡牌。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: DESTROYED
+        optional: false
+        cost: none
+        condition:
+          all_of:
+            - type: source_is_paired
+            - type: another_link_unit_exists
+              controller: self
+              zone: battle_area
+              extra_filters:
+                other_than_source: true
+        resolution:
+          type: simple
+          actions:
+            - action: draw
+              amount: 1
+
+  - card_id: ST04-010
+    name: 基拉・大和
+    card_type: PILOT
+    level: 4
+    play_cost: 1
+    color: White
+    terrain: []
+    traits: [地球聯合, 調整者]
+    resonance: null
+    base_ap: "+2"
+    base_hp: "+1"
+    raw_effect: "【爆發】此卡牌加入手牌。\n【攻擊時】選擇對方的1張機體。本次戰鬥中，使其AP-2。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: add_to_hand
+              target: source
+              visibility:
+                reveal_to: all_players
+                reason: burst
+      - kind: triggered
+        timing: ON_ATTACK
+        optional: false
+        cost: none
+        condition:
+          type: event_source_is
+          source: this_unit
+        target:
+          controller: opponent
+          card_type: unit
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: modify_ap
+              target: chosen
+              amount: -2
+              duration: this_battle
+
+  - card_id: ST04-011
+    name: 阿斯蘭・薩拉
+    card_type: PILOT
+    level: 4
+    play_cost: 1
+    color: Red
+    terrain: []
+    traits: [札夫特, 調整者]
+    resonance: null
+    base_ap: "+1"
+    base_hp: "+2"
+    raw_effect: "【爆發】此卡牌加入手牌。\n【共鳴時】本回合中，此機體可以選擇對方活躍狀態且等級不高於Lv.5的機體作為攻擊對象。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: add_to_hand
+              target: source
+              visibility:
+                reveal_to: all_players
+                reason: burst
+      - kind: triggered
+        timing: ON_RESONANCE
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: allow_attack_active
+              target: this_unit
+              duration: this_turn
+              attack_target_filter:
+                controller: opponent
+                card_type: unit
+                status: active
+                comparisons:
+                  - field: level
+                    op: lte
+                    value: 5
+
+  - card_id: ST04-012
+    name: 突擊背包
+    card_type: COMMAND
+    level: 4
+    play_cost: 2
+    color: White
+    terrain: []
+    traits: []
+    resonance: null
+    base_ap: null
+    base_hp: null
+    raw_effect: "【爆發】若我方戰鬥區中不存在〔地球聯合〕的機體替代卡，則配置1張「機動型突擊高達」（〔地球聯合〕・AP3・HP3・《阻擋者》）的機體替代卡。\n【主要】若我方戰鬥區中不存在〔地球聯合〕的機體替代卡，則配置1張「重劍型突擊高達」（〔地球聯合〕・AP4・HP2・《阻擋者》）或「砲戰型突擊高達」（〔地球聯合〕・AP2・HP4・《阻擋者》）的機體替代卡。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        condition:
+          not:
+            type: board_count
+            controller: self
+            card_type: unit
+            zone: battle_area
+            token: true
+            extra_filters:
+              trait_any: [地球聯合]
+            op: gte
+            value: 1
+        resolution:
+          type: simple
+          actions:
+            - action: deploy_token
+              token:
+                card_id: T-008
+                name: 機動型突擊高達
+                card_type: unit
+                traits: [地球聯合]
+                keywords:
+                  - keyword: BLOCKER
+                base_ap: 3
+                base_hp: 3
+      - kind: activated
+        timing: MAIN
+        cost: none
+        condition:
+          not:
+            type: board_count
+            controller: self
+            card_type: unit
+            zone: battle_area
+            token: true
+            extra_filters:
+              trait_any: [地球聯合]
+            op: gte
+            value: 1
+        resolution:
+          type: simple
+          actions:
+            - action: deploy_token
+              choose: 1
+              choices:
+                - card_id: T-010
+                  name: 重劍型突擊高達
+                  card_type: unit
+                  traits: [地球聯合]
+                  keywords:
+                    - keyword: BLOCKER
+                  base_ap: 4
+                  base_hp: 2
+                - card_id: T-009
+                  name: 砲戰型突擊高達
+                  card_type: unit
+                  traits: [地球聯合]
+                  keywords:
+                    - keyword: BLOCKER
+                  base_ap: 2
+                  base_hp: 4
+
+  - card_id: ST04-013
+    name: 安迪米翁之鷹
+    card_type: COMMAND
+    level: 2
+    play_cost: 1
+    color: White
+    terrain: []
+    traits: [地球聯合]
+    resonance: null
+    base_ap: "+1"
+    base_hp: "+0"
+    pilot_requirement: 穆・拉・福拉卡
+    raw_effect: "【主要】/【瞬動】選擇對方1張HP不高於3的機體。將其放回到持有者的手牌中。\n【機師】「穆・拉・福拉卡」"
+    keywords: []
+    effects:
+      - kind: activated
+        timing: [MAIN, ACTION]
+        cost: none
+        target:
+          controller: opponent
+          card_type: unit
+          comparisons:
+            - field: hp
+              op: lte
+              value: 3
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: return_to_hand
+              target: chosen
+
+  - card_id: ST04-014
+    name: 黃昏的魔彈
+    card_type: COMMAND
+    level: 3
+    play_cost: 1
+    color: Red
+    terrain: []
+    traits: [札夫特, 調整者]
+    resonance: null
+    base_ap: "+0"
+    base_hp: "+1"
+    pilot_requirement: 米蓋爾・艾曼
+    raw_effect: "【主要】/【瞬動】選擇友方1張等級不高於Lv.2的機體。本回合中，使其獲得《先制攻擊》效果。\n（攻擊中的此機體，會比對方優先給予傷害）\n【機師】「米蓋爾・艾曼」"
+    keywords: []
+    effects:
+      - kind: activated
+        timing: [MAIN, ACTION]
+        cost: none
+        target:
+          controller: self
+          card_type: unit
+          comparisons:
+            - field: level
+              op: lte
+              value: 2
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: grant_keyword
+              target: chosen
+              keyword: FIRST_STRIKE
+              duration: this_turn
+
+  - card_id: ST04-015
+    name: 大天使號
+    card_type: BASE
+    level: 3
+    play_cost: 1
+    color: White
+    terrain: [宇宙, 地球]
+    traits: [地球聯合, 艦船]
+    resonance: null
+    base_ap: null
+    base_hp: 5
+    raw_effect: "【爆發】配置此卡牌。\n【配置時】將我方的1張護盾加入手牌。\n【啟動·主要】【每回合1次】②：選擇友方1張擁有《阻擋者》效果的機體。將其轉為活躍狀態，且本回合中，其無法攻擊。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: deploy
+              target: source
+      - kind: triggered
+        timing: ENTERS_PLAY
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: add_shield_to_hand
+      - kind: activated
+        timing: MAIN
+        frequency: once_per_turn
+        cost:
+          - type: pay_resource
+            amount: 2
+            allowed_resource_types: [basic, ex]
+        target:
+          controller: self
+          card_type: unit
+          extra_filters:
+            keyword_has: BLOCKER
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: set_active
+              target: chosen
+            - action: restrict_attack
+              target: chosen
+              cannot_attack: true
+              duration: this_turn
+
+  - card_id: ST04-016
+    name: 維薩里號
+    card_type: BASE
+    level: 3
+    play_cost: 1
+    color: Red
+    terrain: [宇宙]
+    traits: [札夫特, 艦船]
+    resonance: null
+    base_ap: null
+    base_hp: 5
+    raw_effect: "【爆發】配置此卡牌。\n【配置時】將我方的1張護盾加入手牌。\n【啟動·主要】將此基地轉為休息狀態：選擇友方的1張機體。本回合中，使其AP+1。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: deploy
+              target: source
+      - kind: triggered
+        timing: ENTERS_PLAY
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: add_shield_to_hand
+      - kind: activated
+        timing: MAIN
+        cost:
+          - type: rest
+            target: source
+        target:
+          controller: self
+          card_type: unit
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: modify_ap
+              target: chosen
+              amount: 1
+              duration: this_turn
+
+  - card_id: T-008
+    name: 機動型突擊高達
+    card_type: UNIT
+    token: true
+    level: null
+    play_cost: null
+    color: null
+    terrain: []
+    traits: [地球聯合]
+    resonance: null
+    base_ap: 3
+    base_hp: 3
+    raw_effect: "《阻擋者》（可轉換為休息狀態並將攻擊對象改為此機體）"
+    keywords:
+      - keyword: BLOCKER
+    effects: []
+
+  - card_id: T-009
+    name: 砲戰型突擊高達
+    card_type: UNIT
+    token: true
+    level: null
+    play_cost: null
+    color: null
+    terrain: []
+    traits: [地球聯合]
+    resonance: null
+    base_ap: 2
+    base_hp: 4
+    raw_effect: "《阻擋者》（可轉換為休息狀態並將攻擊對象改為此機體）"
+    keywords:
+      - keyword: BLOCKER
+    effects: []
+
+  - card_id: T-010
+    name: 重劍型突擊高達
+    card_type: UNIT
+    token: true
+    level: null
+    play_cost: null
+    color: null
+    terrain: []
+    traits: [地球聯合]
+    resonance: null
+    base_ap: 4
+    base_hp: 2
+    raw_effect: "《阻擋者》（可轉換為休息狀態並將攻擊對象改為此機體）"
+    keywords:
+      - keyword: BLOCKER
+    effects: []

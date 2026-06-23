@@ -1,0 +1,6978 @@
+{
+  "metadata": {
+    "version": "1.1",
+    "lastUpdated": "2026-01-21",
+    "cardType": "unit"
+  },
+  "cards": {
+    "GD01-001": {
+      "id": "GD01-001",
+      "name": "Gundam",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 4,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation",
+        "White Base Team"
+      ],
+      "link": [
+        "Amuro Ray"
+      ],
+      "ap": 3,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "All your (White Base Team) Units gain <Repair 1>. (At the end of your turn, this Unit recovers the specified number of HP.)",
+          "[When Paired]If you have 2 or more other Units in play, draw 1."
+        ],
+        "rules": [
+          {
+            "effectId": "grant_repair_1",
+            "type": "continuous",
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "filters": {
+                "traits": [
+                  "White Base Team"
+                ]
+              }
+            },
+            "action": "grant_keyword",
+            "parameters": {
+              "value": 1,
+              "keyword": "Repair"
+            },
+            "timing": {
+              "duration": "continuous",
+              "endOnSourceDestroyed": true
+            }
+          },
+          {
+            "effectId": "pair_draw",
+            "type": "triggered",
+            "action": "draw",
+            "conditions": [
+              {
+                "type": "unitsInPlay",
+                "value": ">=3"
+              }
+            ],
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "PAIRING_COMPLETE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-002": {
+      "id": "GD01-002",
+      "name": "Unicorn Gundam (Destroy Mode)",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 7,
+      "cost": 6,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Civilian"
+      ],
+      "link": [
+        "Banagher Links"
+      ],
+      "ap": 5,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "When playing this card from your hand, you may destroy 1 of your Link Units with \"Unicorn Mode\" in its card name that is Lv.5. If you do, play this card as if it has 0 Lv. and cost.",
+          "[Attack]Choose 1 enemy Unit. Rest it."
+        ],
+        "rules": [
+          {
+            "effectId": "play_destroy_linked_unicorn_mode_lv5_as_zero",
+            "type": "play",
+            "optional": true,
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ],
+              "eventTrigger": "COST"
+            },
+            "action": "replace_cost",
+            "parameters": {
+              "replace": {
+                "from": {
+                  "type": "destroy",
+                  "target": "friendly_linked_unit",
+                  "filters": {
+                    "cardType": "unit",
+                    "nameIncludes": "Unicorn Mode",
+                    "level": "=5"
+                  }
+                },
+                "to": {
+                  "level": 0,
+                  "cost": 0
+                }
+              }
+            }
+          },
+          {
+            "effectId": "attack_rest",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              },
+              "filters": {
+                "status": "active"
+              }
+            },
+            "action": "rest",
+            "timing": {
+              "eventTrigger": "ATTACK_PHASE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-003": {
+      "id": "GD01-003",
+      "name": "Unicorn Gundam 02 Banshee (Destroy Mode)",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 6,
+      "cost": 4,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation"
+      ],
+      "link": [
+        "Marida Cruz"
+      ],
+      "ap": 5,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "[During Link][Attack]Choose 12 cards from your trash. Return them to their owner's deck and shuffle it. If you do, set this Unit as active. It gains <First Strike> during this turn. (While this Unit is attacking, it deals damage before the enemy Unit.)"
+        ],
+        "rules": [
+          {
+            "effectId": "attack_effect",
+            "type": "triggered",
+            "sourceConditions": [
+              {
+                "type": "linked"
+              }
+            ],
+            "optional": true,
+            "cost": {
+              "moveFromTrashToDeck": {
+                "scope": "self_trash",
+                "count": 12,
+                "shuffle": true
+              }
+            },
+            "action": "sequence",
+            "parameters": {
+              "steps": [
+                {
+                  "action": "setActive",
+                  "target": {
+                    "type": "unit",
+                    "scope": "self",
+                    "count": 1
+                  }
+                },
+                {
+                  "action": "grant_keyword",
+                  "timing": {
+                    "duration": "UNTIL_END_OF_TURN"
+                  },
+                  "target": {
+                    "type": "unit",
+                    "scope": "self",
+                    "count": 1
+                  },
+                  "parameters": {
+                    "keyword": "First Strike"
+                  }
+                }
+              ],
+              "notes": "Implemented: moveFromTrashToDeck attack costs gate sequence resolution."
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_PHASE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-004": {
+      "id": "GD01-004",
+      "name": "Guncannon",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation",
+        "White Base Team"
+      ],
+      "link": [
+        "White Base Team"
+      ],
+      "ap": 2,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "<Repair 1> (At the end of your turn, this Unit recovers the specified number of HP.)",
+          "[When Paired]Choose 1 enemy Unit with 2 or less HP. Rest it."
+        ],
+        "rules": [
+          {
+            "effectId": "repair_1",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "source",
+              "count": 1
+            },
+            "action": "heal",
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "END_OF_TURN"
+            }
+          },
+          {
+            "effectId": "pair_rest",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "hp": "<=2",
+                "status": "active"
+              },
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "action": "rest",
+            "timing": {
+              "eventTrigger": "PAIRING_COMPLETE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-005": {
+      "id": "GD01-005",
+      "name": "Unicorn Gundam (Unicorn Mode)",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 5,
+      "cost": 4,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Civilian"
+      ],
+      "link": [
+        "Banagher Links"
+      ],
+      "ap": 4,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "[During Link][Destroyed]Return this Unit's paired Pilot to its owner's hand. Then, discard 1."
+        ],
+        "rules": [
+          {
+            "effectId": "during_link_destroyed_return_paired_pilot_then_discard",
+            "type": "triggered",
+            "sourceConditions": [
+              {
+                "type": "linked"
+              }
+            ],
+            "action": "sequence",
+            "parameters": {
+              "steps": [
+                {
+                  "action": "returnToHand",
+                  "target": {
+                    "type": "card",
+                    "scope": "source_paired_pilot",
+                    "count": 1
+                  },
+                  "parameters": {
+                    "ownershipPolicy": "TARGET_OWNER",
+                    "notes": "Implemented: source_paired_pilot targeting resolves and can be returned to hand."
+                  }
+                },
+                {
+                  "action": "discard",
+                  "parameters": {
+                    "value": 1,
+                    "notes": "Implemented: discardFromHand steps and costs are resolved by runtime cost flow."
+                  }
+                }
+              ]
+            },
+            "timing": {
+              "eventTrigger": "DESTROYED"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-006": {
+      "id": "GD01-006",
+      "name": "Delta Plus",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 4,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation"
+      ],
+      "link": [
+        "Earth Federation"
+      ],
+      "ap": 4,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "<Repair 1> (At the end of your turn, this Unit recovers the specified number of HP.)",
+          "[During Link]This Unit gets HP+1."
+        ],
+        "rules": [
+          {
+            "effectId": "repair_1",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "source",
+              "count": 1
+            },
+            "action": "heal",
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "END_OF_TURN"
+            }
+          },
+          {
+            "effectId": "during_link_hp_plus_1",
+            "type": "continuous",
+            "action": "modifyHP",
+            "sourceConditions": [
+              {
+                "type": "linked"
+              }
+            ],
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "duration": "continuous",
+              "endOnSourceDestroyed": true
+            }
+          }
+        ]
+      }
+    },
+    "GD01-007": {
+      "id": "GD01-007",
+      "name": "Noin's Aries",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 3,
+      "cost": 3,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "OZ"
+      ],
+      "link": [
+        "Lucrezia Noin"
+      ],
+      "ap": 2,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "[Destroyed]If you have another (OZ) Unit in play, draw 1."
+        ],
+        "rules": [
+          {
+            "effectId": "destroyed_conditional_draw",
+            "type": "triggered",
+            "action": "draw",
+            "conditions": [
+              {
+                "type": "hasAnotherUnitWithTrait",
+                "scope": "self",
+                "traits": [
+                  "OZ"
+                ]
+              }
+            ],
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "DESTROYED"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-008": {
+      "id": "GD01-008",
+      "name": "Guntank",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 2,
+      "cost": 1,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation",
+        "White Base Team"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[Deploy]Choose 1 rested enemy Unit. Deal 1 damage to it."
+        ],
+        "rules": [
+          {
+            "effectId": "deploy_damage_1",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "status": "rested"
+              },
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "action": "damage",
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-009": {
+      "id": "GD01-009",
+      "name": "G-Fighter",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation",
+        "White Base Team"
+      ],
+      "link": [
+        "White Base Team"
+      ],
+      "ap": 3,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[Deploy]Choose 1 of your (White Base Team) Units. It gains <High-Maneuver> during this turn. (This Unit can't be blocked.)"
+        ],
+        "rules": [
+          {
+            "effectId": "deploy_grant_high_maneuver",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "filters": {
+                "traits": [
+                  "White Base Team"
+                ]
+              },
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "action": "grant_keyword",
+            "parameters": {
+              "keyword": "High-Maneuver"
+            },
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-010": {
+      "id": "GD01-010",
+      "name": "Unicorn Gundam 02 Banshee (Unicorn Mode)",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 4,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation"
+      ],
+      "link": [
+        "Cyber-Newtype"
+      ],
+      "ap": 4,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "[When Paired]Choose 1 enemy Unit with 3 or less HP. Rest it."
+        ],
+        "rules": [
+          {
+            "effectId": "pair_rest",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "hp": "<=3",
+                "status": "active"
+              },
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "action": "rest",
+            "timing": {
+              "eventTrigger": "PAIRING_COMPLETE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-011": {
+      "id": "GD01-011",
+      "name": "Loto",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation"
+      ],
+      "link": [
+        "Earth Federation"
+      ],
+      "ap": 2,
+      "hp": 2,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-012": {
+      "id": "GD01-012",
+      "name": "Zechs' Leo",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "OZ"
+      ],
+      "link": [
+        "OZ"
+      ],
+      "ap": 3,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[When Paired]Choose 1 enemy Unit with 3 or less HP. Rest it."
+        ],
+        "rules": [
+          {
+            "effectId": "pair_rest",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "hp": "<=3",
+                "status": "active"
+              },
+              "count": 1
+            },
+            "action": "rest",
+            "timing": {
+              "eventTrigger": "PAIRING_COMPLETE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-013": {
+      "id": "GD01-013",
+      "name": "Gundam",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 4,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation",
+        "White Base Team"
+      ],
+      "link": [
+        "Amuro Ray"
+      ],
+      "ap": 3,
+      "hp": 4,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-014": {
+      "id": "GD01-014",
+      "name": "G-Sky Easy",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation",
+        "White Base Team"
+      ],
+      "link": [
+        "White Base Team"
+      ],
+      "ap": 1,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "[During Link][Activate-Action][Once per Turn]Choose 1 Unit. It recovers 1 HP."
+        ],
+        "rules": [
+          {
+            "effectId": "activate_heal",
+            "type": "activated",
+            "timing": {
+              "activationWindows": [
+                "ACTION_STEP"
+              ]
+            },
+            "cost": {
+              "oncePerTurn": true
+            },
+            "target": {
+              "type": "unit",
+              "scope": "any",
+              "count": 1
+            },
+            "action": "heal",
+            "parameters": {
+              "value": 1
+            },
+            "sourceConditions": [
+              {
+                "type": "linked"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "GD01-015": {
+      "id": "GD01-015",
+      "name": "Ball",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 1,
+      "cost": 1,
+      "zone": [
+        "Space"
+      ],
+      "traits": [
+        "Earth Federation"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Attack]Choose 1 of your Units. It recovers 1 HP."
+        ],
+        "rules": [
+          {
+            "effectId": "attack_effect",
+            "type": "triggered",
+            "action": "heal",
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_PHASE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-016": {
+      "id": "GD01-016",
+      "name": "Jegan",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "While you have 2 or more (Earth Federation) Units in play, this card in your hand gets cost -1."
+        ],
+        "rules": [
+          {
+            "effectId": "hand_cost_reduction_1",
+            "type": "continuous",
+            "action": "modifyCost",
+            "target": {
+              "type": "card",
+              "scope": "self_hand",
+              "count": 1
+            },
+            "conditions": [
+              {
+                "type": "unitsInPlayWithTrait",
+                "scope": "self",
+                "traits": [
+                  "Earth Federation"
+                ],
+                "value": ">=2"
+              }
+            ],
+            "parameters": {
+              "value": -1
+            },
+            "timing": {
+              "duration": "continuous"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-017": {
+      "id": "GD01-017",
+      "name": "Stark Jegan",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 3,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation"
+      ],
+      "link": [
+        "Earth Federation"
+      ],
+      "ap": 3,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "<Repair 1> (At the end of your turn, this Unit recovers the specified number of HP.)"
+        ],
+        "rules": [
+          {
+            "effectId": "repair_1",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "source",
+              "count": 1
+            },
+            "action": "heal",
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "END_OF_TURN"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-018": {
+      "id": "GD01-018",
+      "name": "ReZEL",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation"
+      ],
+      "link": [],
+      "ap": 4,
+      "hp": 3,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-019": {
+      "id": "GD01-019",
+      "name": "Byarlant Custom",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 4,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation"
+      ],
+      "link": [],
+      "ap": 3,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "While 4 or more enemy Units are in play, this Unit gains <Blocker>. (Rest this Unit to change the attack target to it.)"
+        ],
+        "rules": [
+          {
+            "effectId": "gain_blocker_if_enemy_units_ge_4",
+            "type": "triggered",
+            "conditions": [
+              {
+                "type": "unitsInPlay",
+                "scope": "opponent",
+                "value": ">=4"
+              }
+            ],
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "action": "redirect_attack",
+            "parameters": {
+              "cost": "rest_self"
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_REDIRECT"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-020": {
+      "id": "GD01-020",
+      "name": "Anksha",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 4,
+      "cost": 2,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation"
+      ],
+      "link": [],
+      "ap": 3,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "[Deploy]Choose 1 rested enemy Unit. Deal 1 damage to it."
+        ],
+        "rules": [
+          {
+            "effectId": "deploy_damage_1",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "status": "rested"
+              },
+              "count": 1
+            },
+            "action": "damage",
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-021": {
+      "id": "GD01-021",
+      "name": "Pisces",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 1,
+      "cost": 1,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "OZ"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 2,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-022": {
+      "id": "GD01-022",
+      "name": "Cancer",
+      "cardType": "unit",
+      "color": "Blue",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "OZ"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 3,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-023": {
+      "id": "GD01-023",
+      "name": "Char's Gelgoog",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 4,
+      "cost": 4,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [
+        "Char Aznable"
+      ],
+      "ap": 4,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "[Activate/Main]Discard 1 (Zeon)/(Neo Zeon) Unit card:If a Pilot is not paired with this Unit, choose 1 (Newtype) Pilot card that is Lv.3 or lower from your trash. Pair it with this Unit."
+        ],
+        "rules": [
+          {
+            "effectId": "activate_effect",
+            "type": "activated",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "cost": {
+              "discardFromHand": {
+                "scope": "self_hand",
+                "cardType": "unit",
+                "traitsAny": [
+                  "Zeon",
+                  "Neo Zeon"
+                ],
+                "count": 1
+              }
+            },
+            "conditions": [
+              {
+                "type": "noPairedPilot",
+                "scope": "source",
+                "value": true
+              }
+            ],
+            "action": "pair_from_trash",
+            "target": {
+              "type": "card",
+              "scope": "self_trash",
+              "filters": {
+                "cardType": "pilot",
+                "traitsAny": [
+                  "Newtype"
+                ],
+                "level": "<=3"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "notes": "Implemented: discard costs plus pair_from_trash targeting are supported."
+            }
+          }
+        ]
+      }
+    },
+    "GD01-024": {
+      "id": "GD01-024",
+      "name": "Wing Gundam Zero",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 8,
+      "cost": 8,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "G Team"
+      ],
+      "link": [
+        "Heero Yuy"
+      ],
+      "ap": 5,
+      "hp": 7,
+      "effects": {
+        "description": [
+          "<High-Maneuver> (This Unit can't be blocked.)",
+          "[Deploy]Deal 3 damage to all Units that are Lv.5 or lower."
+        ],
+        "rules": [
+          {
+            "effectId": "high_maneuver",
+            "type": "continuous",
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "action": "grant_keyword",
+            "parameters": {
+              "keyword": "High-Maneuver"
+            },
+            "timing": {
+              "duration": "continuous"
+            }
+          },
+          {
+            "effectId": "deploy_damage_all_3",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "any_all_unit",
+              "filters": {
+                "level": "<=5"
+              }
+            },
+            "action": "damage",
+            "parameters": {
+              "value": 3
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-025": {
+      "id": "GD01-025",
+      "name": "Gundam Deathscythe",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 6,
+      "cost": 4,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Operation Meteor"
+      ],
+      "link": [
+        "Duo Maxwell"
+      ],
+      "ap": 5,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "[When Paired-(Operation Meteor) Pilot]Place 1 rested Resource. Then, this Unit gains <First Strike> during this turn. (While this Unit is attacking, it deals damage before the enemy Unit.)"
+        ],
+        "rules": [
+          {
+            "effectId": "pair_operation_meteor_place_resource_then_gain_first_strike",
+            "type": "triggered",
+            "action": "sequence",
+            "sourceConditions": [
+              {
+                "type": "paired"
+              }
+            ],
+            "conditions": [
+              {
+                "type": "pairedPilotTrait",
+                "scope": "source",
+                "value": "Operation Meteor"
+              }
+            ],
+            "parameters": {
+              "steps": [
+                {
+                  "action": "addBasicEnergy",
+                  "parameters": {
+                    "value": 1,
+                    "rested": true
+                  }
+                },
+                {
+                  "action": "grant_keyword",
+                  "target": {
+                    "type": "unit",
+                    "scope": "self",
+                    "count": 1
+                  },
+                  "timing": {
+                    "duration": "UNTIL_END_OF_TURN"
+                  },
+                  "parameters": {
+                    "keyword": "First Strike"
+                  }
+                }
+              ]
+            },
+            "timing": {
+              "eventTrigger": "PAIRING_COMPLETE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-026": {
+      "id": "GD01-026",
+      "name": "Char's Zaku Ⅱ",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [
+        "Char Aznable"
+      ],
+      "ap": 3,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[During Pair][Destroyed]Deploy 1 rested [Char's Zaku Ⅱ]((Zeon)-AP3-HP1) Unit token."
+        ],
+        "rules": [
+          {
+            "effectId": "destroyed_effect",
+            "type": "triggered",
+            "action": "conditionalTokenDeploy",
+            "sourceConditions": [
+              {
+                "type": "paired"
+              }
+            ],
+            "parameters": {
+              "condition1": {
+                "token": {
+                  "cardId": "T-006"
+                },
+                "count": 1,
+                "rested": true,
+                "notes": "Implemented: conditional token deploy supports rested deployment."
+              }
+            },
+            "timing": {
+              "eventTrigger": "DESTROYED"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-027": {
+      "id": "GD01-027",
+      "name": "Big Zam",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 7,
+      "cost": 5,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [
+        "Dozle Zabi"
+      ],
+      "ap": 5,
+      "hp": 6,
+      "effects": {
+        "description": [
+          "<Breach 4> (When this Unit's attack destroys an enemy Unit, deal the specified amount of damage to the first card in that opponent's shield area.)",
+          "[Deploy]If there are 10 or more (Zeon)/(Neo Zeon) Unit cards in your trash, deal 4 damage to all Units with <Blocker>."
+        ],
+        "rules": [
+          {
+            "effectId": "breach_4",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "opponent_shield",
+              "count": 1
+            },
+            "action": "damageShield",
+            "parameters": {
+              "value": 4
+            },
+            "timing": {
+              "eventTrigger": "BATTLE_DESTROY"
+            }
+          },
+          {
+            "effectId": "deploy_damage_all_4",
+            "type": "triggered",
+            "action": "sequence",
+            "parameters": {
+              "text": "If there are 10 or more (Zeon)/(Neo Zeon) Unit cards in your trash, deal 4 damage to all Units with <Blocker>.",
+              "version": 1,
+              "steps": [
+                {
+                  "action": "conditional",
+                  "parameters": {
+                    "if": [
+                      {
+                        "type": "cardsInTrash",
+                        "scope": "self",
+                        "cardType": "unit",
+                        "traitsAny": [
+                          "Zeon",
+                          "Neo Zeon"
+                        ],
+                        "value": ">=10"
+                      }
+                    ],
+                    "then": [
+                      {
+                        "action": "damage",
+                        "target": {
+                          "type": "unit",
+                          "scope": "any_all_unit",
+                          "filters": {
+                            "keywords": [
+                              "Blocker"
+                            ]
+                          }
+                        },
+                        "parameters": {
+                          "value": 4
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-028": {
+      "id": "GD01-028",
+      "name": "Gundam Sandrock",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 5,
+      "cost": 3,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Operation Meteor"
+      ],
+      "link": [
+        "Quatre Raberba Winner"
+      ],
+      "ap": 4,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "[Deploy]You may deploy 1 (Maganac Corps) Unit card from your hand."
+        ],
+        "rules": [
+          {
+            "effectId": "deploy_effect",
+            "type": "triggered",
+            "optional": true,
+            "action": "deploy_from_hand",
+            "target": {
+              "type": "unit",
+              "scope": "self_hand",
+              "filters": {
+                "traits": [
+                  "Maganac Corps"
+                ]
+              },
+              "count": 1
+            },
+            "parameters": {
+              "notes": "Implemented: deploy_from_hand resolves with standard target selection and slot checks."
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-029": {
+      "id": "GD01-029",
+      "name": "Shenlong Gundam",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 5,
+      "cost": 4,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Operation Meteor"
+      ],
+      "link": [
+        "Chang Wufei"
+      ],
+      "ap": 4,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "<Breach 4> (When this Unit's attack destroys an enemy Unit, deal the specified amount of damage to the first card in that opponent's shield area.)",
+          "[Attack]Choose 1 enemy Unit with <Blocker> that is Lv.3 or lower. Destroy it."
+        ],
+        "rules": [
+          {
+            "effectId": "breach_4",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "opponent_shield",
+              "count": 1
+            },
+            "action": "damageShield",
+            "parameters": {
+              "value": 4
+            },
+            "timing": {
+              "eventTrigger": "BATTLE_DESTROY"
+            }
+          },
+          {
+            "effectId": "attack_effect",
+            "type": "triggered",
+            "action": "destroy",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "keywords": [
+                  "Blocker"
+                ],
+                "level": "<=3"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "notes": "Implemented: keyword-based target filters are resolved during target selection."
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_PHASE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-030": {
+      "id": "GD01-030",
+      "name": "Rick Dom",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space"
+      ],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [],
+      "ap": 3,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "<Breach 2> (When this Unit's attack destroys an enemy Unit, deal the specified amount of damage to the first card in that opponent's shield area.)"
+        ],
+        "rules": [
+          {
+            "effectId": "breach_2",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "opponent_shield",
+              "count": 1
+            },
+            "action": "damageShield",
+            "parameters": {
+              "value": 2
+            },
+            "timing": {
+              "eventTrigger": "BATTLE_DESTROY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-031": {
+      "id": "GD01-031",
+      "name": "Gelgoog",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 4,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [
+        "Zeon"
+      ],
+      "ap": 4,
+      "hp": 3,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-032": {
+      "id": "GD01-032",
+      "name": "Gyan",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 4,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [
+        "M'Quve"
+      ],
+      "ap": 4,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "[When Paired-(Zeon) Pilot]Choose 1 enemy Unit with <Blocker> that is Lv.2 or lower. Destroy it."
+        ],
+        "rules": [
+          {
+            "effectId": "pair_destroy_blocker_low_level",
+            "type": "triggered",
+            "action": "destroy",
+            "sourceConditions": [
+              {
+                "type": "paired"
+              }
+            ],
+            "conditions": [
+              {
+                "type": "pairedPilotTrait",
+                "scope": "source",
+                "value": "Zeon"
+              }
+            ],
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "level": "<=2",
+                "keywords": [
+                  "Blocker"
+                ]
+              },
+              "count": 1
+            },
+            "parameters": {
+              "notes": "Implemented: keyword-based target filters are resolved during target selection."
+            },
+            "timing": {
+              "eventTrigger": "PAIRING_COMPLETE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-033": {
+      "id": "GD01-033",
+      "name": "Gundam Deathscythe",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 4,
+      "cost": 2,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Operation Meteor"
+      ],
+      "link": [
+        "Duo Maxwell"
+      ],
+      "ap": 4,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "<Repair 1> (At the end of your turn, this Unit recovers the specified number of HP.)"
+        ],
+        "rules": [
+          {
+            "effectId": "repair_1",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "source",
+              "count": 1
+            },
+            "action": "heal",
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "END_OF_TURN"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-034": {
+      "id": "GD01-034",
+      "name": "Gundam Heavyarms",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 4,
+      "cost": 2,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Operation Meteor"
+      ],
+      "link": [
+        "Trowa Barton"
+      ],
+      "ap": 3,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "[During Pair]This Unit gains <Breach 3>. (When this Unit's attack destroys an enemy Unit, deal the specified amount of damage to the first card in that opponent's shield area.)"
+        ],
+        "rules": [
+          {
+            "effectId": "breach_3",
+            "type": "triggered",
+            "action": "damageShield",
+            "sourceConditions": [
+              {
+                "type": "paired"
+              }
+            ],
+            "target": {
+              "type": "card",
+              "scope": "opponent_shield",
+              "count": 1
+            },
+            "parameters": {
+              "value": 3
+            },
+            "timing": {
+              "eventTrigger": "BATTLE_DESTROY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-035": {
+      "id": "GD01-035",
+      "name": "Zaku Ⅱ",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 2,
+      "cost": 1,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 2,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-036": {
+      "id": "GD01-036",
+      "name": "Gouf",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [],
+      "ap": 3,
+      "hp": 2,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-037": {
+      "id": "GD01-037",
+      "name": "Gogg",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 3,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-038": {
+      "id": "GD01-038",
+      "name": "Adzam",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 5,
+      "cost": 4,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [
+        "Zeon"
+      ],
+      "ap": 2,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "[Deploy]If 5 or more enemy Units are in play, deal 1 damage to all enemy Units."
+        ],
+        "rules": [
+          {
+            "effectId": "deploy_damage_1",
+            "type": "triggered",
+            "conditions": [
+              {
+                "type": "unitsInPlay",
+                "scope": "opponent",
+                "value": ">=5"
+              }
+            ],
+            "target": {
+              "type": "unit",
+              "scope": "opponent_all",
+              "count": 99
+            },
+            "action": "damage",
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-039": {
+      "id": "GD01-039",
+      "name": "Dopp",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 1,
+      "cost": 1,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Deploy]Look at the top card of your deck. Return it to the top or bottom of your deck."
+        ],
+        "rules": [
+          {
+            "effectId": "deploy_scry_top_1",
+            "type": "triggered",
+            "action": "scry_top_deck",
+            "parameters": {
+              "count": 1,
+              "keep": 1,
+              "choice": "top_or_bottom",
+              "notes": "Implemented: scry supports choosing top or bottom placement.",
+              "rest": "bottom"
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-040": {
+      "id": "GD01-040",
+      "name": "Wing Gundam",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 5,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Operation Meteor"
+      ],
+      "link": [
+        "Heero Yuy"
+      ],
+      "ap": 4,
+      "hp": 3,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-041": {
+      "id": "GD01-041",
+      "name": "Shenlong Gundam",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 4,
+      "cost": 3,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Operation Meteor"
+      ],
+      "link": [
+        "Chang Wufei"
+      ],
+      "ap": 4,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "<Breach 3> (When this Unit's attack destroys an enemy Unit, deal the specified amount of damage to the first card in that opponent's shield area.)"
+        ],
+        "rules": [
+          {
+            "effectId": "breach_3",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "opponent_shield",
+              "count": 1
+            },
+            "action": "damageShield",
+            "parameters": {
+              "value": 3
+            },
+            "timing": {
+              "eventTrigger": "BATTLE_DESTROY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-042": {
+      "id": "GD01-042",
+      "name": "Duo's Leo",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Operation Meteor"
+      ],
+      "link": [
+        "Duo Maxwell"
+      ],
+      "ap": 2,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "This Unit may choose an active enemy Unit that is Lv.2 or lower as its attack target."
+        ],
+        "rules": [
+          {
+            "effectId": "attack_active_low_level_2",
+            "type": "continuous",
+            "action": "allow_attack_target",
+            "parameters": {
+              "status": "active",
+              "level": "<=2"
+            },
+            "timing": {
+              "duration": "continuous"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-043": {
+      "id": "GD01-043",
+      "name": "Rasid's Maganac",
+      "cardType": "unit",
+      "color": "Green",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Maganac Corps"
+      ],
+      "link": [
+        "Maganac Corps"
+      ],
+      "ap": 2,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "[Deploy]Choose 1 of your green Units. During this turn, it may choose an active enemy Unit with 4 or less AP as its attack target."
+        ],
+        "rules": [
+          {
+            "effectId": "deploy_allow_attack_target_active_enemy_ap_le_4",
+            "type": "triggered",
+            "action": "allow_attack_target",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "eventTrigger": "ENTERS_PLAY"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "filters": {
+                "color": "Green"
+              },
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "parameters": {
+              "status": "active",
+              "ap": "<=4"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-044": {
+      "id": "GD01-044",
+      "name": "Kshatriya",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 5,
+      "cost": 4,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Neo Zeon"
+      ],
+      "link": [
+        "Marida Cruz"
+      ],
+      "ap": 5,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "[When Paired-(Cyber-Newtype)/(Newtype) Pilot]Choose 1 to 2 enemy Units. Deal 1 damage to them."
+        ],
+        "rules": [
+          {
+            "effectId": "pair_damage_1_to_1_or_2",
+            "type": "triggered",
+            "action": "damage",
+            "sourceConditions": [
+              {
+                "type": "paired"
+              }
+            ],
+            "conditions": [
+              {
+                "type": "pairedPilotTraitAny",
+                "scope": "source",
+                "value": [
+                  "Cyber-Newtype",
+                  "Newtype"
+                ]
+              }
+            ],
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "count": {
+                "min": 1,
+                "max": 2
+              },
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "PAIRING_COMPLETE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-045": {
+      "id": "GD01-045",
+      "name": "Duel Gundam (Assault Shroud)",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 5,
+      "cost": 4,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "ZAFT"
+      ],
+      "link": [
+        "Yzak Jule"
+      ],
+      "ap": 4,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "[When Paired]Look at the top 3 cards of your deck. You may deploy 1 (ZAFT) Unit card that is Lv.4 or lower among them. Return the remaining cards randomly to the bottom of your deck."
+        ],
+        "rules": [
+          {
+            "effectId": "pair_look_top_3_deploy_zaft_unit_le_4",
+            "type": "triggered",
+            "action": "select_from_top_deck",
+            "parameters": {
+              "lookCount": 3,
+              "select": {
+                "count": 1,
+                "optional": true,
+                "toZone": "play",
+                "filters": {
+                  "cardType": "unit",
+                  "traitsAny": [
+                    "ZAFT"
+                  ],
+                  "level": "<=4"
+                }
+              },
+              "rest": {
+                "toZone": "deck_bottom",
+                "order": "random"
+              },
+              "notes": "Implemented: select_from_top_deck supports look, optional play selection, and bottom placement."
+            },
+            "timing": {
+              "eventTrigger": "PAIRING_COMPLETE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-046": {
+      "id": "GD01-046",
+      "name": "Buster Gundam",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 4,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "ZAFT"
+      ],
+      "link": [
+        "Dearka Elthman"
+      ],
+      "ap": 1,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "[Activate/Main]<Support 3> (Rest this Unit. 1 other friendly Unit gets AP+(specified amount) during this turn.)",
+          "[During Pair-(Coordinator) Pilot][Once per Turn]When you use this Unit's <Support> to increase a (ZAFT) Unit's AP, set this Unit as active."
+        ],
+        "rules": [
+          {
+            "effectId": "activate_support_3",
+            "type": "activated",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "cost": {
+              "rest": "self"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "action": "modifyAP",
+            "parameters": {
+              "value": 3,
+              "excludeSource": true
+            }
+          },
+          {
+            "effectId": "support_ap_up_zaft_set_self_active_once_per_turn",
+            "type": "triggered",
+            "cost": {
+              "oncePerTurn": true
+            },
+            "restrictions": [
+              "once_per_turn"
+            ],
+            "conditions": [
+              {
+                "type": "sourcePairedWithPilot",
+                "scope": "source",
+                "value": true
+              },
+              {
+                "type": "pairedPilotTraitAny",
+                "scope": "source",
+                "traitsAny": [
+                  "Coordinator"
+                ]
+              }
+            ],
+            "target": {
+              "type": "unit",
+              "scope": "source",
+              "count": 1
+            },
+            "action": "setActive",
+            "timing": {
+              "eventTrigger": "SUPPORT_AP_INCREASED"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-047": {
+      "id": "GD01-047",
+      "name": "Shamblo",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 8,
+      "cost": 7,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [
+        "Newtype",
+        "Cyber-Newtype"
+      ],
+      "ap": 6,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "[Attack]If 2 or more other rested friendly Units are in play, choose 1 enemy Unit. Deal 3 damage to it."
+        ],
+        "rules": [
+          {
+            "effectId": "attack_effect",
+            "type": "triggered",
+            "action": "damage",
+            "conditions": [
+              {
+                "type": "unitsInPlayWithStatus",
+                "scope": "self",
+                "status": "rested",
+                "excludeSource": true,
+                "value": ">=2"
+              }
+            ],
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "count": 1
+            },
+            "parameters": {
+              "value": 3,
+              "notes": "Implemented: unitsInPlayWithStatus supports excludeSource filtering."
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_PHASE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-048": {
+      "id": "GD01-048",
+      "name": "Zaku I Sniper Type",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [
+        "Zeon"
+      ],
+      "ap": 0,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Activate/Main]<Support 1> (Rest this Unit. 1 other friendly Unit gets AP+(specified amount) during this turn.)",
+          "[Deploy]Look at the top card of your deck. If it is a (Zeon)/(Neo Zeon) Unit card, you may reveal it and add it to your hand. Return any remaining card to the bottom of your deck."
+        ],
+        "rules": [
+          {
+            "effectId": "activate_support_1",
+            "type": "activated",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "cost": {
+              "rest": "self"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "action": "modifyAP",
+            "parameters": {
+              "value": 1,
+              "excludeSource": true
+            }
+          },
+          {
+            "effectId": "deploy_effect",
+            "type": "triggered",
+            "action": "select_from_top_deck",
+            "parameters": {
+              "lookCount": 1,
+              "select": {
+                "count": 1,
+                "optional": true,
+                "toZone": "hand",
+                "reveal": true,
+                "filters": {
+                  "cardType": "unit",
+                  "traitsAny": [
+                    "Zeon",
+                    "Neo Zeon"
+                  ]
+                }
+              },
+              "rest": {
+                "toZone": "deck_bottom",
+                "order": "preserve"
+              },
+              "notes": "Implemented: select_from_top_deck supports reveal/select from top-of-deck."
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-049": {
+      "id": "GD01-049",
+      "name": "Blitz Gundam",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 4,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "ZAFT"
+      ],
+      "link": [
+        "Nicol Amarfi"
+      ],
+      "ap": 3,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "[Deploy]Choose 1 of your (ZAFT) Units with 5 or more AP. It gains <First Strike> during this turn. (While this Unit is attacking, it deals damage before the enemy Unit.)"
+        ],
+        "rules": [
+          {
+            "effectId": "deploy_grant_first_strike_to_zaft_ap_ge_5",
+            "type": "triggered",
+            "action": "grant_keyword",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "eventTrigger": "ENTERS_PLAY"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "filters": {
+                "traits": [
+                  "ZAFT"
+                ],
+                "ap": ">=5"
+              },
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "parameters": {
+              "keyword": "First Strike"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-050": {
+      "id": "GD01-050",
+      "name": "LaGOWE",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "ZAFT"
+      ],
+      "link": [
+        "ZAFT"
+      ],
+      "ap": 2,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "[Attack]If this Unit has 5 or more AP and it is attacking an enemy Unit, choose 1 enemy Unit. Deal 2 damage to it."
+        ],
+        "rules": [
+          {
+            "effectId": "attack_effect",
+            "type": "triggered",
+            "action": "damage",
+            "conditions": [
+              {
+                "type": "sourceAp",
+                "scope": "source",
+                "value": ">=5"
+              },
+              {
+                "type": "attackTargetCardType",
+                "scope": "battle",
+                "value": "unit"
+              }
+            ],
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "count": 1
+            },
+            "parameters": {
+              "value": 2,
+              "notes": "Implemented: attack-target card-type conditions are evaluated at runtime."
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_PHASE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-051": {
+      "id": "GD01-051",
+      "name": "Kshatriya",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 4,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Neo Zeon"
+      ],
+      "link": [
+        "Cyber-Newtype"
+      ],
+      "ap": 3,
+      "hp": 4,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-052": {
+      "id": "GD01-052",
+      "name": "Geara Zulu (Guards Type)",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 4,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Neo Zeon"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "[Deploy]Choose 1 enemy Unit. Deal 1 damage to it."
+        ],
+        "rules": [
+          {
+            "effectId": "deploy_damage_1",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "count": 1
+            },
+            "action": "damage",
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-053": {
+      "id": "GD01-053",
+      "name": "Geara Doga (Heavy Armed Type)",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 4,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Neo Zeon"
+      ],
+      "link": [],
+      "ap": 4,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[Activate/Main][Once per Turn]①:Choose 1 enemy Unit with 2 or less AP. Deal 1 damage to it."
+        ],
+        "rules": [
+          {
+            "effectId": "activate_effect",
+            "type": "activated",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "cost": {
+              "resource": 1,
+              "oncePerTurn": true
+            },
+            "action": "damage",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "ap": "<=2"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "value": 1
+            }
+          }
+        ]
+      }
+    },
+    "GD01-054": {
+      "id": "GD01-054",
+      "name": "Duel Gundam",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "ZAFT"
+      ],
+      "link": [
+        "ZAFT"
+      ],
+      "ap": 3,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "While this Unit has 5 or more AP, it gains <Breach 3>. (When this Unit's attack destroys an enemy Unit, deal the specified amount of damage to the first card in that opponent's shield area.)"
+        ],
+        "rules": [
+          {
+            "effectId": "gain_breach_3_if_ap_ge_5",
+            "type": "continuous",
+            "action": "grant_breach",
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "conditions": [
+              {
+                "type": "sourceAp",
+                "scope": "source",
+                "value": ">=5"
+              }
+            ],
+            "parameters": {
+              "value": 3
+            },
+            "timing": {
+              "duration": "continuous"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-055": {
+      "id": "GD01-055",
+      "name": "BuCUE",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "ZAFT"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "[Activate/Main]<Support 2> (Rest this Unit. 1 other friendly Unit gets AP+(specified amount) during this turn.)"
+        ],
+        "rules": [
+          {
+            "effectId": "activate_support_2",
+            "type": "activated",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "cost": {
+              "rest": "self"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "action": "modifyAP",
+            "parameters": {
+              "value": 2,
+              "excludeSource": true
+            }
+          }
+        ]
+      }
+    },
+    "GD01-056": {
+      "id": "GD01-056",
+      "name": "Geara Doga (Sleeves)",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Neo Zeon"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "[Destroyed]Choose 1 enemy Unit with 5 or less AP. Deal 1 damage to it."
+        ],
+        "rules": [
+          {
+            "effectId": "destroyed_damage_enemy_ap_le_5",
+            "type": "triggered",
+            "action": "damage",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "ap": "<=5"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "DESTROYED"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-057": {
+      "id": "GD01-057",
+      "name": "Dreissen (Sleeves)",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Neo Zeon"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 3,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-058": {
+      "id": "GD01-058",
+      "name": "Galluss-K",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [],
+      "ap": 3,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[Activate-Action][Once per Turn]①:Choose 1 Unit that is Lv.4 or higher. It gets AP+1 during this battle."
+        ],
+        "rules": [
+          {
+            "effectId": "activate_effect",
+            "type": "activated",
+            "timing": {
+              "duration": "UNTIL_END_OF_BATTLE",
+              "activationWindows": [
+                "ACTION_STEP"
+              ]
+            },
+            "cost": {
+              "resource": 1,
+              "oncePerTurn": true
+            },
+            "action": "modifyAP",
+            "target": {
+              "type": "unit",
+              "scope": "any",
+              "filters": {
+                "level": ">=4"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "value": 1
+            }
+          }
+        ]
+      }
+    },
+    "GD01-059": {
+      "id": "GD01-059",
+      "name": "Zee Zulu",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Neo Zeon"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[Attack]If you are attacking the enemy player, this Unit gets AP+2 during this battle."
+        ],
+        "rules": [
+          {
+            "effectId": "attack_ap_boost",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "source",
+              "count": 1
+            },
+            "action": "modifyAP",
+            "parameters": {
+              "value": 2
+            },
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "eventTrigger": "ATTACK_PHASE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-060": {
+      "id": "GD01-060",
+      "name": "Zaku Mariner",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 2,
+      "cost": 1,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 2,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-061": {
+      "id": "GD01-061",
+      "name": "ZuOOT",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 1,
+      "cost": 1,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "ZAFT"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[Activate/Main]<Support 1> (Rest this Unit. 1 other friendly Unit gets AP+(specified amount) during this turn.)"
+        ],
+        "rules": [
+          {
+            "effectId": "activate_support_1",
+            "type": "activated",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "cost": {
+              "rest": "self"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "action": "modifyAP",
+            "parameters": {
+              "value": 1,
+              "excludeSource": true
+            }
+          }
+        ]
+      }
+    },
+    "GD01-062": {
+      "id": "GD01-062",
+      "name": "GOOhN",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 1,
+      "cost": 1,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "ZAFT"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 2,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-063": {
+      "id": "GD01-063",
+      "name": "ZnO",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "ZAFT"
+      ],
+      "link": [
+        "ZAFT"
+      ],
+      "ap": 2,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "During your turn, while this Unit is battling an enemy Unit that is Lv.2 or lower, it gains <First Strike>. (While this Unit is attacking, it deals damage before the enemy Unit.)"
+        ],
+        "rules": [
+          {
+            "effectId": "first_strike_vs_low_level_during_your_turn",
+            "type": "continuous",
+            "action": "grant_keyword",
+            "timing": {
+              "actionTurn": "YOUR_TURN",
+              "duration": "continuous"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "conditions": [
+              {
+                "type": "battleOpponentLevel",
+                "scope": "battle",
+                "value": "<=2"
+              }
+            ],
+            "parameters": {
+              "keyword": "First Strike"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-064": {
+      "id": "GD01-064",
+      "name": "DINN",
+      "cardType": "unit",
+      "color": "Red",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "ZAFT"
+      ],
+      "link": [],
+      "ap": 3,
+      "hp": 2,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-065": {
+      "id": "GD01-065",
+      "name": "Freedom Gundam",
+      "cardType": "unit",
+      "color": "White",
+      "level": 7,
+      "cost": 5,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Triple Ship Alliance"
+      ],
+      "link": [
+        "Kira Yamato"
+      ],
+      "ap": 4,
+      "hp": 6,
+      "effects": {
+        "description": [
+          "<Blocker> (Rest this Unit to change the attack target to it.)",
+          "[During Pair][Once per Turn]When you pair a Pilot with this Unit or one of your white Units, choose 1 enemy Unit. It gets AP-2 during this turn."
+        ],
+        "rules": [
+          {
+            "effectId": "blocker",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "self"
+            },
+            "action": "redirect_attack",
+            "parameters": {
+              "cost": "rest_self"
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_REDIRECT"
+            }
+          },
+          {
+            "effectId": "paired_on_pilot_pairing_reduce_enemy_ap_2",
+            "type": "triggered",
+            "restrictions": [
+              "once_per_turn"
+            ],
+            "sourceConditions": [
+              {
+                "type": "paired",
+                "scope": "source"
+              }
+            ],
+            "timing": {
+              "actionTurn": "YOUR_TURN",
+              "duration": "UNTIL_END_OF_TURN",
+              "eventTrigger": "PAIRING_COMPLETE_GLOBAL"
+            },
+            "action": "modifyAP",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "parameters": {
+              "value": -2,
+              "pairedUnitColor": "White"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-066": {
+      "id": "GD01-066",
+      "name": "Justice Gundam",
+      "cardType": "unit",
+      "color": "White",
+      "level": 7,
+      "cost": 5,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Triple Ship Alliance"
+      ],
+      "link": [
+        "Athrun Zala"
+      ],
+      "ap": 5,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "[Deploy]Deploy 1 [Fatum-00]((Triple Ship Alliance)-AP2-HP2-<Blocker>) Unit token.",
+          "[During Pair][Attack]Choose 1 of your (Triple Ship Alliance) Unit tokens. It may attack on the turn it is deployed."
+        ],
+        "rules": [
+          {
+            "effectId": "deploy_effect",
+            "type": "triggered",
+            "action": "conditionalTokenDeploy",
+            "parameters": {
+              "condition1": {
+                "token": {
+                  "cardId": "T-011"
+                },
+                "count": 1
+              },
+              "notes": "Implemented: token deployment resolves token cardId at runtime."
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          },
+          {
+            "effectId": "attack_effect",
+            "type": "triggered",
+            "action": "allow_attack_target",
+            "sourceConditions": [
+              {
+                "type": "paired"
+              }
+            ],
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "eventTrigger": "ATTACK_PHASE"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "filters": {
+                "traits": [
+                  "Triple Ship Alliance"
+                ],
+                "color": "Token"
+              },
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "parameters": {
+              "allowAttackOnDeployTurn": true,
+              "notes": "Implemented: allowAttackOnDeployTurn grants deploy-turn attack permission to selected targets."
+            }
+          }
+        ]
+      }
+    },
+    "GD01-067": {
+      "id": "GD01-067",
+      "name": "Gundam Aerial Rebuild",
+      "cardType": "unit",
+      "color": "White",
+      "level": 6,
+      "cost": 5,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Academy"
+      ],
+      "link": [
+        "Suletta Mercury"
+      ],
+      "ap": 5,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "[When Paired]Choose 1 Command card that is Lv.5 or lower from your trash. Add it to your hand."
+        ],
+        "rules": [
+          {
+            "effectId": "pair_add_command_from_trash_le_5",
+            "type": "triggered",
+            "action": "addToHand",
+            "target": {
+              "type": "card",
+              "scope": "self_trash",
+              "filters": {
+                "cardType": "command",
+                "level": "<=5"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "value": 1,
+              "from": "trash",
+              "notes": "Implemented: addToHand supports selecting and transferring specific trash cards to hand."
+            },
+            "timing": {
+              "eventTrigger": "PAIRING_COMPLETE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-068": {
+      "id": "GD01-068",
+      "name": "Perfect Strike Gundam",
+      "cardType": "unit",
+      "color": "White",
+      "level": 5,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Triple Ship Alliance"
+      ],
+      "link": [
+        "Earth Alliance"
+      ],
+      "ap": 4,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "<Blocker> (Rest this Unit to change the attack target to it.)",
+          "[Deploy]Choose 1 enemy Unit with 1 HP. Return it to its owner's hand."
+        ],
+        "rules": [
+          {
+            "effectId": "blocker",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "self"
+            },
+            "action": "redirect_attack",
+            "parameters": {
+              "cost": "rest_self"
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_REDIRECT"
+            }
+          },
+          {
+            "effectId": "deploy_effect",
+            "type": "triggered",
+            "action": "returnToHand",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "hp": "==1"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "notes": "Implemented: returns the selected Unit to its owner's hand."
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-069": {
+      "id": "GD01-069",
+      "name": "Strike Rouge",
+      "cardType": "unit",
+      "color": "White",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Triple Ship Alliance"
+      ],
+      "link": [
+        "Orb"
+      ],
+      "ap": 3,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[Activate/Main][Once per Turn]①:Choose 1 of your rested white Units with <Blocker>. Set it as active. It can't attack during this turn."
+        ],
+        "rules": [
+          {
+            "effectId": "activate_effect",
+            "type": "activated",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "cost": {
+              "resource": 1,
+              "oncePerTurn": true
+            },
+            "action": "sequence",
+            "parameters": {
+              "steps": [
+                {
+                  "action": "setActive",
+                  "target": {
+                    "type": "unit",
+                    "scope": "self_all_unit",
+                    "selection": {
+                      "type": "player_choice"
+                    },
+                    "filters": {
+                      "color": "White",
+                      "keywords": [
+                        "Blocker"
+                      ],
+                      "status": "rested"
+                    },
+                    "count": 1
+                  }
+                },
+                {
+                  "action": "restrict_attack",
+                  "timing": {
+                    "duration": "UNTIL_END_OF_TURN"
+                  },
+                  "target": {
+                    "type": "unit",
+                    "scope": "previous_target",
+                    "count": 1
+                  },
+                  "parameters": {
+                    "disallow": true,
+                    "notes": "Implemented: applies temporary attack restriction to selected targets."
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "GD01-070": {
+      "id": "GD01-070",
+      "name": "Gundam Aerial",
+      "cardType": "unit",
+      "color": "White",
+      "level": 5,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Academy"
+      ],
+      "link": [
+        "Suletta Mercury"
+      ],
+      "ap": 3,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "While there are 4 or more Command cards in your trash, this card in your hand gets cost -2."
+        ],
+        "rules": [
+          {
+            "effectId": "hand_cost_reduction_2_if_trash_commands_ge_4",
+            "type": "continuous",
+            "action": "modifyCost",
+            "target": {
+              "type": "card",
+              "scope": "self_hand",
+              "count": 1
+            },
+            "conditions": [
+              {
+                "type": "cardsInTrash",
+                "scope": "self",
+                "cardType": "command",
+                "value": ">=4"
+              }
+            ],
+            "parameters": {
+              "value": -2
+            },
+            "timing": {
+              "duration": "continuous"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-071": {
+      "id": "GD01-071",
+      "name": "Gundam Pharact",
+      "cardType": "unit",
+      "color": "White",
+      "level": 4,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Academy"
+      ],
+      "link": [
+        "Academy"
+      ],
+      "ap": 3,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "[During Link][Attack]Choose 1 enemy Unit. It gets AP-2 during this battle."
+        ],
+        "rules": [
+          {
+            "effectId": "attack_effect",
+            "type": "triggered",
+            "action": "modifyAP",
+            "sourceConditions": [
+              {
+                "type": "linked"
+              }
+            ],
+            "timing": {
+              "duration": "UNTIL_END_OF_BATTLE",
+              "eventTrigger": "ATTACK_PHASE"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "count": 1
+            },
+            "parameters": {
+              "value": -2
+            }
+          }
+        ]
+      }
+    },
+    "GD01-072": {
+      "id": "GD01-072",
+      "name": "Launcher Strike Gundam",
+      "cardType": "unit",
+      "color": "White",
+      "level": 4,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Alliance"
+      ],
+      "link": [
+        "Earth Alliance"
+      ],
+      "ap": 3,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "<Blocker> (Rest this Unit to change the attack target to it.)"
+        ],
+        "rules": [
+          {
+            "effectId": "blocker",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "self"
+            },
+            "action": "redirect_attack",
+            "parameters": {
+              "cost": "rest_self"
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_REDIRECT"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-073": {
+      "id": "GD01-073",
+      "name": "Sword Strike Gundam",
+      "cardType": "unit",
+      "color": "White",
+      "level": 4,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Alliance"
+      ],
+      "link": [
+        "Earth Alliance"
+      ],
+      "ap": 4,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "[During Link][Attack]Choose 1 enemy Unit with 2 or less HP. Return it to its owner's hand."
+        ],
+        "rules": [
+          {
+            "effectId": "attack_effect",
+            "type": "triggered",
+            "action": "returnToHand",
+            "sourceConditions": [
+              {
+                "type": "linked"
+              }
+            ],
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "hp": "<=2"
+              },
+              "count": 1
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_PHASE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-074": {
+      "id": "GD01-074",
+      "name": "Chuchu's Demi Trainer",
+      "cardType": "unit",
+      "color": "White",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Academy"
+      ],
+      "link": [
+        "Chuatury Panlunch"
+      ],
+      "ap": 3,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Attack]Draw 1. Then, discard 1."
+        ],
+        "rules": [
+          {
+            "effectId": "attack_effect",
+            "type": "triggered",
+            "action": "draw_then_discard",
+            "parameters": {
+              "draw": 1,
+              "discard": 1
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_PHASE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-075": {
+      "id": "GD01-075",
+      "name": "Darilbalde",
+      "cardType": "unit",
+      "color": "White",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Academy"
+      ],
+      "link": [
+        "Academy"
+      ],
+      "ap": 4,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[Deploy]Choose 1 enemy Unit with 1 HP. Return it to its owner's hand."
+        ],
+        "rules": [
+          {
+            "effectId": "deploy_effect",
+            "type": "triggered",
+            "action": "returnToHand",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "hp": "==1"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "notes": "Implemented: returns the selected Unit to its owner's hand."
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-076": {
+      "id": "GD01-076",
+      "name": "Michaelis",
+      "cardType": "unit",
+      "color": "White",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Academy"
+      ],
+      "link": [
+        "Academy"
+      ],
+      "ap": 3,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "While there are 4 or more Command cards in your trash, this Unit gets AP+1.",
+          "While there are 4 or more Command cards in your trash, this Unit gets HP+1."
+        ],
+        "rules": [
+          {
+            "effectId": "ap_boost_if_trash_commands_ge_4",
+            "type": "continuous",
+            "action": "modifyAP",
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "conditions": [
+              {
+                "type": "cardsInTrash",
+                "scope": "self",
+                "cardType": "command",
+                "value": ">=4"
+              }
+            ],
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "duration": "continuous"
+            }
+          },
+          {
+            "effectId": "hp_boost_if_trash_commands_ge_4",
+            "type": "continuous",
+            "action": "modifyHP",
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "conditions": [
+              {
+                "type": "cardsInTrash",
+                "scope": "self",
+                "cardType": "command",
+                "value": ">=4"
+              }
+            ],
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "duration": "continuous"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-077": {
+      "id": "GD01-077",
+      "name": "Strike Gundam",
+      "cardType": "unit",
+      "color": "White",
+      "level": 4,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Alliance"
+      ],
+      "link": [
+        "Kira Yamato"
+      ],
+      "ap": 3,
+      "hp": 4,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-078": {
+      "id": "GD01-078",
+      "name": "Mistral",
+      "cardType": "unit",
+      "color": "White",
+      "level": 1,
+      "cost": 1,
+      "zone": [
+        "Space"
+      ],
+      "traits": [
+        "Earth Alliance"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Deploy]Choose 1 enemy Unit. It gets AP-1 during this turn."
+        ],
+        "rules": [
+          {
+            "effectId": "deploy_effect",
+            "type": "triggered",
+            "action": "modifyAP",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "eventTrigger": "ENTERS_PLAY"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "count": 1
+            },
+            "parameters": {
+              "value": -1
+            }
+          }
+        ]
+      }
+    },
+    "GD01-079": {
+      "id": "GD01-079",
+      "name": "Skygrasper",
+      "cardType": "unit",
+      "color": "White",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Earth Alliance"
+      ],
+      "link": [
+        "Earth Alliance"
+      ],
+      "ap": 2,
+      "hp": 2,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-080": {
+      "id": "GD01-080",
+      "name": "Cagalli's Skygrasper",
+      "cardType": "unit",
+      "color": "White",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Earth Alliance"
+      ],
+      "link": [
+        "Cagalli Yula Athha"
+      ],
+      "ap": 2,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Destroyed]Choose 1 enemy Unit that is Lv.2 or lower. Return it to its owner's hand."
+        ],
+        "rules": [
+          {
+            "effectId": "destroyed_bounce_enemy_le_2",
+            "type": "triggered",
+            "action": "returnToHand",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "level": "<=2"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "notes": "Implemented: returns the selected Unit to its owner's hand."
+            },
+            "timing": {
+              "eventTrigger": "DESTROYED"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-081": {
+      "id": "GD01-081",
+      "name": "M1 Astray",
+      "cardType": "unit",
+      "color": "White",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Triple Ship Alliance"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "While you have another (Triple Ship Alliance) Unit in play, this Unit gets AP+1.",
+          "While you have another (Triple Ship Alliance) Unit in play, this Unit gains <Blocker>. (Rest this Unit to change the attack target to it.)"
+        ],
+        "rules": [
+          {
+            "effectId": "ap_boost_if_another_tsa_unit",
+            "type": "continuous",
+            "action": "modifyAP",
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "conditions": [
+              {
+                "type": "hasAnotherUnitWithTrait",
+                "scope": "self",
+                "traits": [
+                  "Triple Ship Alliance"
+                ]
+              }
+            ],
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "duration": "continuous"
+            }
+          },
+          {
+            "effectId": "gain_blocker_if_another_tsa_unit",
+            "type": "triggered",
+            "conditions": [
+              {
+                "type": "hasAnotherUnitWithTrait",
+                "scope": "self",
+                "traits": [
+                  "Triple Ship Alliance"
+                ]
+              }
+            ],
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "action": "redirect_attack",
+            "parameters": {
+              "cost": "rest_self"
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_REDIRECT"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-082": {
+      "id": "GD01-082",
+      "name": "Gundam Aerial (Mirasoul Flight Unit)",
+      "cardType": "unit",
+      "color": "White",
+      "level": 4,
+      "cost": 3,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Academy"
+      ],
+      "link": [
+        "Suletta Mercury"
+      ],
+      "ap": 4,
+      "hp": 3,
+      "effects": {
+        "description": [
+          "[During Pair][Activate-Action][Once per Turn](2):Choose 1 enemy Unit. It gets AP-1 during this battle."
+        ],
+        "rules": [
+          {
+            "effectId": "activate_effect",
+            "type": "activated",
+            "timing": {
+              "duration": "UNTIL_END_OF_BATTLE",
+              "activationWindows": [
+                "ACTION_STEP"
+              ]
+            },
+            "cost": {
+              "resource": 2,
+              "oncePerTurn": true
+            },
+            "sourceConditions": [
+              {
+                "type": "paired"
+              }
+            ],
+            "action": "modifyAP",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "count": 1
+            },
+            "parameters": {
+              "value": -1
+            }
+          }
+        ]
+      }
+    },
+    "GD01-083": {
+      "id": "GD01-083",
+      "name": "Guel's Dilanza",
+      "cardType": "unit",
+      "color": "White",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Academy"
+      ],
+      "link": [
+        "Academy"
+      ],
+      "ap": 2,
+      "hp": 2,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-084": {
+      "id": "GD01-084",
+      "name": "Beguir-Pente",
+      "cardType": "unit",
+      "color": "White",
+      "level": 2,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Academy"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 3,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-085": {
+      "id": "GD01-085",
+      "name": "Demi Garrison",
+      "cardType": "unit",
+      "color": "White",
+      "level": 2,
+      "cost": 1,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Academy"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 2,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "GD01-086": {
+      "id": "GD01-086",
+      "name": "Gundam Lfrith",
+      "cardType": "unit",
+      "color": "White",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Vanadis Institute"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "<Blocker> (Rest this Unit to change the attack target to it.)"
+        ],
+        "rules": [
+          {
+            "effectId": "blocker",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "self"
+            },
+            "action": "redirect_attack",
+            "parameters": {
+              "cost": "rest_self"
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_REDIRECT"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-087": {
+      "id": "GD01-087",
+      "name": "Sayla Mass",
+      "cardType": "pilot",
+      "color": "Blue",
+      "level": 3,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Earth Federation",
+        "White Base Team",
+        "Newtype"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "While this Unit is blue, it gains <Repair 1>. (At the end of your turn, this Unit recovers the specified number of HP.)"
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "continuous_gain_repair_1_if_blue_unit",
+            "type": "continuous",
+            "sourceConditions": [
+              {
+                "type": "paired"
+              }
+            ],
+            "conditions": [
+              {
+                "type": "pairedUnitColor",
+                "scope": "source",
+                "value": "Blue"
+              }
+            ],
+            "action": "grant_keyword",
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "parameters": {
+              "keyword": "Repair",
+              "value": 1
+            },
+            "timing": {
+              "duration": "continuous"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-088": {
+      "id": "GD01-088",
+      "name": "Banagher Links",
+      "cardType": "pilot",
+      "color": "Blue",
+      "level": 5,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Civilian",
+        "Newtype"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "[When Linked]Draw 1."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "pair_draw_1_when_linked",
+            "type": "triggered",
+            "sourceConditions": [
+              {
+                "type": "linked"
+              }
+            ],
+            "action": "draw",
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "PAIRING_COMPLETE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-089": {
+      "id": "GD01-089",
+      "name": "Riddhe Marcenas",
+      "cardType": "pilot",
+      "color": "Blue",
+      "level": 3,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Earth Federation"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "While this Unit has <Repair>, it gets AP+1."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "continuous_ap_plus_1_if_unit_has_repair",
+            "type": "continuous",
+            "action": "modifyAP",
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1,
+              "filters": {
+                "keywords": [
+                  "Repair"
+                ]
+              }
+            },
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "duration": "continuous"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-090": {
+      "id": "GD01-090",
+      "name": "Duo Maxwell",
+      "cardType": "pilot",
+      "color": "Green",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Operation Meteor"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "[During Link]This Unit's AP can't be reduced by enemy effects."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "during_link_prevent_enemy_ap_reduction",
+            "type": "continuous",
+            "sourceConditions": [
+              {
+                "type": "linked"
+              }
+            ],
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "action": "prevent_ap_reduction",
+            "parameters": {
+              "sourceController": "opponent"
+            },
+            "timing": {
+              "duration": "continuous",
+              "endOnSourceDestroyed": true
+            }
+          }
+        ]
+      }
+    },
+    "GD01-091": {
+      "id": "GD01-091",
+      "name": "Chang Wufei",
+      "cardType": "pilot",
+      "color": "Green",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Operation Meteor"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "During your turn, while this Unit has <Breach>, it can't receive battle damage from enemy Units with 3 or less AP."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "continuous_prevent_battle_damage_if_unit_has_breach_during_your_turn",
+            "type": "continuous",
+            "action": "prevent_battle_damage",
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1,
+              "filters": {
+                "keywords": [
+                  "Breach"
+                ]
+              }
+            },
+            "conditions": [
+              {
+                "type": "turnPlayer",
+                "scope": "self"
+              }
+            ],
+            "parameters": {
+              "from": "enemy_units",
+              "maxEnemyAp": 3
+            },
+            "timing": {
+              "duration": "continuous",
+              "endOnSourceDestroyed": true
+            }
+          }
+        ]
+      }
+    },
+    "GD01-092": {
+      "id": "GD01-092",
+      "name": "M'Quve",
+      "cardType": "pilot",
+      "color": "Green",
+      "level": 3,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "While this Unit is (Zeon), it gains <Breach 1>. (When this Unit's attack destroys an enemy Unit, deal the specified amount of damage to the first card in that opponent's shield area.)"
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "continuous_gain_breach_1_if_zeon_unit",
+            "type": "continuous",
+            "sourceConditions": [
+              {
+                "type": "paired"
+              }
+            ],
+            "conditions": [
+              {
+                "type": "pairedUnitTrait",
+                "scope": "source",
+                "value": "Zeon"
+              }
+            ],
+            "action": "grant_breach",
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "duration": "continuous"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-093": {
+      "id": "GD01-093",
+      "name": "Marida Cruz",
+      "cardType": "pilot",
+      "color": "Red",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Neo Zeon",
+        "Cyber-Newtype"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "[During Link][Attack]Choose 1 enemy Unit whose Lv. is equal to or lower than this Unit. Deal 1 damage to it."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "attack_effect",
+            "type": "triggered",
+            "action": "damage",
+            "sourceConditions": [
+              {
+                "type": "linked"
+              }
+            ],
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "level": "<=SOURCE_LEVEL"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "value": 1,
+              "notes": "Implemented: target level comparison uses SOURCE_LEVEL dynamically."
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_PHASE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-094": {
+      "id": "GD01-094",
+      "name": "Yzak Jule",
+      "cardType": "pilot",
+      "color": "Red",
+      "level": 3,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "ZAFT",
+        "Coordinator"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "[Once per Turn] When an enemy Link Unit is destroyed with damage while this Unit is attacking, draw 1."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "linked_battle_destroy_draw_once_per_turn",
+            "type": "triggered",
+            "action": "draw",
+            "sourceConditions": [
+              {
+                "type": "linked"
+              }
+            ],
+            "restrictions": [
+              "once_per_turn"
+            ],
+            "timing": {
+              "actionTurn": "YOUR_TURN",
+              "eventTrigger": "BATTLE_DESTROY"
+            },
+            "conditions": [
+              {
+                "type": "eventAttackerController",
+                "value": "self"
+              },
+              {
+                "type": "eventTargetLinkStatus",
+                "value": "linked"
+              }
+            ],
+            "parameters": {
+              "value": 1
+            }
+          }
+        ]
+      }
+    },
+    "GD01-095": {
+      "id": "GD01-095",
+      "name": "Dearka Elthman",
+      "cardType": "pilot",
+      "color": "Red",
+      "level": 3,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "ZAFT",
+        "Coordinator"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "[When Linked]Discard 1. If you do, draw 1."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "linked_discard_then_draw",
+            "type": "triggered",
+            "action": "sequence",
+            "sourceConditions": [
+              {
+                "type": "linked"
+              }
+            ],
+            "parameters": {
+              "text": "Discard 1. If you do, draw 1.",
+              "version": 1,
+              "steps": [
+                {
+                  "action": "conditional",
+                  "parameters": {
+                    "if": [
+                      {
+                        "type": "cardsInZone",
+                        "scope": "self",
+                        "zone": "hand",
+                        "value": ">=1"
+                      }
+                    ],
+                    "then": [
+                      {
+                        "action": "discardFromHand",
+                        "target": {
+                          "type": "card",
+                          "scope": "self_hand",
+                          "count": 1
+                        },
+                        "parameters": {
+                          "value": 1
+                        }
+                      },
+                      {
+                        "action": "draw",
+                        "target": {
+                          "type": "player",
+                          "scope": "self",
+                          "count": 1
+                        },
+                        "parameters": {
+                          "value": 1
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "timing": {
+              "eventTrigger": "PAIRING_COMPLETE"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-096": {
+      "id": "GD01-096",
+      "name": "Cagalli Yula Athha",
+      "cardType": "pilot",
+      "color": "White",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Orb"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "While this Unit is white, it gains <Blocker>. (Rest this Unit to change the attack target to it.)"
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "continuous_gain_blocker_if_white_unit",
+            "type": "triggered",
+            "sourceConditions": [
+              {
+                "type": "paired"
+              }
+            ],
+            "conditions": [
+              {
+                "type": "pairedUnitColor",
+                "scope": "source",
+                "value": "White"
+              }
+            ],
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 1
+            },
+            "action": "redirect_attack",
+            "parameters": {
+              "cost": "rest_self"
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_REDIRECT"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-097": {
+      "id": "GD01-097",
+      "name": "Guel Jeturk",
+      "cardType": "pilot",
+      "color": "White",
+      "level": 3,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Academy"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "[Activate/Main][Once per Turn]If your opponent has 8 or more cards in their hand, set this Unit as active. It can't attack during this turn."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "activate_effect",
+            "type": "activated",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "cost": {
+              "oncePerTurn": true
+            },
+            "conditions": [
+              {
+                "type": "opponentHandSize",
+                "scope": "opponent",
+                "value": ">=8"
+              }
+            ],
+            "action": "sequence",
+            "parameters": {
+              "steps": [
+                {
+                  "action": "setActive",
+                  "target": {
+                    "type": "unit",
+                    "scope": "source_paired_unit",
+                    "count": 1
+                  }
+                },
+                {
+                  "action": "restrict_attack",
+                  "timing": {
+                    "duration": "UNTIL_END_OF_TURN"
+                  },
+                  "target": {
+                    "type": "unit",
+                    "scope": "source_paired_unit",
+                    "count": 1
+                  },
+                  "parameters": {
+                    "disallow": true,
+                    "notes": "Implemented: applies temporary attack restriction to selected targets."
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "GD01-098": {
+      "id": "GD01-098",
+      "name": "Elan Ceres (Enhanced Person Number 4)",
+      "cardType": "pilot",
+      "color": "White",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Academy"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "[Activate-Action][Once per Turn]If an enemy Unit with 1 or less AP is in play, this Unit recovers 1 HP."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "activate_heal",
+            "type": "activated",
+            "timing": {
+              "activationWindows": [
+                "ACTION_STEP"
+              ]
+            },
+            "cost": {
+              "oncePerTurn": true
+            },
+            "conditions": [
+              {
+                "type": "unitsInPlayWithFilter",
+                "scope": "opponent",
+                "filters": {
+                  "ap": "<=1"
+                },
+                "value": ">=1"
+              }
+            ],
+            "target": {
+              "type": "unit",
+              "scope": "source_paired_unit",
+              "count": 1
+            },
+            "action": "heal",
+            "parameters": {
+              "value": 1
+            }
+          }
+        ]
+      }
+    },
+    "GD01-099": {
+      "id": "GD01-099",
+      "name": "Intercept Orders",
+      "cardType": "command",
+      "color": "Blue",
+      "level": 4,
+      "cost": 2,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Burst]Choose 1 enemy Unit with 5 or less HP. Rest it.",
+          "[Main][Action]Choose 1 to 2 enemy Units with 3 or less HP. Rest them."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_rest",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "hp": "<=5",
+                "status": "active"
+              },
+              "count": 1
+            },
+            "action": "rest",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "rest",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE",
+                "ACTION_STEP"
+              ]
+            },
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "hp": "<=3",
+                "status": "active"
+              },
+              "count": {
+                "min": 1,
+                "max": 2
+              },
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "action": "rest"
+          }
+        ]
+      }
+    },
+    "GD01-100": {
+      "id": "GD01-100",
+      "name": "A Show of Resolve",
+      "cardType": "command",
+      "color": "Blue",
+      "level": 4,
+      "cost": 3,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Main]Draw 2."
+        ],
+        "rules": [
+          {
+            "effectId": "draw",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "action": "draw",
+            "parameters": {
+              "value": 2
+            }
+          }
+        ]
+      }
+    },
+    "GD01-101": {
+      "id": "GD01-101",
+      "name": "Deep Devotion",
+      "cardType": "command",
+      "color": "Blue",
+      "level": 2,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "OZ"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Main][Action]Choose 1 friendly Link Unit. It recovers 3 HP.",
+          "[Pilot][Lucrezia Noin]"
+        ],
+        "rules": [
+          {
+            "effectId": "heal",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE",
+                "ACTION_STEP"
+              ]
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "filters": {
+                "linkStatus": "linked"
+              },
+              "count": 1
+            },
+            "action": "heal",
+            "parameters": {
+              "value": 3
+            }
+          },
+          {
+            "effectId": "pilot_designation",
+            "type": "special",
+            "action": "designate_pilot",
+            "parameters": {
+              "pilotName": "Lucrezia Noin",
+              "AP": 1,
+              "HP": 0
+            },
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "GD01-102": {
+      "id": "GD01-102",
+      "name": "Securing the Supply Line",
+      "cardType": "command",
+      "color": "Blue",
+      "level": 4,
+      "cost": 2,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Main]All friendly Units that are Lv.4 or lower recover 2 HP."
+        ],
+        "rules": [
+          {
+            "effectId": "heal_friendly_units_le_4",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "action": "heal",
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "count": 99,
+              "filters": {
+                "level": "<=4"
+              }
+            },
+            "parameters": {
+              "value": 2
+            }
+          }
+        ]
+      }
+    },
+    "GD01-103": {
+      "id": "GD01-103",
+      "name": "The Stubborn Cog",
+      "cardType": "command",
+      "color": "Blue",
+      "level": 1,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Earth Federation"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Main]Choose 1 active friendly (Earth Federation) Unit and 1 active enemy Unit. Rest them.",
+          "[Pilot][Daguza Mackle]"
+        ],
+        "rules": [
+          {
+            "effectId": "rest",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "action": "sequence",
+            "parameters": {
+              "text": "Choose 1 active friendly (Earth Federation) Unit and 1 active enemy Unit. Rest them.",
+              "version": 1,
+              "steps": [
+                {
+                  "stepId": "rest_friendly_ef_unit",
+                  "action": "rest",
+                  "target": {
+                    "type": "unit",
+                    "scope": "self",
+                    "count": 1,
+                    "selection": {
+                      "type": "player_choice"
+                    },
+                    "filters": {
+                      "status": "active",
+                      "traits": [
+                        "Earth Federation"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "stepId": "rest_enemy_unit",
+                  "action": "rest",
+                  "target": {
+                    "type": "unit",
+                    "scope": "opponent",
+                    "count": 1,
+                    "selection": {
+                      "type": "player_choice"
+                    },
+                    "filters": {
+                      "status": "active"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "effectId": "pilot_designation",
+            "type": "special",
+            "action": "designate_pilot",
+            "parameters": {
+              "pilotName": "Daguza Mackle",
+              "AP": 0,
+              "HP": 1
+            },
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "GD01-104": {
+      "id": "GD01-104",
+      "name": "Signs of a Revolution",
+      "cardType": "command",
+      "color": "Blue",
+      "level": 3,
+      "cost": 2,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Burst]Draw 1.",
+          "[Main]Choose 1 rested enemy Unit. Deal 2 damage to it."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_draw_1",
+            "type": "triggered",
+            "action": "draw",
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "main_damage_rested_enemy_2",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "action": "damage",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "status": "rested"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "value": 2
+            }
+          }
+        ]
+      }
+    },
+    "GD01-105": {
+      "id": "GD01-105",
+      "name": "Citizens, Take a Stand!",
+      "cardType": "command",
+      "color": "Green",
+      "level": 4,
+      "cost": 1,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Burst]Add this card to your hand.",
+          "[Main]All your Units get AP+2 during this turn."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_add_to_hand",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "addToHand",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "main_all_friendly_units_ap_plus_2",
+            "type": "play",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "action": "modifyAP",
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "count": 99
+            },
+            "parameters": {
+              "value": 2
+            }
+          }
+        ]
+      }
+    },
+    "GD01-106": {
+      "id": "GD01-106",
+      "name": "Fortress Defense",
+      "cardType": "command",
+      "color": "Green",
+      "level": 5,
+      "cost": 2,
+      "zone": [],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Main]Deploy 2 [Zaku Ⅱ]((Zeon)-AP1-HP1) Unit tokens.",
+          "[Pilot][Dozle Zabi]"
+        ],
+        "rules": [
+          {
+            "effectId": "play_effect",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "action": "conditionalTokenDeploy",
+            "parameters": {
+              "condition1": {
+                "token": {
+                  "cardId": "T-007"
+                },
+                "count": 2
+              },
+              "notes": "Deploying 2 Zaku II tokens is modeled as unconditional token deployment using token cardId."
+            }
+          },
+          {
+            "effectId": "pilot_designation",
+            "type": "special",
+            "action": "designate_pilot",
+            "parameters": {
+              "pilotName": "Dozle Zabi",
+              "AP": 1,
+              "HP": 0
+            },
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "GD01-107": {
+      "id": "GD01-107",
+      "name": "First Contact",
+      "cardType": "command",
+      "color": "Green",
+      "level": 3,
+      "cost": 3,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Burst]Place 1 EX Resource.",
+          "[Main]Place 1 rested Resource."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_place_ex_resource",
+            "type": "triggered",
+            "action": "addExtraEnergy",
+            "parameters": {
+              "value": 1
+            },
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "main_place_rested_resource",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "action": "addBasicEnergy",
+            "parameters": {
+              "value": 1,
+              "rested": true,
+              "notes": "Implemented: addBasicEnergy supports rested resource placement."
+            }
+          }
+        ]
+      }
+    },
+    "GD01-108": {
+      "id": "GD01-108",
+      "name": "Strategic Arms",
+      "cardType": "command",
+      "color": "Green",
+      "level": 6,
+      "cost": 6,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Main]Deal 2 damage to all Units with <Blocker>."
+        ],
+        "rules": [
+          {
+            "effectId": "main_damage_all_blockers_2",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "action": "damage",
+            "target": {
+              "type": "unit",
+              "scope": "any_all_unit",
+              "filters": {
+                "keywords": [
+                  "Blocker"
+                ]
+              }
+            },
+            "parameters": {
+              "value": 2,
+              "notes": "Implemented: keyword filters and any-player all-unit scope are resolved at runtime."
+            }
+          }
+        ]
+      }
+    },
+    "GD01-109": {
+      "id": "GD01-109",
+      "name": "The Path to Victory or Defeat",
+      "cardType": "command",
+      "color": "Green",
+      "level": 5,
+      "cost": 1,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Main]Look at the top 5 cards of your deck. You may reveal 1 (Operation Meteor)/(G Team) Unit card/Pilot card among them and add it to your hand. Return the remaining cards randomly to the bottom of your deck."
+        ],
+        "rules": [
+          {
+            "effectId": "play_effect",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "action": "select_from_top_deck",
+            "parameters": {
+              "lookCount": 5,
+              "select": {
+                "count": 1,
+                "optional": true,
+                "toZone": "hand",
+                "reveal": true,
+                "filters": {
+                  "cardTypeAny": [
+                    "unit",
+                    "pilot"
+                  ],
+                  "traitsAny": [
+                    "Operation Meteor",
+                    "G Team"
+                  ]
+                }
+              },
+              "rest": {
+                "toZone": "deck_bottom",
+                "order": "random"
+              },
+              "notes": "Implemented: select_from_top_deck supports reveal/select from top and random bottom placement."
+            }
+          }
+        ]
+      }
+    },
+    "GD01-110": {
+      "id": "GD01-110",
+      "name": "Rasid's Orders",
+      "cardType": "command",
+      "color": "Green",
+      "level": 3,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Maganac Corps"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Main][Action]Choose 1 Unit that is Lv.4 or higher. During this turn, it may choose an active enemy Unit with 6 or less AP as its attack target.",
+          "[Pilot][Rasid Kurama]"
+        ],
+        "rules": [
+          {
+            "effectId": "allow_attack_target_active_enemy_ap_le_6_for_unit_ge_4",
+            "type": "play",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "action": "allow_attack_target",
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "filters": {
+                "level": ">=4"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "status": "active",
+              "ap": "<=6"
+            }
+          },
+          {
+            "effectId": "pilot_designation",
+            "type": "special",
+            "action": "designate_pilot",
+            "parameters": {
+              "pilotName": "Rasid Kurama",
+              "AP": 0,
+              "HP": 1
+            },
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "GD01-111": {
+      "id": "GD01-111",
+      "name": "Battle of Aces",
+      "cardType": "command",
+      "color": "Red",
+      "level": 3,
+      "cost": 2,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Burst]Choose 1 enemy Unit. Deal 2 damage to it.",
+          "[Main][Action]Choose 1 damaged enemy Unit. Deal 3 damage to it."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_damage_enemy_2",
+            "type": "triggered",
+            "action": "damage",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "count": 1
+            },
+            "parameters": {
+              "value": 2
+            },
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "main_damage_damaged_enemy_3",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE",
+                "ACTION_STEP"
+              ]
+            },
+            "action": "damage",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "damaged": true
+              },
+              "count": 1
+            },
+            "parameters": {
+              "value": 3,
+              "notes": "Implemented: targets can be filtered by damaged state."
+            }
+          }
+        ]
+      }
+    },
+    "GD01-112": {
+      "id": "GD01-112",
+      "name": "Extreme Hatred",
+      "cardType": "command",
+      "color": "Red",
+      "level": 6,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Zeon",
+        "Newtype"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Main]Choose 2 of your active Units. Rest them. If you do, choose 1 enemy Unit. Deal 3 damage to it.",
+          "[Pilot][Loni Garvey]"
+        ],
+        "rules": [
+          {
+            "effectId": "rest",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "action": "sequence",
+            "parameters": {
+              "text": "Choose 2 of your active Units. Rest them. If you do, choose 1 enemy Unit. Deal 3 damage to it.",
+              "version": 1,
+              "steps": [
+                {
+                  "stepId": "rest_two_friendly_units",
+                  "action": "rest",
+                  "target": {
+                    "type": "unit",
+                    "scope": "self_all_unit",
+                    "filters": {
+                      "status": "active"
+                    },
+                    "count": 2,
+                    "selection": {
+                      "type": "player_choice"
+                    }
+                  },
+                  "parameters": {
+                    "failIfNoTargets": true
+                  }
+                },
+                {
+                  "action": "conditional",
+                  "parameters": {
+                    "if": [
+                      {
+                        "type": "stepResolved",
+                        "stepId": "rest_two_friendly_units"
+                      }
+                    ],
+                    "then": [
+                      {
+                        "action": "damage",
+                        "target": {
+                          "type": "unit",
+                          "scope": "opponent",
+                          "count": 1,
+                          "selection": {
+                            "type": "player_choice"
+                          }
+                        },
+                        "parameters": {
+                          "value": 3
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "effectId": "pilot_designation",
+            "type": "special",
+            "action": "designate_pilot",
+            "parameters": {
+              "pilotName": "Loni Garvey",
+              "AP": 1,
+              "HP": 0
+            },
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "GD01-113": {
+      "id": "GD01-113",
+      "name": "The Desert Tiger",
+      "cardType": "command",
+      "color": "Red",
+      "level": 3,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "ZAFT",
+        "Coordinator"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Main][Action]Choose 1 friendly (ZAFT) Unit. It gets AP+3 during this turn.",
+          "[Pilot][Andrew Waldfeld]"
+        ],
+        "rules": [
+          {
+            "effectId": "modify_ap",
+            "type": "play",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "activationWindows": [
+                "MAIN_PHASE",
+                "ACTION_STEP"
+              ]
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "filters": {
+                "traits": [
+                  "ZAFT"
+                ]
+              },
+              "count": 1
+            },
+            "action": "modifyAP",
+            "parameters": {
+              "value": 3
+            }
+          },
+          {
+            "effectId": "pilot_designation",
+            "type": "special",
+            "action": "designate_pilot",
+            "parameters": {
+              "pilotName": "Andrew Waldfeld",
+              "AP": 1,
+              "HP": 0
+            },
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "GD01-114": {
+      "id": "GD01-114",
+      "name": "Assault on Torrington Base",
+      "cardType": "command",
+      "color": "Red",
+      "level": 1,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Action]Choose 2 friendly Units. They get AP+1 during this turn.",
+          "[Pilot][Yonem Kirks]"
+        ],
+        "rules": [
+          {
+            "effectId": "boost_ap",
+            "type": "play",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "activationWindows": [
+                "ACTION_STEP"
+              ]
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self",
+              "count": 2
+            },
+            "action": "modifyAP",
+            "parameters": {
+              "value": 1
+            }
+          },
+          {
+            "effectId": "pilot_designation",
+            "type": "special",
+            "action": "designate_pilot",
+            "parameters": {
+              "pilotName": "Yonem Kirks",
+              "AP": 1,
+              "HP": 0
+            },
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "GD01-115": {
+      "id": "GD01-115",
+      "name": "Zeon Remnant Forces",
+      "cardType": "command",
+      "color": "Red",
+      "level": 2,
+      "cost": 1,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Main][Action]Choose 1 enemy Unit. Deal 1 damage to it."
+        ],
+        "rules": [
+          {
+            "effectId": "main_damage_enemy_1",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE",
+                "ACTION_STEP"
+              ]
+            },
+            "action": "damage",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "count": 1
+            },
+            "parameters": {
+              "value": 1
+            }
+          }
+        ]
+      }
+    },
+    "GD01-116": {
+      "id": "GD01-116",
+      "name": "Stealth Stratagem",
+      "cardType": "command",
+      "color": "Red",
+      "level": 2,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "ZAFT",
+        "Coordinator"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 1,
+      "effects": {
+        "description": [
+          "[Main][Action]Choose 1 enemy Unit with 2 or less AP. Deal 2 damage to it.",
+          "[Pilot][Nicol Amarfi]"
+        ],
+        "rules": [
+          {
+            "effectId": "main_damage_enemy_ap_le_2_for_2",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE",
+                "ACTION_STEP"
+              ]
+            },
+            "action": "damage",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "ap": "<=2"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "value": 2
+            }
+          },
+          {
+            "effectId": "pilot_designation",
+            "type": "special",
+            "action": "designate_pilot",
+            "parameters": {
+              "pilotName": "Nicol Amarfi",
+              "AP": 0,
+              "HP": 1
+            },
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "GD01-117": {
+      "id": "GD01-117",
+      "name": "The Witch and the Bride",
+      "cardType": "command",
+      "color": "White",
+      "level": 5,
+      "cost": 2,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Burst]You may activate this card's [Main] effect.",
+          "[Main][Action]Choose 1 enemy Unit with 5 or less HP. Return it to its owner's hand."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_resolve_main",
+            "type": "triggered",
+            "action": "activate_ability",
+            "parameters": {
+              "effectId": "main_action",
+              "notes": "Implemented: Burst activate_ability resolves the card's selected main/play effect."
+            },
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "main_action",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE",
+                "ACTION_STEP"
+              ]
+            },
+            "action": "returnToHand",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "hp": "<=5"
+              },
+              "count": 1
+            },
+            "parameters": {
+              "notes": "Implemented: returns the selected Unit to its owner's hand."
+            }
+          }
+        ]
+      }
+    },
+    "GD01-118": {
+      "id": "GD01-118",
+      "name": "Overflowing Affection",
+      "cardType": "command",
+      "color": "White",
+      "level": 2,
+      "cost": 1,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Main]Draw 2. Then, discard 1."
+        ],
+        "rules": [
+          {
+            "effectId": "draw",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "action": "draw_then_discard",
+            "parameters": {
+              "draw": 2,
+              "discard": 1
+            }
+          }
+        ]
+      }
+    },
+    "GD01-119": {
+      "id": "GD01-119",
+      "name": "Iron-Fisted Discipline",
+      "cardType": "command",
+      "color": "White",
+      "level": 2,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Academy"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Main][Action]Choose 1 enemy Unit that is Lv.4 or lower. It gets AP-2 during this turn.",
+          "[Pilot][Chuatury Panlunch]"
+        ],
+        "rules": [
+          {
+            "effectId": "modify_ap",
+            "type": "play",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "activationWindows": [
+                "MAIN_PHASE",
+                "ACTION_STEP"
+              ]
+            },
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "filters": {
+                "level": "<=4"
+              },
+              "count": 1
+            },
+            "action": "modifyAP",
+            "parameters": {
+              "value": -2
+            }
+          },
+          {
+            "effectId": "pilot_designation",
+            "type": "special",
+            "action": "designate_pilot",
+            "parameters": {
+              "pilotName": "Chuatury Panlunch",
+              "AP": 1,
+              "HP": 0
+            },
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "GD01-120": {
+      "id": "GD01-120",
+      "name": "Naval Bombardment",
+      "cardType": "command",
+      "color": "White",
+      "level": 2,
+      "cost": 1,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Burst]Choose 1 enemy Unit. It gets AP-3 during this turn.",
+          "[Action]Choose 1 friendly Unit with <Blocker>. It gets AP+3 during this turn."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_enemy_ap_minus_3",
+            "type": "triggered",
+            "action": "modifyAP",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "eventTrigger": "BURST_CONDITION"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "count": 1
+            },
+            "parameters": {
+              "value": -3
+            }
+          },
+          {
+            "effectId": "modify_ap",
+            "type": "play",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "activationWindows": [
+                "ACTION_STEP"
+              ]
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "filters": {
+                "keywords": [
+                  "Blocker"
+                ]
+              },
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "action": "modifyAP",
+            "parameters": {
+              "value": 3
+            }
+          }
+        ]
+      }
+    },
+    "GD01-121": {
+      "id": "GD01-121",
+      "name": "Midair Modifications",
+      "cardType": "command",
+      "color": "White",
+      "level": 3,
+      "cost": 2,
+      "zone": [],
+      "traits": [],
+      "link": [],
+      "ap": 0,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Burst]You may activate this card's [Main] effect.",
+          "[Main]Choose 1 rested Unit with <Blocker>. Set it as active. It can't attack during this turn."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_resolve_main",
+            "type": "triggered",
+            "action": "activate_ability",
+            "parameters": {
+              "effectId": "main_action",
+              "notes": "Implemented: Burst activate_ability resolves the card's selected main/play effect."
+            },
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "main_action",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "action": "sequence",
+            "parameters": {
+              "steps": [
+                {
+                  "action": "setActive",
+                  "target": {
+                    "type": "unit",
+                    "scope": "self_all_unit",
+                    "filters": {
+                      "keywords": [
+                        "Blocker"
+                      ],
+                      "status": "rested"
+                    },
+                    "count": 1
+                  }
+                },
+                {
+                  "action": "restrict_attack",
+                  "timing": {
+                    "duration": "UNTIL_END_OF_TURN"
+                  },
+                  "target": {
+                    "type": "unit",
+                    "scope": "previous_target",
+                    "count": 1
+                  },
+                  "parameters": {
+                    "disallow": true,
+                    "notes": "Implemented: applies temporary attack restriction to selected targets."
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "GD01-122": {
+      "id": "GD01-122",
+      "name": "Covert Operative",
+      "cardType": "command",
+      "color": "White",
+      "level": 3,
+      "cost": 1,
+      "zone": [],
+      "traits": [
+        "Academy"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 0,
+      "effects": {
+        "description": [
+          "[Main]Choose 1 enemy Unit with 2 or less HP. Return it to its owner's hand. If you have a Link Unit in play, choose 1 enemy Unit with 4 or less HP instead.",
+          "[Pilot][Shaddiq Zenelli]"
+        ],
+        "rules": [
+          {
+            "effectId": "main_bounce_enemy_hp_le_2_or_4_if_link_unit_in_play",
+            "type": "play",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "action": "conditional",
+            "parameters": {
+              "branches": [
+                {
+                  "conditions": [
+                    {
+                      "type": "unitsInPlayWithFilter",
+                      "scope": "self",
+                      "filters": {
+                        "isLinkUnit": true
+                      },
+                      "value": ">=1"
+                    }
+                  ],
+                  "steps": [
+                    {
+                      "action": "returnToHand",
+                      "target": {
+                        "type": "unit",
+                        "scope": "opponent",
+                        "filters": {
+                          "hp": "<=4"
+                        },
+                        "count": 1
+                      },
+                      "parameters": {
+                        "notes": "Implemented: returns the selected Unit to its owner's hand."
+                      }
+                    }
+                  ]
+                },
+                {
+                  "conditions": [],
+                  "steps": [
+                    {
+                      "action": "returnToHand",
+                      "target": {
+                        "type": "unit",
+                        "scope": "opponent",
+                        "filters": {
+                          "hp": "<=2"
+                        },
+                        "count": 1
+                      },
+                      "parameters": {
+                        "notes": "Implemented: returns the selected Unit to its owner's hand."
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "effectId": "pilot_designation",
+            "type": "special",
+            "action": "designate_pilot",
+            "parameters": {
+              "pilotName": "Shaddiq Zenelli",
+              "AP": 1,
+              "HP": 0
+            },
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "GD01-123": {
+      "id": "GD01-123",
+      "name": "Nahel Argama",
+      "cardType": "base",
+      "color": "Blue",
+      "level": 3,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Earth Federation",
+        "Warship"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "[Burst]Deploy this card.",
+          "[Deploy]Add 1 of your Shields to your hand. Then, choose 1 enemy Unit with 3 or less HP. Rest it."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_deploy",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "deploy",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "deploy_rest",
+            "type": "triggered",
+            "action": "sequence",
+            "parameters": {
+              "text": "Add 1 of your Shields to your hand. Then, choose 1 enemy Unit with 3 or less HP. Rest it.",
+              "version": 1,
+              "steps": [
+                {
+                  "stepId": "add_shield_to_hand",
+                  "action": "addToHand",
+                  "target": {
+                    "type": "card",
+                    "scope": "self_shield",
+                    "count": 1
+                  },
+                  "parameters": {
+                    "from": "shield",
+                    "value": 1
+                  }
+                },
+                {
+                  "stepId": "rest_enemy_hp3_or_lower",
+                  "action": "rest",
+                  "target": {
+                    "type": "unit",
+                    "scope": "opponent",
+                    "count": 1,
+                    "selection": {
+                      "type": "player_choice"
+                    },
+                    "filters": {
+                      "hp": "<=3"
+                    }
+                  }
+                }
+              ]
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-124": {
+      "id": "GD01-124",
+      "name": "Side 7",
+      "cardType": "base",
+      "color": "Blue",
+      "level": 1,
+      "cost": 1,
+      "zone": [
+        "Space"
+      ],
+      "traits": [
+        "Earth Federation",
+        "Stronghold"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "[Burst]Deploy this card.",
+          "[Deploy]Add 1 of your Shields to your hand.",
+          "[Activate/Main]Rest this Base:Choose 1 friendly Unit. It recovers 1 HP."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_deploy",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "deploy",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "deploy_effect",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self_shield"
+            },
+            "action": "addToHand",
+            "parameters": {
+              "value": 1,
+              "from": "shield"
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          },
+          {
+            "effectId": "activate_heal",
+            "type": "activated",
+            "timing": {
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "cost": {
+              "restSelf": true,
+              "rest": "self"
+            },
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "count": 1
+            },
+            "action": "heal",
+            "parameters": {
+              "value": 1
+            }
+          }
+        ]
+      }
+    },
+    "GD01-125": {
+      "id": "GD01-125",
+      "name": "Zanzibar",
+      "cardType": "base",
+      "color": "Green",
+      "level": 4,
+      "cost": 2,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Zeon",
+        "Warship"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "[Burst]Deploy this card.",
+          "[Deploy]Add 1 of your Shields to your hand. Then, if it is your turn, you may deploy 1 (Zeon) Unit card that is Lv.4 or lower from your hand."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_deploy",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "deploy",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "deploy_shield_to_hand_then_optional_deploy_zeon_unit_le_4_if_your_turn",
+            "type": "triggered",
+            "action": "sequence",
+            "parameters": {
+              "steps": [
+                {
+                  "action": "addToHand",
+                  "target": {
+                    "type": "card",
+                    "scope": "self_shield"
+                  },
+                  "parameters": {
+                    "value": 1,
+                    "from": "shield"
+                  }
+                },
+                {
+                  "action": "conditional",
+                  "parameters": {
+                    "if": [
+                      {
+                        "type": "turnPlayer",
+                        "scope": "self"
+                      }
+                    ],
+                    "then": [
+                      {
+                        "action": "deploy_from_hand",
+                        "optional": true,
+                        "target": {
+                          "type": "unit",
+                          "scope": "self_hand",
+                          "filters": {
+                            "cardType": "unit",
+                            "traitsAny": [
+                              "Zeon"
+                            ],
+                            "level": "<=4"
+                          },
+                          "count": 1
+                        },
+                        "parameters": {
+                          "notes": "Implemented: deploy_from_hand resolves with standard target selection and slot checks."
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-126": {
+      "id": "GD01-126",
+      "name": "Underground Desert Base",
+      "cardType": "base",
+      "color": "Green",
+      "level": 2,
+      "cost": 1,
+      "zone": [
+        "Earth"
+      ],
+      "traits": [
+        "Maganac Corps",
+        "Stronghold"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 6,
+      "effects": {
+        "description": [
+          "[Burst]Deploy this card.",
+          "[Deploy]Add 1 of your Shields to your hand."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_deploy",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "deploy",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "deploy_effect",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self_shield"
+            },
+            "action": "addToHand",
+            "parameters": {
+              "value": 1,
+              "from": "shield"
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-127": {
+      "id": "GD01-127",
+      "name": "Gamow",
+      "cardType": "base",
+      "color": "Red",
+      "level": 2,
+      "cost": 1,
+      "zone": [
+        "Space"
+      ],
+      "traits": [
+        "ZAFT",
+        "Warship"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "[Burst]Deploy this card.",
+          "[Deploy]Add 1 of your Shields to your hand.",
+          "[Activate-Action]Rest this Base:Choose 1 friendly (ZAFT) Unit with 5 or more AP. It gains <Breach 3> during this battle. (When this Unit's attack destroys an enemy Unit, deal the specified amount of damage to the first card in that opponent's shield area.)"
+        ],
+        "rules": [
+          {
+            "effectId": "burst_deploy",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "deploy",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "deploy_effect",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self_shield"
+            },
+            "action": "addToHand",
+            "parameters": {
+              "value": 1,
+              "from": "shield"
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          },
+          {
+            "effectId": "activate_effect",
+            "type": "activated",
+            "timing": {
+              "duration": "UNTIL_END_OF_BATTLE",
+              "activationWindows": [
+                "ACTION_STEP"
+              ]
+            },
+            "cost": {
+              "restSelf": true,
+              "rest": "self"
+            },
+            "action": "grant_breach",
+            "target": {
+              "type": "unit",
+              "scope": "self_all_unit",
+              "filters": {
+                "traits": [
+                  "ZAFT"
+                ],
+                "ap": ">=5"
+              },
+              "count": 1,
+              "selection": {
+                "type": "player_choice"
+              }
+            },
+            "parameters": {
+              "value": 3,
+              "notes": "Implemented: grants Breach for the configured duration."
+            }
+          }
+        ]
+      }
+    },
+    "GD01-128": {
+      "id": "GD01-128",
+      "name": "Mining Asteroid Palau",
+      "cardType": "base",
+      "color": "Red",
+      "level": 2,
+      "cost": 1,
+      "zone": [
+        "Space"
+      ],
+      "traits": [
+        "Neo Zeon",
+        "Stronghold"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 6,
+      "effects": {
+        "description": [
+          "[Burst]Deploy this card.",
+          "[Deploy]Add 1 of your Shields to your hand."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_deploy",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "deploy",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "deploy_effect",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self_shield"
+            },
+            "action": "addToHand",
+            "parameters": {
+              "value": 1,
+              "from": "shield"
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-129": {
+      "id": "GD01-129",
+      "name": "Kusanagi",
+      "cardType": "base",
+      "color": "White",
+      "level": 4,
+      "cost": 2,
+      "zone": [
+        "Space"
+      ],
+      "traits": [
+        "Triple Ship Alliance",
+        "Warship"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 4,
+      "effects": {
+        "description": [
+          "[Burst]Deploy this card.",
+          "[Deploy]Add 1 of your Shields to your hand. Then, choose 1 enemy Unit with 3 or less HP. Return it to its owner's hand."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_deploy",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "deploy",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "deploy_shield_to_hand_then_bounce_enemy_hp_le_3",
+            "type": "triggered",
+            "action": "sequence",
+            "parameters": {
+              "steps": [
+                {
+                  "action": "addToHand",
+                  "target": {
+                    "type": "card",
+                    "scope": "self_shield"
+                  },
+                  "parameters": {
+                    "value": 1,
+                    "from": "shield"
+                  }
+                },
+                {
+                  "action": "returnToHand",
+                  "target": {
+                    "type": "unit",
+                    "scope": "opponent",
+                    "filters": {
+                      "hp": "<=3"
+                    },
+                    "count": 1
+                  },
+                  "parameters": {
+                    "notes": "Implemented: returns the selected Unit to its owner's hand."
+                  }
+                }
+              ]
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          }
+        ]
+      }
+    },
+    "GD01-130": {
+      "id": "GD01-130",
+      "name": "13th Tactical Testing Sector",
+      "cardType": "base",
+      "color": "White",
+      "level": 3,
+      "cost": 1,
+      "zone": [
+        "Space"
+      ],
+      "traits": [
+        "Academy",
+        "Stronghold"
+      ],
+      "link": [],
+      "ap": 0,
+      "hp": 5,
+      "effects": {
+        "description": [
+          "[Burst]Deploy this card.",
+          "[Deploy]Add 1 of your Shields to your hand.",
+          "[Activate/Main]Rest this Base:If a friendly (Academy) Unit is in play, choose 1 enemy Unit. It gets AP-1 during this turn."
+        ],
+        "rules": [
+          {
+            "effectId": "burst_deploy",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self"
+            },
+            "action": "deploy",
+            "timing": {
+              "eventTrigger": "BURST_CONDITION"
+            }
+          },
+          {
+            "effectId": "deploy_effect",
+            "type": "triggered",
+            "target": {
+              "type": "card",
+              "scope": "self_shield"
+            },
+            "action": "addToHand",
+            "parameters": {
+              "value": 1,
+              "from": "shield"
+            },
+            "timing": {
+              "eventTrigger": "ENTERS_PLAY"
+            }
+          },
+          {
+            "effectId": "activate_effect",
+            "type": "activated",
+            "timing": {
+              "duration": "UNTIL_END_OF_TURN",
+              "activationWindows": [
+                "MAIN_PHASE"
+              ]
+            },
+            "cost": {
+              "restSelf": true,
+              "rest": "self"
+            },
+            "conditions": [
+              {
+                "type": "unitsInPlayWithTrait",
+                "scope": "self",
+                "traits": [
+                  "Academy"
+                ],
+                "value": ">=1"
+              }
+            ],
+            "action": "modifyAP",
+            "target": {
+              "type": "unit",
+              "scope": "opponent",
+              "count": 1
+            },
+            "parameters": {
+              "value": -1
+            }
+          }
+        ]
+      }
+    },
+    "T-006": {
+      "id": "T-006",
+      "name": "Char’s Zaku II",
+      "cardType": "unit",
+      "color": "Token",
+      "level": 0,
+      "cost": 0,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [],
+      "ap": 3,
+      "hp": 1,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "T-007": {
+      "id": "T-007",
+      "name": "Zaku II",
+      "cardType": "unit",
+      "color": "Token",
+      "level": 0,
+      "cost": 0,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Zeon"
+      ],
+      "link": [],
+      "ap": 1,
+      "hp": 1,
+      "effects": {
+        "description": [],
+        "rules": []
+      }
+    },
+    "T-011": {
+      "id": "T-011",
+      "name": "Fatum-00",
+      "cardType": "unit",
+      "color": "Token",
+      "level": 0,
+      "cost": 0,
+      "zone": [
+        "Space",
+        "Earth"
+      ],
+      "traits": [
+        "Triple Ship Alliance"
+      ],
+      "link": [],
+      "ap": 2,
+      "hp": 2,
+      "effects": {
+        "description": [
+          "<Blocker> (Rest this Unit to change the attack target to it.)"
+        ],
+        "rules": [
+          {
+            "effectId": "blocker",
+            "type": "triggered",
+            "target": {
+              "type": "unit",
+              "scope": "self"
+            },
+            "action": "redirect_attack",
+            "parameters": {
+              "cost": "rest_self"
+            },
+            "timing": {
+              "eventTrigger": "ATTACK_REDIRECT"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

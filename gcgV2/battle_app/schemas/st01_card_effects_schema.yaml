@@ -1,0 +1,591 @@
+schema_version: "0.1-draft"
+source_file: "../gcg_card_effects_by_package/st01_card_effects.json"
+package:
+  code: ST01
+  name: "Heroic Beginnings [ST01]"
+notes:
+  - "本檔係按 CARD_EFFECT_STRUCTURE_DESIGN.md 人手轉寫的草案。"
+  - "正常使用費用放在 play_cost；EffectClause.cost 只放啟動能力或額外費用。"
+  - "未有卡面效果的卡，effects 使用空陣列。"
+  - "【機師】指定先以 pilot_requirement 表示，之後可再納入正式 schema vocabulary。"
+
+cards:
+  - card_id: ST01-001
+    name: 高達
+    card_type: UNIT
+    level: 4
+    play_cost: 3
+    color: Blue
+    terrain: [宇宙, 地球]
+    traits: [地球聯邦, WB隊]
+    resonance: 阿姆羅・雷
+    base_ap: 3
+    base_hp: 4
+    raw_effect: "《修復2》（當我方的回合結束時，此機體回復指定數值）\n【搭乘中】我方的回合中，我方所有機體的AP+1。"
+    keywords:
+      - keyword: REPAIR
+        value: 2
+    effects:
+      - kind: continuous
+        condition:
+          all_of:
+            - type: source_is_paired
+            - type: turn_side_is
+              side: self
+        target:
+          scope: self_all_unit
+        modifiers:
+          - stat: AP
+            amount: 1
+        duration: while_condition_true
+
+  - card_id: ST01-002
+    name: 高達（MA型態）
+    card_type: UNIT
+    level: 5
+    play_cost: 3
+    color: Blue
+    terrain: [宇宙]
+    traits: [地球聯邦, WB隊]
+    resonance: 阿姆羅・雷
+    base_ap: 4
+    base_hp: 3
+    raw_effect: "【搭乘時·〔WB隊〕的機師】我方抽取1張卡牌。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: PAIRING_COMPLETE
+        optional: false
+        cost: none
+        condition:
+          type: pilot_trait_any
+          traits: [WB隊]
+        resolution:
+          type: simple
+          actions:
+            - action: draw
+              amount: 1
+
+  - card_id: ST01-003
+    name: 鋼加農
+    card_type: UNIT
+    level: 3
+    play_cost: 2
+    color: Blue
+    terrain: [宇宙, 地球]
+    traits: [地球聯邦, WB隊]
+    resonance: 凱・西登
+    base_ap: 2
+    base_hp: 4
+    raw_effect: "-"
+    keywords: []
+    effects: []
+
+  - card_id: ST01-004
+    name: 鋼坦克
+    card_type: UNIT
+    level: 3
+    play_cost: 2
+    color: Blue
+    terrain: [宇宙, 地球]
+    traits: [地球聯邦, WB隊]
+    resonance: 隼人・小林
+    base_ap: 2
+    base_hp: 3
+    raw_effect: "【配置時】選擇對方1張HP不高於2的機體。將其轉為休息狀態。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: ENTERS_PLAY
+        optional: false
+        cost: none
+        target:
+          controller: opponent
+          card_type: unit
+          comparisons:
+            - field: hp
+              op: lte
+              value: 2
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: rest
+              target: chosen
+
+  - card_id: ST01-005
+    name: 吉姆
+    card_type: UNIT
+    level: 2
+    play_cost: 1
+    color: Blue
+    terrain: [宇宙, 地球]
+    traits: [地球聯邦]
+    resonance: null
+    base_ap: 2
+    base_hp: 2
+    raw_effect: "-"
+    keywords: []
+    effects: []
+
+  - card_id: ST01-006
+    name: 風靈高達（帕梅特刻痕6）
+    card_type: UNIT
+    level: 5
+    play_cost: 4
+    color: White
+    terrain: [宇宙, 地球]
+    traits: [學園]
+    resonance: 蘇萊塔・墨丘利
+    base_ap: 4
+    base_hp: 4
+    raw_effect: "【搭乘時】選擇對方1張等級不高於Lv.5的機體。本回合中，使其AP-3。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: PAIRING_COMPLETE
+        optional: false
+        cost: none
+        target:
+          controller: opponent
+          card_type: unit
+          comparisons:
+            - field: level
+              op: lte
+              value: 5
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: modify_ap
+              target: chosen
+              amount: -3
+              duration: this_turn
+
+  - card_id: ST01-007
+    name: 風靈高達（Bit on Form）
+    card_type: UNIT
+    level: 4
+    play_cost: 2
+    color: White
+    terrain: [宇宙, 地球]
+    traits: [學園]
+    resonance: 蘇萊塔・墨丘利
+    base_ap: 3
+    base_hp: 4
+    raw_effect: "-"
+    keywords: []
+    effects: []
+
+  - card_id: ST01-008
+    name: 迪米教練機
+    card_type: UNIT
+    level: 1
+    play_cost: 1
+    color: White
+    terrain: [宇宙, 地球]
+    traits: [學園]
+    resonance: null
+    base_ap: 1
+    base_hp: 1
+    raw_effect: "《阻擋者》（可轉換為休息狀態並將攻擊對象改為此機體）"
+    keywords:
+      - keyword: BLOCKER
+    effects: []
+
+  - card_id: ST01-009
+    name: 佐渥特
+    card_type: UNIT
+    level: 2
+    play_cost: 2
+    color: White
+    terrain: [宇宙, 地球]
+    traits: [學園]
+    resonance: null
+    base_ap: 3
+    base_hp: 2
+    raw_effect: "《阻擋者》（可轉換為休息狀態並將攻擊對象改為此機體）\n此機體無法選擇對方玩家作為攻擊對象。"
+    keywords:
+      - keyword: BLOCKER
+    effects:
+      - kind: continuous
+        condition: none
+        target:
+          scope: source
+        modifiers:
+          - restrict_attack:
+              cannot_target_player: true
+        duration: while_source_in_play
+
+  - card_id: ST01-010
+    name: 阿姆羅・雷
+    card_type: PILOT
+    level: 4
+    play_cost: 1
+    color: Blue
+    terrain: []
+    traits: [地球聯邦, WB隊, 新人類]
+    resonance: null
+    base_ap: "+1"
+    base_hp: "+2"
+    raw_effect: "【爆發】此卡牌加入手牌。\n【搭乘時】選擇對方1張HP不高於5的機體。將其轉為休息狀態。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: add_to_hand
+              target: source
+              visibility:
+                reveal_to: all_players
+                reason: burst
+      - kind: triggered
+        timing: PAIRING_COMPLETE
+        optional: false
+        cost: none
+        target:
+          controller: opponent
+          card_type: unit
+          comparisons:
+            - field: hp
+              op: lte
+              value: 5
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: rest
+              target: chosen
+
+  - card_id: ST01-011
+    name: 蘇萊塔・墨丘利
+    card_type: PILOT
+    level: 4
+    play_cost: 1
+    color: White
+    terrain: []
+    traits: [學園]
+    resonance: null
+    base_ap: "+1"
+    base_hp: "+2"
+    raw_effect: "【爆發】此卡牌加入手牌。\n【攻擊時】【每回合1次】選擇我方的1張能源。將其轉為活躍狀態。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: add_to_hand
+              target: source
+              visibility:
+                reveal_to: all_players
+                reason: burst
+      - kind: triggered
+        timing: ON_ATTACK
+        frequency: once_per_turn
+        optional: false
+        cost: none
+        target:
+          controller: self
+          card_type: resource
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: set_active
+              target: chosen
+
+  - card_id: ST01-012
+    name: 滿身瘡痍
+    card_type: COMMAND
+    level: 2
+    play_cost: 1
+    color: Blue
+    terrain: []
+    traits: [地球聯邦, WB隊]
+    resonance: null
+    base_ap: "+0"
+    base_hp: "+1"
+    pilot_requirement: 隼人・小林
+    raw_effect: "【主要】選擇對方1張休息狀態的機體。給予其1點傷害。\n【機師】「隼人・小林」"
+    keywords: []
+    effects:
+      - kind: activated
+        timing: MAIN
+        cost: none
+        target:
+          controller: opponent
+          card_type: unit
+          status: rested
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: damage
+              target: chosen
+              amount: 1
+
+  - card_id: ST01-013
+    name: 凱的決心
+    card_type: COMMAND
+    level: 3
+    play_cost: 1
+    color: Blue
+    terrain: []
+    traits: [地球聯邦, WB隊]
+    resonance: null
+    base_ap: "+1"
+    base_hp: "+0"
+    pilot_requirement: 凱・西登
+    raw_effect: "【主要】選擇友方的1張機體。使其回復3點。\n【機師】「凱・西登」"
+    keywords: []
+    effects:
+      - kind: activated
+        timing: MAIN
+        cost: none
+        target:
+          controller: self
+          card_type: unit
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: heal
+              target: chosen
+              amount: 3
+
+  - card_id: ST01-014
+    name: 意外事變
+    card_type: COMMAND
+    level: 3
+    play_cost: 1
+    color: White
+    terrain: []
+    traits: []
+    resonance: null
+    base_ap: null
+    base_hp: null
+    raw_effect: "【爆發】發動此卡牌的【主要】效果。\n【主要】/【瞬動】選擇對方的1張機體。本回合中，使其AP-3。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: execute_own_effect
+              timing: MAIN
+      - kind: activated
+        timing: [MAIN, ACTION]
+        cost: none
+        target:
+          controller: opponent
+          card_type: unit
+          count: 1
+        resolution:
+          type: simple
+          actions:
+            - action: modify_ap
+              target: chosen
+              amount: -3
+              duration: this_turn
+
+  - card_id: ST01-015
+    name: 白色基地
+    card_type: BASE
+    level: 3
+    play_cost: 2
+    color: Blue
+    terrain: [宇宙, 地球]
+    traits: [地球聯邦, WB隊, 艦船]
+    resonance: null
+    base_ap: null
+    base_hp: 5
+    raw_effect: "【爆發】配置此卡牌。\n【配置時】將我方的1張護盾加入手牌。\n【啟動·主要】【每回合1次】②：若我方戰鬥區中不存在機體，則配置1張「高達」（〔WB隊〕・AP3・HP3）的機體替代卡；若只存在1張機體，則配置1張「鋼加農」（〔WB隊〕・AP2・HP2）的機體替代卡；若存在2張或更多機體，則配置1張「鋼坦克」（〔WB隊〕・AP1・HP1）的機體替代卡。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: deploy
+              target: source
+      - kind: triggered
+        timing: ENTERS_PLAY
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: add_shield_to_hand
+      - kind: activated
+        timing: MAIN
+        frequency: once_per_turn
+        cost:
+          - type: pay_resource
+            amount: 2
+            allowed_resource_types: [basic, ex]
+        resolution:
+          type: conditional_chain
+          exclusive: true
+          branches:
+            - condition:
+                type: board_count
+                controller: self
+                card_type: unit
+                zone: battle_area
+                op: eq
+                value: 0
+              actions:
+                - action: deploy_token
+                  token:
+                    card_id: T-001
+                    name: 高達
+                    card_type: unit
+                    traits: [WB隊]
+                    base_ap: 3
+                    base_hp: 3
+                    keywords: []
+            - condition:
+                type: board_count
+                controller: self
+                card_type: unit
+                zone: battle_area
+                op: eq
+                value: 1
+              actions:
+                - action: deploy_token
+                  token:
+                    card_id: T-002
+                    name: 鋼加農
+                    card_type: unit
+                    traits: [WB隊]
+                    base_ap: 2
+                    base_hp: 2
+                    keywords: []
+            - condition:
+                type: board_count
+                controller: self
+                card_type: unit
+                zone: battle_area
+                op: gte
+                value: 2
+              actions:
+                - action: deploy_token
+                  token:
+                    card_id: T-003
+                    name: 鋼坦克
+                    card_type: unit
+                    traits: [WB隊]
+                    base_ap: 1
+                    base_hp: 1
+                    keywords: []
+
+  - card_id: ST01-016
+    name: 阿斯提卡西亞高等專門學園 地球宿舍
+    card_type: BASE
+    level: 2
+    play_cost: 1
+    color: White
+    terrain: [宇宙]
+    traits: [學園, 據點]
+    resonance: null
+    base_ap: null
+    base_hp: 5
+    raw_effect: "【爆發】配置此卡牌。\n【配置時】將我方的1張護盾加入手牌。\n【啟動·主要】將此基地轉為休息狀態：本回合中，友方所有共鳴機體的AP+1。"
+    keywords: []
+    effects:
+      - kind: triggered
+        timing: BURST
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: deploy
+              target: source
+      - kind: triggered
+        timing: ENTERS_PLAY
+        optional: false
+        cost: none
+        resolution:
+          type: simple
+          actions:
+            - action: add_shield_to_hand
+      - kind: activated
+        timing: MAIN
+        cost:
+          - type: rest
+            target: source
+        target:
+          name: resonant_units
+          scope: self_all_unit
+          extra_filters:
+            resonance_active: true
+        resolution:
+          type: simple
+          actions:
+            - action: modify_ap
+              target: $resonant_units
+              amount: 1
+              duration: this_turn
+
+  - card_id: T-001
+    name: 高達
+    card_type: UNIT
+    token: true
+    level: null
+    play_cost: null
+    color: null
+    terrain: []
+    traits: [WB隊]
+    resonance: null
+    base_ap: 3
+    base_hp: 3
+    raw_effect: "-"
+    keywords: []
+    effects: []
+
+  - card_id: T-002
+    name: 鋼加農
+    card_type: UNIT
+    token: true
+    level: null
+    play_cost: null
+    color: null
+    terrain: []
+    traits: [WB隊]
+    resonance: null
+    base_ap: 2
+    base_hp: 2
+    raw_effect: "-"
+    keywords: []
+    effects: []
+
+  - card_id: T-003
+    name: 鋼坦克
+    card_type: UNIT
+    token: true
+    level: null
+    play_cost: null
+    color: null
+    terrain: []
+    traits: [WB隊]
+    resonance: null
+    base_ap: 1
+    base_hp: 1
+    raw_effect: "-"
+    keywords: []
+    effects: []

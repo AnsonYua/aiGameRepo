@@ -22,14 +22,18 @@ from urllib.parse import parse_qs, urlparse
 
 
 BATTLE_APP_ROOT = Path(__file__).resolve().parent
-GCGV2_ROOT = BATTLE_APP_ROOT.parent
+GCGV2_ROOT = BATTLE_APP_ROOT
 PUBLIC_ROOT = BATTLE_APP_ROOT / "public"
 
-if str(GCGV2_ROOT) not in sys.path:
-    sys.path.insert(0, str(GCGV2_ROOT))
+for path in (BATTLE_APP_ROOT, BATTLE_APP_ROOT.parent):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
 
+from battle_app.env import load_battle_app_env  # noqa: E402
 from reviewboard.humanVsAI.battle_session import HumanVsAiBattleSession, ManualBattleSession  # noqa: E402
 from battle_app.scenarios import ScenarioError, load_scenario, start_session_from_scenario  # noqa: E402
+
+load_battle_app_env()
 
 
 def utc_now_iso() -> str:

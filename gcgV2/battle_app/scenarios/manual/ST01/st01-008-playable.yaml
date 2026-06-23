@@ -1,0 +1,37 @@
+schema_version: 1
+scenario_id: st01-008-playable
+title: ST01-008 可部署測試
+target_card: ST01-008
+purpose: 測試 P1 在主要階段有足夠資源時，可從手牌部署 ST01-008。
+setup:
+  turn: 1
+  phase: main
+  step: null
+  active_player: P1
+  priority_player: P1
+  first_player: P1
+players:
+  P1:
+    hand:
+      - st01/ST01-008
+    resources:
+      active: 1
+      rested: 0
+      ex: 0
+    shields: 6
+    deck_count: 30
+    base: EX-BASE
+    board: []
+  P2:
+    hand: []
+    resources:
+      active: 0
+      rested: 0
+      ex: 0
+    shields: 6
+    deck_count: 30
+    base: EX-BASE
+    board: []
+expected:
+  legal_commands:
+    - play_card st01/ST01-008 0

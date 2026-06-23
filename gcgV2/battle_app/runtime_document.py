@@ -18,7 +18,10 @@ from gcg.sim.bootstrap import build_simulator
 from reviewboard.humanVsAI.battle_session import AI_PLAYER, HUMAN_PLAYER, HumanVsAiBattleSession
 from reviewboard.humanVsAI.command_labels import build_legal_actions
 
+from battle_app.env import load_battle_app_env
 from .storage import build_game_document
+
+load_battle_app_env()
 
 
 _CARD_ID_PATTERN = re.compile(r"\bst\d{2}/[A-Z0-9-]+\b")
@@ -454,6 +457,7 @@ def card_detail(card_id):
         "zone": list(card.get("zone", [])),
         "traits": list(card.get("traits", [])),
         "link": list(card.get("link", [])),
+        "keywords": list(card.get("keywords", [])),
         "descriptions": list(card.get("effects", {}).get("description", [])),
     }
 
